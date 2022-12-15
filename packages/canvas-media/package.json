@@ -7,7 +7,7 @@
   "module": "es/index.js",
   "sideEffects": false,
   "scripts": {
-    "i18n:extract": "format-message extract \"src*/**/*.[jt]s*\" -g underscored_crc32 -o locales/en.json",
+    "i18n:extract": "format-message extract \"src*/**/*.js\" -g underscored_crc32 -o locales/en.json",
     "installTranslations": "scripts/installTranslations.js",
     "commitTranslations": "scripts/commitTranslations.sh",
     "test": "jest --color --runInBand",
@@ -17,9 +17,8 @@
     "build:es": "babel src --out-dir es --ignore '**/__tests__'",
     "build:cjs": "babel --config-file=./babel.config.cjs.js src --out-dir lib --ignore '**/__tests__'",
     "build:canvas": "yarn installTranslations && yarn run build:es && yarn run build:cjs",
-    "build:watch": "yarn run clean:es && yarn run build:es --watch",
-    "clean": "rm -rf lib && yarn run clean:es && rm -rf coverage",
-    "clean:es": "rm -rf es",
+    "build:watch": "yarn run build:es --watch",
+    "clean": "rm -rf lib && rm -rf es && rm -rf coverage",
     "prepublishOnly": "yarn build && yarn test"
   },
   "repository": {
@@ -34,7 +33,7 @@
   "dependencies": {
     "@instructure/canvas-theme": "7",
     "@instructure/k5uploader": "*",
-    "@instructure/media-capture": "~8.4.1-rc.16",
+    "@instructure/media-capture": "~8.0.1-rc.11",
     "@instructure/ui-a11y-content": "^7",
     "@instructure/ui-alerts": "^7",
     "@instructure/ui-billboard": "^7",
@@ -63,7 +62,6 @@
     "@instructure/ui-view": "^7",
     "@instructure/uid": "7",
     "@sheerun/mutationobserver-shim": "^0.3.2",
-    "aphrodite": "^2",
     "axios": "^0.21.1",
     "format-message": "^6",
     "format-message-generate-id": "^6",

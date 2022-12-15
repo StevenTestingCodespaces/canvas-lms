@@ -15,11 +15,11 @@
 // You should have received a copy of the GNU Affero General Public License along
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import ModuleCollection from '@canvas/modules/backbone/collections/ModuleCollection'
+import ModuleCollection from '@canvas/modules/backbone/collections/ModuleCollection.coffee'
 import {savedObservedId} from '@canvas/observer-picker/ObserverGetObservee'
-import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection'
+import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection.coffee'
 import _ from 'underscore'
-import AssignmentGroup from '../models/AssignmentGroup'
+import AssignmentGroup from '../models/AssignmentGroup.coffee'
 import SubmissionCollection from './SubmissionCollection'
 
 const PER_PAGE_LIMIT = 50

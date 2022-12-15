@@ -36,8 +36,8 @@ describe Types::OutcomeFriendlyDescriptionType do
   let(:outcome_friendly_description) do
     OutcomeFriendlyDescription.create!(
       learning_outcome: outcome,
-      context:,
-      description:
+      context: context,
+      description: description
     )
   end
   let(:graphql_context) { { current_user: @user } }
@@ -87,7 +87,7 @@ describe Types::OutcomeFriendlyDescriptionType do
     it "returns nil" do
       expect(
         outcome_friendly_description_type.resolve("_id")
-      ).to be_nil
+      ).to eq nil
     end
   end
 end

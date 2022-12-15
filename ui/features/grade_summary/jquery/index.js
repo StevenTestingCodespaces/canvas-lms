@@ -25,29 +25,25 @@ import '@canvas/util/templateData'
 import '@canvas/media-comments/jquery/mediaCommentThumbnail'
 import '@canvas/media-comments' /* mediaComment */
 import axios from '@canvas/axios'
-import {camelizeProperties} from '@canvas/convert-case'
+import {camelize} from 'convert-case'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import gradingPeriodSetsApi from '@canvas/grading/jquery/gradingPeriodSetsApi'
 import htmlEscape from 'html-escape'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import round from '@canvas/round'
+import round from 'round'
 import numberHelper from '@canvas/i18n/numberHelper'
 import CourseGradeCalculator from '@canvas/grading/CourseGradeCalculator'
 import {scopeToUser} from '@canvas/grading/EffectiveDueDates'
 import {scoreToGrade} from '@canvas/grading/GradingSchemeHelper'
 import GradeFormatHelper from '@canvas/grading/GradeFormatHelper'
 import StatusPill from '@canvas/grading-status-pill'
-import GradeSummaryManager from '../react/GradeSummary/GradeSummaryManager'
 import SelectMenuGroup from '../react/SelectMenuGroup'
 import SubmissionCommentsTray from '../react/SubmissionCommentsTray'
-import ClearBadgeCountsButton from '../react/ClearBadgeCountsButton'
 import {scoreToPercentage} from '@canvas/grading/GradeCalculationHelper'
 import useStore from '../react/stores'
 
 const I18n = useI18nScope('gradingGradeSummary')
-
-const SUBMISSION_UNREAD_PREFIX = 'submission_unread_dot_'
 
 const GradeSummary = {
   getSelectedGradingPeriodId() {
@@ -88,10 +84,6 @@ const GradeSummary = {
       numericalValue,
       formattedValue: $assignment.find('.original_score').text(),
     }
-  },
-
-  getOriginalWorkflowState($assignment) {
-    return $assignment.find('.submission_status').text().trim()
   },
 
   onEditWhatIfScore($assignmentScore, $ariaAnnouncer) {
@@ -214,7 +206,7 @@ const GradeSummary = {
       $assignment.find('.grade').prepend($screenreaderLinkClone)
     }
 
-    GradeSummary.updateScoreForAssignment(assignmentId, score.numericalValue, 'graded')
+    GradeSummary.updateScoreForAssignment(assignmentId, score.numericalValue)
     GradeSummary.updateStudentGrades()
   },
 
@@ -251,8 +243,7 @@ const GradeSummary = {
     $grade.removeClass('changed')
 
     const assignmentId = $assignment.getTemplateValue('assignment_id')
-    const workflowState = GradeSummary.getOriginalWorkflowState($assignment)
-    GradeSummary.updateScoreForAssignment(assignmentId, score.numericalValue, workflowState)
+    GradeSummary.updateScoreForAssignment(assignmentId, score.numericalValue)
     if (!opts.skipEval) {
       GradeSummary.updateStudentGrades()
     }
@@ -440,12 +431,12 @@ function calculateTotals(calculatedGrades, currentOrFinal, groupWeightingScheme)
   let finalGrade
   let teaserText
 
-  if (gradingSchemeEnabled() || ENV.restrict_quantitative_data) {
+  if (gradingSchemeEnabled()) {
     const scoreToUse = overrideScorePresent()
       ? ENV.effective_final_score
       : calculatePercentGrade(finalScore, finalPossible)
 
-    const letterGrade = scoreToGrade(scoreToUse, ENV.grading_scheme) || I18n.t('N/A')
+    const letterGrade = scoreToGrade(scoreToUse, ENV.grading_scheme)
     $('.final_grade .letter_grade').text(letterGrade)
   }
 
@@ -528,12 +519,11 @@ function updateStudentGrades() {
   }
 }
 
-function updateScoreForAssignment(assignmentId, score, workflowStateOverride) {
+function updateScoreForAssignment(assignmentId, score) {
   const submission = _.find(ENV.submissions, s => `${s.assignment_id}` === `${assignmentId}`)
 
   if (submission) {
     submission.score = score
-    submission.workflow_state = workflowStateOverride ?? submission.workflow_state
   } else {
     ENV.submissions.push({assignment_id: assignmentId, score})
   }
@@ -581,7 +571,7 @@ function saveAssignmentOrder(order) {
 }
 
 function coursesWithGrades() {
-  return ENV.courses_with_grades.map(course => camelizeProperties(course))
+  return ENV.courses_with_grades.map(course => camelize(course))
 }
 
 function getSelectMenuGroupProps() {
@@ -594,15 +584,11 @@ function getSelectMenuGroupProps() {
     gradingPeriods: ENV.grading_periods || [],
     saveAssignmentOrder,
     selectedAssignmentSortOrder: ENV.current_assignment_sort_order,
-    selectedCourseID: getCourseId(),
+    selectedCourseID: ENV.context_asset_string.match(/.*_(\d+)$/)[1],
     selectedGradingPeriodID: ENV.current_grading_period_id,
     selectedStudentID: ENV.student_id,
     students: ENV.students,
   }
-}
-
-function getCourseId() {
-  return ENV.context_asset_string.match(/.*_(\d+)$/)[1]
 }
 
 function renderSelectMenuGroup() {
@@ -612,22 +598,15 @@ function renderSelectMenuGroup() {
   )
 }
 
-function renderGradeSummaryTable() {
-  ReactDOM.render(<GradeSummaryManager />, document.getElementById('grade-summary-react'))
-}
-
 function handleSubmissionsCommentTray(assignmentId) {
   const {submissionTrayAssignmentId, submissionTrayOpen} = useStore.getState()
 
   if (submissionTrayAssignmentId === assignmentId && submissionTrayOpen) {
     useStore.setState({submissionTrayOpen: false, submissionTrayAssignmentId: undefined})
     $(`#comments_thread_${submissionTrayAssignmentId}`).removeClass('comment_thread_show_print')
-    $(`#submission_${submissionTrayAssignmentId}`).removeClass('selected-assignment')
   } else {
     $(`#comments_thread_${submissionTrayAssignmentId}`).removeClass('comment_thread_show_print')
-    $(`#submission_${submissionTrayAssignmentId}`).removeClass('selected-assignment')
     $(`#comments_thread_${assignmentId}`).addClass('comment_thread_show_print')
-    $(`#submission_${assignmentId}`).addClass('selected-assignment')
     const {attempts, assignmentUrl} = getSubmissionCommentsTrayProps(assignmentId)
     useStore.setState({
       submissionCommentsTray: {attempts},
@@ -665,20 +644,9 @@ function renderSubmissionCommentsTray() {
       onDismiss={() => {
         const {submissionTrayAssignmentId} = useStore.getState()
         $(`#comments_thread_${submissionTrayAssignmentId}`).removeClass('comment_thread_show_print')
-        $(`#submission_${submissionTrayAssignmentId}`).removeClass('selected-assignment')
       }}
     />,
     document.getElementById('GradeSummarySubmissionCommentsTray')
-  )
-}
-
-function renderClearBadgeCountsButton() {
-  ReactDOM.unmountComponentAtNode(document.getElementById('ClearBadgeCountsButton'))
-  const userId = ENV.student_id
-  const courseId = ENV.course_id ?? ENV.context_asset_string.replace('course_', '')
-  ReactDOM.render(
-    <ClearBadgeCountsButton userId={userId} courseId={courseId} />,
-    document.getElementById('ClearBadgeCountsButton')
   )
 }
 
@@ -746,16 +714,11 @@ function setup() {
         }
       })
 
-      if (ENV.assignments_2_student_enabled && $('.unread_dot.grade_dot').length) {
-        const unreadSubmissions = $('.unread_dot.grade_dot').toArray()
-        const unreadSubmissionIds = unreadSubmissions.map(x => {
-          return $(x).attr('id').substring(SUBMISSION_UNREAD_PREFIX.length)
-        })
-        const url = `/api/v1/courses/${getCourseId()}/submissions/bulk_mark_read`
-        const data = {
-          submissionIds: unreadSubmissionIds,
-        }
-        axios.put(url, data)
+      if ($('.unread_dot.grade_dot').length) {
+        const fiveSeconds = 5000
+        setTimeout(() => {
+          $('.unread_dot.grade_dot').remove()
+        }, fiveSeconds)
       }
     }
 
@@ -855,7 +818,7 @@ function setup() {
 
     $('.comments .play_comment_link').mediaCommentThumbnail('normal')
 
-    $(document).on('click', '.play_comment_link', function (event) {
+    $('.play_comment_link').live('click', function (event) {
       event.preventDefault()
       const $parent = $(this).parents('.comment_media')
       const commentId = $parent.getTemplateData({textValues: ['media_comment_id']}).media_comment_id
@@ -895,11 +858,9 @@ export default _.extend(GradeSummary, {
   formatPercentGrade,
   getSelectMenuGroupProps,
   renderSelectMenuGroup,
-  renderGradeSummaryTable,
   getSubmissionCommentsTrayProps,
   handleSubmissionsCommentTray,
   renderSubmissionCommentsTray,
-  renderClearBadgeCountsButton,
   updateScoreForAssignment,
   updateStudentGrades,
 })

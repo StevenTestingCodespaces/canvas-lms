@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -48,7 +47,7 @@ interface ComponentProps {
   readonly showFlag?: boolean
 }
 
-export const FlaggableNumberInput = ({
+export const FlaggableNumberInput: React.FC<ComponentProps> = ({
   label,
   interaction,
   value,
@@ -58,7 +57,7 @@ export const FlaggableNumberInput = ({
   onIncrement,
   showTooltipOn,
   showFlag = false,
-}: ComponentProps) => {
+}) => {
   return (
     <Flex as="div" wrap="no-wrap" justifyItems="end">
       {showFlag && (

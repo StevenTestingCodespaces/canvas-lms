@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require "active_support"
+
 describe Quizzes::QuizRegrader::AttemptVersion do
   let(:regrade_options) do
     { 1 => "no_regrade", 2 => "full_credit", 3 => "current_correct_only" }
@@ -57,8 +59,8 @@ describe Quizzes::QuizRegrader::AttemptVersion do
   end
 
   let(:attempt_version) do
-    Quizzes::QuizRegrader::AttemptVersion.new(version:,
-                                              question_regrades:)
+    Quizzes::QuizRegrader::AttemptVersion.new(version: version,
+                                              question_regrades: question_regrades)
   end
 
   describe "#initialize" do

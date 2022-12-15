@@ -22,17 +22,13 @@ import $ from 'jquery'
 
 const I18n = useI18nScope('modules_home_page')
 
-export const publishCourse = ({courseId, onSuccess = null}) => {
+export const publishCourse = ({courseId}) => {
   axios
     .put(`/api/v1/courses/${courseId}`, {
       course: {event: 'offer'},
     })
     .then(() => {
-      if (onSuccess) {
-        onSuccess()
-      } else {
-        window.location.search += 'for_reload=1'
-      }
+      window.location.reload()
     })
     .catch(e => {
       if (e.response.status === 401 && e.response.data.status === 'unverified') {

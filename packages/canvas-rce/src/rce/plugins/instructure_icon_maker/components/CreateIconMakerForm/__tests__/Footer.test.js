@@ -17,7 +17,7 @@
  */
 
 import React from 'react'
-import {render, fireEvent} from '@testing-library/react'
+import {render, screen, fireEvent} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {Footer} from '../Footer'
 
@@ -31,31 +31,29 @@ describe('<Footer />', () => {
       onReplace: jest.fn(),
       editing: false,
       isModified: false,
-      replaceAll: false,
-      disabled: false,
     }
   })
 
-  const subject = (overrides = {}) => render(<Footer {...defaults} {...overrides} />)
-
   afterEach(() => jest.clearAllMocks())
 
-  it('calls "onSubmit" when pressing create button', () => {
-    const {getByTestId} = subject()
-    userEvent.click(getByTestId('create-icon-button'))
-    expect(defaults.onSubmit).toHaveBeenCalled()
+  it('submits the icon maker tray', () => {
+    const onSubmit = jest.fn()
+    render(<Footer {...defaults} onSubmit={onSubmit} />)
+    userEvent.click(screen.getByRole('button', {name: /apply/i}))
+    expect(onSubmit).toHaveBeenCalled()
   })
 
-  it('calls "onCancel" when pressing cancel button', () => {
-    const {getByTestId} = subject()
-    userEvent.click(getByTestId('icon-maker-cancel'))
-    expect(defaults.onCancel).toHaveBeenCalled()
+  it('closes the icon maker tray', () => {
+    const onCancel = jest.fn()
+    render(<Footer {...defaults} onCancel={onCancel} />)
+    userEvent.click(screen.getByRole('button', {name: /cancel/i}))
+    expect(onCancel).toHaveBeenCalled()
   })
 
-  it('disabled prop disables apply and cancel buttons', () => {
-    const {getByTestId} = subject({disabled: true})
-    const cancelButton = getByTestId('icon-maker-cancel')
-    const applyButton = getByTestId('create-icon-button')
+  it('renders the footer disabled', () => {
+    render(<Footer {...defaults} disabled={true} />)
+    const cancelButton = screen.getByRole('button', {name: /cancel/i})
+    const applyButton = screen.getByRole('button', {name: /apply/i})
     expect(cancelButton).toBeDisabled()
     expect(applyButton).toBeDisabled()
   })
@@ -65,48 +63,50 @@ describe('<Footer />', () => {
       defaults.editing = true
     })
 
+    const subject = (overrides = {}) => render(<Footer {...defaults} {...overrides} />)
+
     it('renders the "apply to all" checkbox', async () => {
       const {findByTestId} = subject()
       expect(await findByTestId('cb-replace-all')).toBeInTheDocument()
     })
 
-    it('renders the "save" button with "save copy" text by default', async () => {
+    it('renders the "save" button', async () => {
       const {findByText} = subject()
-      expect(await findByText('Save Copy')).toBeInTheDocument()
-    })
-
-    it('renders the "save" button with "save" text when replacing all', async () => {
-      const {findByText} = subject({replaceAll: true})
       expect(await findByText('Save')).toBeInTheDocument()
     })
 
-    it('does not render the "apply" button', () => {
-      const {queryByTestId} = subject()
-      expect(queryByTestId('create-icon-button')).not.toBeInTheDocument()
-    })
-
     it('Disable the "save" button when the user has not made changes', async () => {
-      const {findByTestId} = subject()
-      const saveButton = await findByTestId('icon-maker-save')
-      expect(saveButton.closest('button')).toBeDisabled()
+      const {findByText} = subject()
+      const saveButton = await findByText('Save')
+
+      expect(saveButton.closest('button')).toHaveAttribute('disabled')
     })
 
     it('renders Tooltip when hover the "save" button', async () => {
-      const {findByTestId, findByText} = subject()
-      const saveButton = await findByTestId('icon-maker-save')
+      const {findByText} = subject()
+      const saveButton = await findByText('Save')
       fireEvent.mouseOver(saveButton)
+
       expect(await findByText('No changes to save.')).toBeInTheDocument()
     })
 
+    it('does not render the "apply" button', async () => {
+      const {queryByText} = subject()
+      expect(await queryByText('Apply')).not.toBeInTheDocument()
+    })
+
     it('Enable the "save" button when the user has made changes', async () => {
-      const {findByTestId} = subject({isModified: true})
-      const saveButton = await findByTestId('icon-maker-save')
+      defaults.isModified = true
+      const {findByText} = subject()
+      const saveButton = await findByText('Save')
+
       expect(saveButton.closest('button')).not.toBeDisabled()
     })
 
     it('calls "onSubmit" when "Save" is pressed"', async () => {
-      const {findByTestId} = subject({isModified: true})
-      userEvent.click(await findByTestId('icon-maker-save'))
+      defaults.isModified = true
+      const {findByText} = subject()
+      userEvent.click(await findByText('Save'))
       expect(defaults.onSubmit).toHaveBeenCalled()
     })
   })

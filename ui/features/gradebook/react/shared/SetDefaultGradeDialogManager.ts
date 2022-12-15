@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -21,7 +20,7 @@ import $ from 'jquery'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import '@canvas/rails-flash-notifications'
 import AsyncComponents from '../default_gradebook/AsyncComponents'
-import type {Assignment, StudentMap} from '../../../../api.d'
+import type {Assignment} from '../../../../api.d'
 
 const I18n = useI18nScope('gradebooksharedSetDefaultGradeDialogManager')
 
@@ -32,27 +31,21 @@ class SetDefaultGradeDialogManager {
 
   contextId: string
 
-  missingShortcutEnabled: boolean
-
   submissionsLoaded: boolean
 
   selectedSection: string | null
 
-  getStudents: (assignmentId: string) => StudentMap
-
   constructor(
     assignment: Assignment,
-    getStudents: (assignmentId: string) => StudentMap,
+    students,
     contextId: string,
-    missingShortcutEnabled: boolean,
     selectedSection: string | null,
     isAdmin = false,
     submissionsLoaded = false
   ) {
     this.assignment = assignment
-    this.getStudents = getStudents
+    this.students = students
     this.contextId = contextId
-    this.missingShortcutEnabled = missingShortcutEnabled
     this.selectedSection = selectedSection
     this.isAdmin = isAdmin
     this.submissionsLoaded = submissionsLoaded
@@ -63,9 +56,8 @@ class SetDefaultGradeDialogManager {
   getSetDefaultGradeDialogOptions() {
     return {
       assignment: this.assignment,
-      students: this.getStudents(this.assignment.id),
+      students: this.students,
       context_id: this.contextId,
-      missing_shortcut_enabled: this.missingShortcutEnabled,
       selected_section: this.selectedSection,
     }
   }

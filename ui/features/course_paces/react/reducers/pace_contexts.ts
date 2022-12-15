@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -23,22 +22,8 @@ import {
   PaceContextsApiResponse,
   PaceContextsState,
   StoreState,
-  PaceContextProgress,
 } from '../types'
 import {Constants as PaceContextsConstants} from '../actions/pace_contexts'
-import uniqBy from 'lodash/uniqBy'
-
-const pacesPublishing: PaceContextProgress[] = window.ENV.PACES_PUBLISHING || []
-const uniqPaces = uniqBy(pacesPublishing, 'progress_context_id').map(paceProgress => ({
-  ...paceProgress,
-  polling: false,
-}))
-
-export interface PaceProgress {
-  paceId: string
-  paceName: string
-  contextCode: string
-}
 
 export const paceContextsInitialState: PaceContextsState = {
   selectedContextType: 'section',
@@ -53,7 +38,6 @@ export const paceContextsInitialState: PaceContextsState = {
   searchTerm: '',
   sortBy: 'name',
   order: 'asc',
-  contextsPublishing: uniqPaces,
 }
 
 export const getSelectedPaceContext = (state: StoreState): PaceContext | null =>
@@ -132,43 +116,6 @@ export const paceContextsReducer = (
         ...state,
         order: action.payload,
       }
-    case PaceContextsConstants.ADD_PUBLISHING_PACE:
-      return {
-        ...state,
-        contextsPublishing: [...state.contextsPublishing, action.payload],
-      }
-    case PaceContextsConstants.UPDATE_PUBLISHING_PACE: {
-      const contextsPublishing = state.contextsPublishing.map(contextPublishing => {
-        const newPublishingContext = action.payload.find(
-          updatedContextPublishing =>
-            contextPublishing.progress_context_id === updatedContextPublishing.progress_context_id
-        )
-        return newPublishingContext || contextPublishing
-      })
-      return {
-        ...state,
-        contextsPublishing,
-      }
-    }
-    case PaceContextsConstants.REMOVE_PUBLISHING_PACE:
-      return {
-        ...state,
-        contextsPublishing: state.contextsPublishing.filter(
-          ({progress_context_id}) => action.payload.progress_context_id !== progress_context_id
-        ),
-      }
-    case PaceContextsConstants.REPLACE_PACE_CONTEXTS: {
-      const newPaceContexts = state.entries.map(paceContext => {
-        const newPaceContext = action.payload.find(
-          updatedPaceContext => paceContext.item_id === updatedPaceContext.item_id
-        )
-        return newPaceContext || paceContext
-      })
-      return {
-        ...state,
-        entries: newPaceContexts,
-      }
-    }
     default:
       return state
   }

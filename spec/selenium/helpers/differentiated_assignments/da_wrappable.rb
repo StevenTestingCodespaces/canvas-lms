@@ -61,7 +61,7 @@ module DifferentiatedAssignments
     end
 
     def validate_assignees
-      !DifferentiatedAssignments::HomeworkAssignee::ASSIGNEES.intersect?(assignees)
+      (DifferentiatedAssignments::HomeworkAssignee::ASSIGNEES & assignees).empty?
     end
 
     def assign_to(assignee)

@@ -19,6 +19,8 @@
 #
 
 require_relative "../lti2_api_spec_helper"
+require_dependency "lti/ims/access_token_helper"
+require "json/jwt"
 
 module Lti
   module IMS
@@ -43,7 +45,7 @@ module Lti
 
       it "requires an access token" do
         get :index, format: :json
-        expect(response).to have_http_status :unauthorized
+        expect(response.code).to eq "401"
       end
 
       it "decrypts the access token" do
@@ -61,7 +63,7 @@ module Lti
       it "allows the request to go through" do
         @request.headers.merge!(request_headers)
         get :index, format: :json
-        expect(response).to have_http_status :ok
+        expect(response.code).to eq "200"
       end
 
       it "requires an active tool proxy id signed with share secret" do
@@ -69,21 +71,21 @@ module Lti
         tool_proxy.workflow_state = "disabled"
         tool_proxy.save!
         get :index, format: :json
-        expect(response).to have_http_status :unauthorized
+        expect(response.code).to eq "401"
       end
 
       it "requires an active developer key when signed with dev key" do
         @request.headers.merge!(dev_key_request_headers)
         developer_key.destroy!
         get :index, format: :json
-        expect(response).to have_http_status :unauthorized
+        expect(response.code).to eq "401"
       end
 
       it "requires the developer key to be active" do
         @request.headers.merge!(request_headers)
         developer_key.deactivate
         get :index, format: :json
-        expect(response).to have_http_status :unauthorized
+        expect(response.code).to eq "401"
       end
 
       it "requires the defined service to be in the ToolProxy security contract" do
@@ -93,7 +95,7 @@ module Lti
         tool_proxy.raw_data = ims_tp.to_json
         tool_proxy.save!
         get :index, format: :json
-        expect(response).to have_http_status :unauthorized
+        expect(response.code).to eq "401"
       end
 
       it "requires the http method to be in the security contract" do
@@ -104,7 +106,7 @@ module Lti
         tool_proxy.raw_data = ims_tp.to_json
         tool_proxy.save!
         get :index, format: :json
-        expect(response).to have_http_status :unauthorized
+        expect(response.code).to eq "401"
       end
 
       describe "#bearer_token" do

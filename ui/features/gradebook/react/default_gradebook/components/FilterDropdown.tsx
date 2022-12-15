@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -25,9 +24,7 @@ import {TruncateText} from '@instructure/ui-truncate-text'
 import {IconArrowOpenEndLine, IconArrowOpenStartLine, IconFilterLine} from '@instructure/ui-icons'
 import {View} from '@instructure/ui-view'
 import {Flex} from '@instructure/ui-flex'
-import {Tooltip} from '@instructure/ui-tooltip'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import {unescape} from 'html-escape'
 import type {FilterDrilldownData, FilterDrilldownMenuItem} from '../gradebook.d'
 
 const I18n = useI18nScope('gradebook')
@@ -39,21 +36,6 @@ type Props = {
   onOpenTray: () => void
   dataMap: FilterDrilldownData
   filterItems: FilterDrilldownData
-}
-
-const TruncateWithTooltip = ({children}: {children: React.ReactNode}) => {
-  const [isTruncated, setIsTruncated] = useState(false)
-  return isTruncated ? (
-    <Tooltip as="div" placement="end" renderTip={children}>
-      <TruncateText position="middle" onUpdate={setIsTruncated}>
-        {children}
-      </TruncateText>
-    </Tooltip>
-  ) : (
-    <TruncateText onUpdate={setIsTruncated} position="middle">
-      {children}
-    </TruncateText>
-  )
 }
 
 const FilterDropdown = ({
@@ -118,7 +100,7 @@ const FilterDropdown = ({
         <View margin="0 small 0 0">
           <IconArrowOpenStartLine />
         </View>
-        {I18n.t('Back')}
+        <TruncateText>{I18n.t('Back')}</TruncateText>
       </Flex>
     </MenuItem>
   )
@@ -159,7 +141,7 @@ const FilterDropdown = ({
                 {items.map(a => {
                   return (
                     <MenuItem key={a.id} as="div">
-                      <TruncateText position="middle">{a.name}</TruncateText>
+                      <TruncateText>{a.name}</TruncateText>
                     </MenuItem>
                   )
                 })}
@@ -195,7 +177,7 @@ const FilterDropdown = ({
                     selected={item.isSelected}
                   >
                     <Flex as="div" justifyItems="space-between">
-                      <TruncateText position="middle">{item.name}</TruncateText>
+                      <TruncateText>{item.name}</TruncateText>
                       {((item.items?.length || 0) > 0 || (item.itemGroups?.length || 0) > 0) && (
                         <View margin="0 0 0 small">
                           <IconArrowOpenEndLine />
@@ -243,13 +225,10 @@ const FilterDropdown = ({
                     }}
                   >
                     {itemGroup.items.map((item: any) => {
-                      // TODO: remove this when we stop recursively mutating and escaping objects in Gradebook.tsx
-                      // (-_-)
-                      const unescapedName = unescape(item.name)
                       return (
                         <MenuItem key={item.id} as="div">
                           <Flex as="div" justifyItems="space-between">
-                            <TruncateText position="middle">{unescapedName}</TruncateText>
+                            <TruncateText>{item.name}</TruncateText>
                           </Flex>
                         </MenuItem>
                       )
@@ -270,7 +249,7 @@ const FilterDropdown = ({
                 {items.map(a => {
                   return (
                     <MenuItem key={a.id} as="div">
-                      <TruncateWithTooltip>{a.name}</TruncateWithTooltip>
+                      <TruncateText>{a.name}</TruncateText>
                     </MenuItem>
                   )
                 })}

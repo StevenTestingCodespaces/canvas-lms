@@ -23,7 +23,7 @@ import * as images from './images'
 import bridge from '../../bridge'
 import {fileEmbed} from '../../common/mimeClass'
 import {isPreviewable} from '../../rce/plugins/shared/Previewable'
-import {isAudioOrVideo, isImage} from '../../rce/plugins/shared/fileTypeUtils'
+import {isImage, isAudioOrVideo} from '../../rce/plugins/shared/fileTypeUtils'
 import {fixupFileUrl} from '../../common/fileUrl'
 import {ICON_MAKER_ICONS} from '../../rce/plugins/instructure_icon_maker/svg/constants'
 import * as CategoryProcessor from '../../rce/plugins/shared/Upload/CategoryProcessor'
@@ -150,14 +150,14 @@ export function embedUploadResult(results, selectedTabType) {
       contextId: results.contextId,
       uuid: results.uuid,
     }
-    return bridge.insertImage(file_props)
+    bridge.insertImage(file_props)
   } else if (selectedTabType === 'media' && isAudioOrVideo(embedData.type)) {
     // embed media after any current selection rather than link to it or replace it
     bridge.activeEditor()?.mceInstance()?.selection.collapse()
 
     // when we record audio, notorious thinks it's a video. use the content type we got
-    // from the recorded file, not the returned media object.
-    return bridge.embedMedia({
+    // from the recoreded file, not the returned media object.
+    bridge.embedMedia({
       id: results.id,
       embedded_iframe_url: results.embedded_iframe_url,
       href: results.href || results.url,
@@ -169,7 +169,7 @@ export function embedUploadResult(results, selectedTabType) {
       uuid: results.uuid,
     })
   } else {
-    return bridge.insertLink(
+    bridge.insertLink(
       {
         'data-canvas-previewable': isPreviewable(results['content-type']),
         href: results.href || results.url,
@@ -189,6 +189,7 @@ export function embedUploadResult(results, selectedTabType) {
       false
     )
   }
+  return results
 }
 
 // fetches the list of folders to select from when uploading a file
@@ -229,7 +230,6 @@ export function mediaUploadComplete(error, uploadData) {
         media_id: mediaObject.media_object.media_id,
         type: uploadedFile.type,
         title: uploadedFile.title || uploadedFile.name,
-        id: mediaObject.media_object.attachment_id,
       }
       dispatch(removePlaceholdersFor(uploadedFile.name))
       embedUploadResult(embedData, 'media')
@@ -283,7 +283,7 @@ export function uploadToIconMakerFolder(svg, uploadSettings = {}) {
 export function uploadToMediaFolder(tabContext, fileMetaProps) {
   return (dispatch, getState) => {
     const editorComponent = bridge.activeEditor()
-    const bookmark = editorComponent?.editor?.selection.getBookmark(undefined, true)
+    const bookmark = editorComponent?.editor?.selection.getBookmark(2, true)
 
     dispatch(activateMediaUpload(fileMetaProps))
     const {source, jwt, host, contextId, contextType} = getState()
@@ -431,29 +431,23 @@ export function uploadPreflight(tabContext, fileMetaProps) {
           }
           return results
         })
-        .then(async results => {
+        .then(results => {
+          // This may or may not be necessary depending on the upload
+          dispatch(removePlaceholdersFor(fileMetaProps.name))
+          return results
+        })
+        .then(results => {
           let newBookmark
           const editorComponent = bridge.activeEditor()
           if (fileMetaProps.bookmark) {
-            newBookmark = editorComponent.editor.selection.getBookmark(undefined, true)
+            newBookmark = editorComponent.editor.selection.getBookmark(2, true)
             editorComponent.editor.selection.moveToBookmark(fileMetaProps.bookmark)
           }
 
-          const uploadResult = {contextType, contextId, ...results}
-
-          const embedResult = embedUploadResult(uploadResult, tabContext)
+          const uploadResult = embedUploadResult({contextType, contextId, ...results}, tabContext)
 
           if (fileMetaProps.bookmark) {
             editorComponent.editor.selection.moveToBookmark(newBookmark)
-          }
-
-          if (embedResult?.loadingPromise) {
-            // Wait until the image loads to remove the placeholder
-            await embedResult.loadingPromise.finally(() =>
-              dispatch(removePlaceholdersFor(fileMetaProps.name))
-            )
-          } else {
-            dispatch(removePlaceholdersFor(fileMetaProps.name))
           }
 
           return uploadResult

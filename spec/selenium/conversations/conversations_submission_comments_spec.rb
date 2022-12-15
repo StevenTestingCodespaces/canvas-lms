@@ -43,7 +43,7 @@ describe "conversations new" do
     student_in_course(user: @s2, active_all: true, course: @course2)
 
     def assignment_with_submission_comments(title, student, course)
-      assignment = course.assignments.create!(title:, description: "hai", points_possible: "14.2", submission_types: "online_text_entry")
+      assignment = course.assignments.create!(title: title, description: "hai", points_possible: "14.2", submission_types: "online_text_entry")
       sub = assignment.grade_student(student, { grade: "12", grader: @teacher }).first
       sub.workflow_state = "submitted"
       sub.submission_comments.create!(comment: "c1", author: @teacher)
@@ -78,7 +78,7 @@ describe "conversations new" do
       expect(f("[data-testid='conversation']").text).to include "Course 1 - assignment 1"
 
       f("[data-testid='delete-course-button']").click
-      f("input[placeholder='Search...']").send_keys "second student"
+      f("input[placeholder='Insert or Select Names']").send_keys "second student"
       fj("li:contains('second student')").click
       expect(ff("[data-testid='conversation']").count).to eq 1
       expect(f("[data-testid='conversation']").text).to include "Course 2 - assignment 2"

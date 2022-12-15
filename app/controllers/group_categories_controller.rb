@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "csv"
+
 # @API Group Categories
 #
 # Group Categories allow grouping of groups together in canvas. There are a few
@@ -635,7 +637,7 @@ class GroupCategoriesController < ApplicationController
       json = memberships.group_by(&:group_id).map do |group_id, new_members|
         { id: group_id, new_members: new_members.map { |m| m.user.group_member_json(@context) } }
       end
-      render json:
+      render json: json
     else
       @group_category.assign_unassigned_members_in_background(by_section, updating_user: @current_user)
       render json: progress_json(@group_category.current_progress, @current_user, session)

@@ -20,6 +20,7 @@
 
 require "rubygems"
 require "zip"
+require "fileutils"
 
 # Call this with a block.  The block will take an array of filenames
 # extracted.  Once this block is executed, these extracted files and
@@ -31,9 +32,9 @@ require "zip"
 # them to a context.
 class ZipExtractor
   class << self
-    def call(filename, &)
+    def call(filename, &block)
       ze = new(filename)
-      ze.unzip_files(&)
+      ze.unzip_files(&block)
     end
   end
 

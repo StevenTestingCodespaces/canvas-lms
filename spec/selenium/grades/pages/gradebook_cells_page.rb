@@ -96,7 +96,7 @@ module Gradebook
       def select_grade_from_menu(student, assignment, grade, menu_selector)
         grading_cell(student, assignment).click
 
-        button = grading_cell_menu_button(student, assignment, menu_selector:)
+        button = grading_cell_menu_button(student, assignment, menu_selector: menu_selector)
         button.click
 
         grade_item = ff("ul[aria-labelledby='#{button.attribute("id")}'] li").detect do |element|
@@ -121,7 +121,7 @@ module Gradebook
         wait_for_ajaximations
       end
 
-      # ---------- Assignment Cells ---------------
+      # ---------- Assignment Group Cells ---------------
       def assignment_group_selector(student, assignment_group)
         ".slick-row.student_#{student.id} .slick-cell.assignment_group_#{assignment_group.id}"
       end
@@ -135,10 +135,6 @@ module Gradebook
         driver.action.send_keys(:escape).perform
         driver.action.send_keys(key).perform
         wait_for_animations
-      end
-
-      def assignments_header(index)
-        f("#gradebook_grid .container_1 .slick-header-column:nth-child(#{index})")
       end
 
       # ---------- Total Grade Cells ---------------

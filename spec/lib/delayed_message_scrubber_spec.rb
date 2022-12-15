@@ -21,8 +21,7 @@
 describe DelayedMessageScrubber do
   # Helpers
   def delayed_message(send_at)
-    message = DelayedMessage.new(notification: @notification,
-                                 context: @context,
+    message = DelayedMessage.new(notification: @notification, context: @context,
                                  communication_channel: @recipient.communication_channel)
     message.send_at = send_at
     message.save!
@@ -68,7 +67,7 @@ describe DelayedMessageScrubber do
     it "logs predicted results if passed dry_run=true" do
       logger = double
       old_messages(2)
-      scrubber = DelayedMessageScrubber.new(logger:)
+      scrubber = DelayedMessageScrubber.new(logger: logger)
 
       expect(logger).to receive(:info).with("DelayedMessageScrubber: 2 records would be deleted (older than #{scrubber.limit})")
       scrubber.scrub(dry_run: true)

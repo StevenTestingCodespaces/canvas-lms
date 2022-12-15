@@ -56,13 +56,13 @@ class PeriodicJobs
       current_shard = Shard.current(connection_class)
       strand = "#{klass}.#{method}:#{current_shard.database_server.id}"
       # TODO: allow this to work with redis jobs
-      next if Delayed::Job == Delayed::Backend::ActiveRecord::Job && Delayed::Job.where(strand:, shard_id: current_shard.id, locked_by: nil).exists?
+      next if Delayed::Job == Delayed::Backend::ActiveRecord::Job && Delayed::Job.where(strand: strand, shard_id: current_shard.id, locked_by: nil).exists?
 
       dj_params = {
-        strand:,
+        strand: strand,
         priority: 40
       }
-      dj_params[:run_at] = compute_run_at(jitter:, local_offset:)
+      dj_params[:run_at] = compute_run_at(jitter: jitter, local_offset: local_offset)
 
       current_shard.activate do
         klass.delay(**dj_params).__send__(method, *args)
@@ -76,12 +76,7 @@ def with_each_job_cluster(klass, method, *args, jitter: nil, local_offset: false
     PeriodicJobs,
     :with_each_shard_by_database_in_region,
     { singleton: "periodic:region: #{klass}.#{method}" },
-    klass,
-    method,
-    *args,
-    jitter:,
-    local_offset:,
-    connection_class: Delayed::Backend::ActiveRecord::AbstractJob
+    klass, method, *args, jitter: jitter, local_offset: local_offset, connection_class: Delayed::Backend::ActiveRecord::AbstractJob
   )
 end
 
@@ -90,13 +85,7 @@ def with_each_shard_by_database(klass, method, *args, jitter: nil, local_offset:
     PeriodicJobs,
     :with_each_shard_by_database_in_region,
     { singleton: "periodic:region: #{klass}.#{method}" },
-    klass,
-    method,
-    *args,
-    jitter:,
-    local_offset:,
-    connection_class: ActiveRecord::Base,
-    error_callback:
+    klass, method, *args, jitter: jitter, local_offset: local_offset, connection_class: ActiveRecord::Base, error_callback: error_callback
   )
 end
 
@@ -262,7 +251,7 @@ Rails.configuration.after_initialize do
       Delayed::Periodic.cron "AuthenticationProvider::SAML::#{federation.class_name}.refresh_providers", "45 0 * * *" do
         DatabaseServer.send_in_each_region(federation,
                                            :refresh_providers,
-                                           { singleton: "AuthenticationProvider::SAML::#{federation.class_name}.refresh_providers" })
+                                           singleton: "AuthenticationProvider::SAML::#{federation.class_name}.refresh_providers")
       end
     end
   end
@@ -349,8 +338,7 @@ Rails.configuration.after_initialize do
 
   if MultiCache.cache.is_a?(ActiveSupport::Cache::HaStore) && MultiCache.cache.options[:consul_event] && InstStatsd.settings.present?
     Delayed::Periodic.cron "HaStore.validate_consul_event", "5 * * * *" do
-      DatabaseServer.send_in_each_region(MultiCache,
-                                         :validate_consul_event,
+      DatabaseServer.send_in_each_region(MultiCache, :validate_consul_event,
                                          {
                                            run_current_region_asynchronously: true,
                                            singleton: "HaStore.validate_consul_event"

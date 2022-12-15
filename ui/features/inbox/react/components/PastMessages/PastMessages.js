@@ -18,7 +18,6 @@
 
 import {ConversationMessage} from '../../../graphql/ConversationMessage'
 import DateHelper from '@canvas/datetime/dateHelper'
-import {nanoid} from 'nanoid'
 import PropTypes from 'prop-types'
 import React from 'react'
 
@@ -53,7 +52,7 @@ export const PastMessages = props => {
   return (
     <Flex direction="column" data-testid="past-messages">
       {props.messages.map(message => (
-        <Flex.Item key={nanoid()}>
+        <Flex.Item key={btoa(JSON.stringify(message))}>
           <PastMessage {...message} />
         </Flex.Item>
       ))}

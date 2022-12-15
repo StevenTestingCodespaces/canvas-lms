@@ -66,21 +66,6 @@ describe Login::CanvasController do
     end
   end
 
-  context "manage_robots_meta" do
-    it "enables robot indexing by default" do
-      get "new"
-      expect(assigns[:allow_robot_indexing]).to be_truthy
-    end
-
-    it "allows robot indexing to be disabled" do
-      Account.default.settings[:disable_login_search_indexing] = true
-      Account.default.save!
-
-      get "new"
-      expect(assigns[:allow_robot_indexing]).to be_falsey
-    end
-  end
-
   it "shows sso buttons on load" do
     aac = Account.default.authentication_providers.create!(auth_type: "facebook")
     allow(Canvas::Plugin.find(:facebook)).to receive(:settings).and_return({})
@@ -190,7 +175,7 @@ describe Login::CanvasController do
     post "create", params: { pseudonym_session: { unique_id: " jtfrd@instructure.com ", password: "qwertyuiop" },
                              authenticity_token: "42" }
     assert_status(400)
-    expect(session[:sentinel]).to be true
+    expect(session[:sentinel]).to eq true
     expect(response).to render_template(:new)
     expect(flash[:error]).to be_a(Hash)
     expect(flash[:error][:html]).to match(/invalid authenticity token/i)
@@ -335,12 +320,12 @@ describe Login::CanvasController do
 
       it "when canvas authentication was used" do
         password = "correct-horse-battery-staple"
-        user_with_pseudonym(username: "12345", active_all: 1, password:)
+        user_with_pseudonym(username: "12345", active_all: 1, password: password)
         aac1 = Account.default.authentication_providers.create!(auth_type: "ldap", identifier_format: "uid")
         expect_any_instantiation_of(aac1).to receive(:ldap_bind_result).once.and_return(nil)
         aac2 = Account.default.authentication_providers.find_by(auth_type: "canvas")
 
-        post "create", params: { pseudonym_session: { unique_id: "12345", password: } }
+        post "create", params: { pseudonym_session: { unique_id: "12345", password: password } }
         expect(session[:login_aac]).to eq aac2.id
       end
     end
@@ -353,7 +338,7 @@ describe Login::CanvasController do
       user_with_pseudonym(username: "jt@instructure.com",
                           active_all: 1,
                           password: "qwertyuiop",
-                          account:)
+                          account: account)
       Account.default.pseudonyms.create!(user: @user, unique_id: "someone")
       post "create", params: { pseudonym_session: { unique_id: "jt@instructure.com", password: "qwertyuiop" } }
       expect(response).to redirect_to(dashboard_url(login_success: 1))
@@ -366,7 +351,7 @@ describe Login::CanvasController do
       user_with_pseudonym(username: "jt@instructure.com",
                           active_all: 1,
                           password: "qwertyuiop",
-                          account:)
+                          account: account)
       allow(HostUrl).to receive(:context_host).with(Account.default, "test.host").and_return("account")
       allow(HostUrl).to receive(:context_host).with(account, "test.host").and_return("account2")
       post "create", params: { pseudonym_session: { unique_id: "jt@instructure.com", password: "qwertyuiop" } }
@@ -379,7 +364,7 @@ describe Login::CanvasController do
       user_with_pseudonym(username: "jt@instructure.com",
                           active_all: 1,
                           password: "qwertyuiop",
-                          account:)
+                          account: account)
       Account.default.account_users.create!(user: @user)
       allow(HostUrl).to receive(:context_host).with(Account.default, "test.host").and_return("account")
       allow(HostUrl).to receive(:context_host).with(account, "test.host").and_return("account2")
@@ -558,7 +543,7 @@ describe Login::CanvasController do
       allow(redis).to receive(:setex)
       allow(redis).to receive(:hmget)
       allow(redis).to receive(:del)
-      allow(Canvas).to receive_messages(redis:)
+      allow(Canvas).to receive_messages(redis: redis)
     end
 
     let_once(:key) { DeveloperKey.create! redirect_uri: "https://example.com" }
@@ -567,7 +552,7 @@ describe Login::CanvasController do
     it "redirects to the confirm url if the user has no token" do
       provider = Canvas::OAuth::Provider.new(key.id, key.redirect_uri, [], nil)
 
-      post :create, params:, session: { oauth2: provider.session_hash }
+      post :create, params: params, session: { oauth2: provider.session_hash }
       expect(response).to redirect_to(oauth2_auth_confirm_url)
     end
 
@@ -575,7 +560,7 @@ describe Login::CanvasController do
       @user.access_tokens.create!(developer_key: key, remember_access: true, scopes: ["/auth/userinfo"], purpose: nil)
       provider = Canvas::OAuth::Provider.new(key.id, key.redirect_uri, ["/auth/userinfo"], nil)
 
-      post :create, params:, session: { oauth2: provider.session_hash }
+      post :create, params: params, session: { oauth2: provider.session_hash }
       expect(response).to be_redirect
       expect(response.location).to match(%r{https://example.com})
     end
@@ -584,7 +569,7 @@ describe Login::CanvasController do
       @user.access_tokens.create!(developer_key: key, remember_access: true, scopes: ["/auth/userinfo"], purpose: nil)
       provider = Canvas::OAuth::Provider.new(key.id, key.redirect_uri, ["/auth/userinfo"], nil)
 
-      post :create, params:, session: { oauth2: provider.session_hash.merge(state: "supersekrit") }
+      post :create, params: params, session: { oauth2: provider.session_hash.merge(state: "supersekrit") }
       expect(response).to be_redirect
       expect(response.location).to match(%r{https://example.com})
       expect(response.location).to match(/state=supersekrit/)
@@ -594,7 +579,7 @@ describe Login::CanvasController do
       @user.access_tokens.create!(developer_key: key, remember_access: true, scopes: ["/auth/userinfo"], purpose: nil)
       provider = Canvas::OAuth::Provider.new(key.id, key.redirect_uri, [], nil)
 
-      post :create, params:, session: { oauth2: provider.session_hash }
+      post :create, params: params, session: { oauth2: provider.session_hash }
       expect(response).to redirect_to(oauth2_auth_confirm_url)
     end
 
@@ -603,7 +588,7 @@ describe Login::CanvasController do
       key.save!
       provider = Canvas::OAuth::Provider.new(key.id, key.redirect_uri, [], nil)
 
-      post :create, params:, session: { oauth2: provider.session_hash }
+      post :create, params: params, session: { oauth2: provider.session_hash }
       expect(response).to be_redirect
       expect(response.location).to match(%r{https://example.com})
     end

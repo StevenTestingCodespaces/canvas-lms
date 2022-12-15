@@ -17,37 +17,28 @@
  */
 
 import axios from '@canvas/axios'
-import {camelizeProperties, underscoreProperties} from '@canvas/convert-case'
-import type {LatePolicyCamelized, LatePolicy} from '../gradebook.d'
+import {camelize, underscore} from 'convert-case'
 
-export const DEFAULT_LATE_POLICY_DATA: LatePolicyCamelized = {
+export const DEFAULT_LATE_POLICY_DATA = Object.freeze({
   lateSubmissionDeductionEnabled: false,
   lateSubmissionDeduction: 0,
   lateSubmissionInterval: 'day',
   lateSubmissionMinimumPercentEnabled: false,
   lateSubmissionMinimumPercent: 0,
   missingSubmissionDeductionEnabled: false,
-  missingSubmissionDeduction: 100,
+  missingSubmissionDeduction: 0,
   newRecord: true,
-} as const
+})
 
-function camelizeLatePolicyResponseData(latePolicyResponseData: {late_policy: LatePolicy}) {
-  const camelizedData = camelizeProperties(
-    latePolicyResponseData.late_policy
-  ) as LatePolicyCamelized
+function camelizeLatePolicyResponseData(latePolicyResponseData) {
+  const camelizedData = camelize(latePolicyResponseData.late_policy)
   return {latePolicy: camelizedData}
 }
 
-function underscoreLatePolicyData(latePolicyData: Partial<LatePolicyCamelized>) {
-  return underscoreProperties(latePolicyData) as LatePolicy
-}
-
-export function fetchLatePolicy(courseId: string) {
+export function fetchLatePolicy(courseId) {
   const url = `/api/v1/courses/${courseId}/late_policy`
   return axios
-    .get<{
-      late_policy: LatePolicy
-    }>(url)
+    .get(url)
     .then(response => ({data: camelizeLatePolicyResponseData(response.data)}))
     .catch(error => {
       // if we get a 404 then we know the course does not
@@ -62,31 +53,21 @@ export function fetchLatePolicy(courseId: string) {
     })
 }
 
-export function createLatePolicy(courseId: string, latePolicyData: Partial<LatePolicyCamelized>) {
+export function createLatePolicy(courseId, latePolicyData) {
   const url = `/api/v1/courses/${courseId}/late_policy`
-  const late_policy = underscoreLatePolicyData(latePolicyData)
-  const data = {late_policy}
+  const data = {late_policy: underscore(latePolicyData)}
   return axios
-    .post<{
-      late_policy: LatePolicy
-    }>(url, data)
+    .post(url, data)
     .then(response => ({data: camelizeLatePolicyResponseData(response.data)}))
 }
 
-export function updateLatePolicy(courseId: string, latePolicyData: Partial<LatePolicyCamelized>) {
+export function updateLatePolicy(courseId, latePolicyData) {
   const url = `/api/v1/courses/${courseId}/late_policy`
-  const data = {late_policy: underscoreLatePolicyData(latePolicyData)}
+  const data = {late_policy: underscore(latePolicyData)}
   return axios.patch(url, data)
 }
 
-export function updateCourseSettings(
-  courseId: string,
-  settings: {
-    allowFinalGradeOverride: boolean
-  }
-) {
+export function updateCourseSettings(courseId, settings) {
   const url = `/api/v1/courses/${courseId}/settings`
-  return axios.put(url, underscoreProperties(settings)).then(response => ({
-    data: camelizeProperties<{allowFinalGradeOverride: boolean}>(response.data),
-  }))
+  return axios.put(url, underscore(settings)).then(response => ({data: camelize(response.data)}))
 }

@@ -18,6 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 require_relative "../../../spec_helper"
+require_dependency "canvas/security/jwt_validator"
 
 module Canvas::Security
   describe JwtValidator do
@@ -25,11 +26,11 @@ module Canvas::Security
 
     let(:validator) do
       described_class.new(
-        jwt:,
-        expected_aud:,
-        require_iss:,
-        skip_jti_check:,
-        max_iat_age:
+        jwt: jwt,
+        expected_aud: expected_aud,
+        require_iss: require_iss,
+        skip_jti_check: skip_jti_check,
+        max_iat_age: max_iat_age
       )
     end
     let(:aud) { Rails.application.routes.url_helpers.oauth2_token_url }
@@ -122,7 +123,7 @@ module Canvas::Security
       it "is false when validated twice", skip_before: true do
         enable_cache do
           validator.validate
-          expect(validator.validate).to be false
+          expect(validator.validate).to eq false
         end
       end
 
@@ -132,7 +133,7 @@ module Canvas::Security
         it "is true when when validated twice", skip_before: true do
           enable_cache do
             validator.validate
-            expect(validator.validate).to be true
+            expect(validator.validate).to eq true
           end
         end
       end

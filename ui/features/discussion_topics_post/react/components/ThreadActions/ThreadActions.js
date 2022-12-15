@@ -73,7 +73,7 @@ export const ThreadActions = props => {
             trigger={
               <span className="discussion-thread-action-button">
                 <IconButton
-                  size="medium"
+                  size="small"
                   screenReaderLabel={I18n.t('Manage Discussion by %{author}', {
                     author: props.authorName,
                   })}

@@ -17,21 +17,23 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "messages/name_helper"
+
 module Messages
   describe NameHelper do
     let(:course) { double(:course, account_membership_allows: false) }
     let(:author) { double("Author", short_name: "Author Name") }
     let(:user) { double("User", short_name: "User Name") }
-    let(:asset) { double("Asset", user:, author:) }
+    let(:asset) { double("Asset", user: user, author: author) }
     let(:message_recipient) { double(:user) }
     let(:assignment) { double(:assignment, anonymize_students?: false, context: course) }
-    let(:submission) { double(:submission, assignment:, user:) }
+    let(:submission) { double(:submission, assignment: assignment, user: user) }
 
     def asset_for(notification_name, a = asset)
       NameHelper.new(
         asset: a,
-        message_recipient:,
-        notification_name:
+        message_recipient: message_recipient,
+        notification_name: notification_name
       )
     end
 
@@ -41,7 +43,7 @@ module Messages
       end
 
       it "uses the author name for messages with authors" do
-        comment = double(:submission_comment, author:, recipient: user, submission:, can_read_author?: true)
+        comment = double(:submission_comment, author: author, recipient: user, submission: submission, can_read_author?: true)
         expect(asset_for("Submission Comment", comment).reply_to_name).to eq "Author Name via Canvas Notifications"
       end
 
@@ -69,8 +71,8 @@ module Messages
 
       it "returns the author's name when the message recipient is the author" do
         assignment = double(:assignment, anonymize_students?: true)
-        submission = double(:submission, assignment:)
-        asset2 = double(:asset, author:, submission:, can_read_author?: true)
+        submission = double(:submission, assignment: assignment)
+        asset2 = double(:asset, author: author, submission: submission, can_read_author?: true)
         from_name = NameHelper.new(
           asset: asset2,
           message_recipient: author,
@@ -82,8 +84,8 @@ module Messages
 
     describe "anonymized notifications" do
       let(:anon_assignment) { double(:assignment, anonymize_students?: true, context: course) }
-      let(:anon_submission) { double(:submission, assignment: anon_assignment, user:) }
-      let(:anon_comment) { double(:submission_comment, author:, recipient: user, submission: anon_submission, can_read_author?: false) }
+      let(:anon_submission) { double(:submission, assignment: anon_assignment, user: user) }
+      let(:anon_comment) { double(:submission_comment, author: author, recipient: user, submission: anon_submission, can_read_author?: false) }
 
       it "returns Anonymous User for comments when assignment is anonymous" do
         expect(asset_for("Submission Comment For Teacher", anon_comment).from_name).to eq "Anonymous User"

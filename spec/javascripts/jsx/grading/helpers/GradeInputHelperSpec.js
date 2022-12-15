@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import round from '@canvas/round'
+import round from 'round'
 import * as GradeInputHelper from '@canvas/grading/GradeInputHelper'
 import fakeENV from 'helpers/fakeENV'
 

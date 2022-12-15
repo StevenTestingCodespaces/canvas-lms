@@ -42,7 +42,7 @@ describe ProgressController do
       user_session(@user2)
 
       get "show", params: { id: @progress.id }
-      expect(response).to have_http_status(:unauthorized)
+      expect(response.status).to eq(401)
     end
   end
 
@@ -61,7 +61,7 @@ describe ProgressController do
       user_session(@user2)
 
       post "cancel", params: { id: @progress.id }
-      expect(response).to have_http_status(:unauthorized)
+      expect(response.status).to eq(401)
     end
   end
 end

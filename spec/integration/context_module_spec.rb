@@ -163,7 +163,7 @@ describe ContextModule do
         # verify the second item is locked (doesn't display)
         get @test_url
         if @test_url.match?("files")
-          expect(response).to have_http_status(:forbidden)
+          expect(response.status).to eq(403)
         else
           expect(response).to be_successful
         end

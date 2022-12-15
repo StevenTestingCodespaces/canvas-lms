@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import _ from 'lodash'
+import _ from 'underscore'
 import OverrideStudentStore from '@canvas/due-dates/react/OverrideStudentStore'
 import fakeENV from 'helpers/fakeENV'
 

@@ -31,14 +31,14 @@ function createMap(opts = {}) {
     isAdmin: false,
   }
 
-  return new SubmissionStateMap({...defaults, ...opts})
+  const params = Object.assign(defaults, opts)
+  return new SubmissionStateMap(params)
 }
 
 function createAndSetupMap(assignment, opts = {}) {
   const map = createMap(opts)
-  const assignments = {
-    [assignment.id]: assignment,
-  }
+  const assignments = {}
+  assignments[assignment.id] = assignment
   map.setup([student], assignments)
   return map
 }

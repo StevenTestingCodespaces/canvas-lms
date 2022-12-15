@@ -16,45 +16,26 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import $ from 'jquery'
-import axios from '@canvas/axios'
 import {GetState, SetState} from 'zustand'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import * as FlashAlert from '@canvas/alerts/react/FlashAlert'
-import type {CustomColumn, CustomColumnData, ColumnOrderSettings} from '../gradebook.d'
+import type {CustomColumn} from '../gradebook.d'
 import type {GradebookStore} from './index'
 
 const I18n = useI18nScope('gradebook')
 
 export type CustomColumnsState = {
-  reorderCustomColumnsUrl: string
   customColumns: CustomColumn[]
   isCustomColumnsLoading: boolean
-  isCustomColumnsLoaded: boolean
-  fetchCustomColumns: () => Promise<void>
-  reorderCustomColumns: (columnIds: string[]) => Promise<void>
-  loadCustomColumnsData: (columnIds: string[]) => Promise<CustomColumnData[][]>
-  loadDataForCustomColumn: (columnId: string) => Promise<CustomColumnData[]>
-  recentlyLoadedCustomColumnData: null | {
-    customColumnId: string
-    columnData: CustomColumnData[]
-  }
-  updateColumnOrder: (courseId: string, columnOrder: ColumnOrderSettings) => Promise<void>
+  fetchCustomColumns: () => Promise<any>
 }
 
 export default (
   set: SetState<GradebookStore>,
   get: GetState<GradebookStore>
 ): CustomColumnsState => ({
-  reorderCustomColumnsUrl: '',
-
   customColumns: [],
 
   isCustomColumnsLoading: false,
-
-  isCustomColumnsLoaded: false,
-
-  recentlyLoadedCustomColumnData: null,
 
   fetchCustomColumns: () => {
     const dispatch = get().dispatch
@@ -68,14 +49,7 @@ export default (
     return dispatch
       .getDepaginated<CustomColumn[]>(url, params)
       .then(customColumns => {
-        set({customColumns, isCustomColumnsLoading: false, isCustomColumnsLoaded: true})
-        get()
-          .loadCustomColumnsData(customColumns.map(column => column.id))
-          .catch(() => {
-            FlashAlert.showFlashError(
-              I18n.t('There was an error fetching custom column data for Gradebook')
-            )
-          })
+        set({customColumns, isCustomColumnsLoading: false})
       })
       .catch(() => {
         set({
@@ -90,47 +64,5 @@ export default (
           ]),
         })
       })
-  },
-
-  reorderCustomColumns: (columnIds: string[]) =>
-    $.ajaxJSON(get().reorderCustomColumnsUrl, 'POST', {
-      order: columnIds,
-    }),
-
-  loadCustomColumnsData: (columnIds: string[] = []): Promise<CustomColumnData[][]> => {
-    const customColumnsDataLoadingPromises = columnIds.map(columnId =>
-      get().loadDataForCustomColumn(columnId)
-    )
-
-    return Promise.all(customColumnsDataLoadingPromises)
-  },
-
-  loadDataForCustomColumn: (columnId: string) => {
-    const courseId = get().courseId
-    const performanceControls = get().performanceControls
-    const dispatch = get().dispatch
-
-    const url = `/api/v1/courses/${courseId}/custom_gradebook_columns/${columnId}/data`
-    const params = {
-      include_hidden: true,
-      per_page: performanceControls.customColumnDataPerPage,
-    }
-
-    const perPageCallback = (customColumnData: CustomColumnData[]) => {
-      set({
-        recentlyLoadedCustomColumnData: {
-          customColumnId: columnId,
-          columnData: customColumnData,
-        },
-      })
-      return customColumnData
-    }
-
-    return dispatch.getDepaginated<CustomColumnData[]>(url, params, perPageCallback)
-  },
-
-  updateColumnOrder: (courseId: string, columnOrder: ColumnOrderSettings) => {
-    const url = `/courses/${courseId}/gradebook/save_gradebook_column_order`
-    return axios.post(url, {column_order: columnOrder})
   },
 })

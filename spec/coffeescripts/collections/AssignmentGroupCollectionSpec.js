@@ -16,10 +16,10 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import AssignmentGroup from '@canvas/assignments/backbone/models/AssignmentGroup'
-import Assignment from '@canvas/assignments/backbone/models/Assignment'
+import AssignmentGroup from '@canvas/assignments/backbone/models/AssignmentGroup.coffee'
+import Assignment from '@canvas/assignments/backbone/models/Assignment.coffee'
 import AssignmentGroupCollection from '@canvas/assignments/backbone/collections/AssignmentGroupCollection'
-import Course from '@canvas/courses/backbone/models/Course'
+import Course from '@canvas/courses/backbone/models/Course.coffee'
 import fakeENV from 'helpers/fakeENV'
 import {saveObservedId} from '@canvas/observer-picker/ObserverGetObservee'
 

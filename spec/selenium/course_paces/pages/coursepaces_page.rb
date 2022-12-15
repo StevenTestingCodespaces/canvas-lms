@@ -74,7 +74,7 @@ module CoursePacesPageObject
   end
 
   def compression_tooltip_selector
-    "button:contains('Toggle due date compression tooltip')"
+    "[data-testid='duedate-tooltip']"
   end
 
   def dates_shown_selector
@@ -413,7 +413,7 @@ module CoursePacesPageObject
   end
 
   def compression_tooltip
-    fj(compression_tooltip_selector)
+    f(compression_tooltip_selector)
   end
 
   def dates_shown
@@ -485,7 +485,7 @@ module CoursePacesPageObject
   end
 
   def course_pace_option(option_type:)
-    f(course_pace_option_selector(option_type:))
+    f(course_pace_option_selector(option_type: option_type))
   end
 
   def course_paces_page
@@ -697,10 +697,10 @@ module CoursePacesPageObject
   end
 
   def force_click_pace_option(option_type:)
-    course_pace_option(option_type:).click
+    course_pace_option(option_type: option_type).click
     # Reducing the flakiness of this menu
     unless element_exists?(menu_selector(menu_type: option_type))
-      course_pace_option(option_type:).click
+      course_pace_option(option_type: option_type).click
     end
   end
 

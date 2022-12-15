@@ -36,10 +36,8 @@ const filterOptions = (value, options) => {
       // if provided, allCourses should always be present
       filteredOptions[key] = options[key]
     } else {
-      filteredOptions[key] = options[key]?.filter(
-        option =>
-          option.contextName.toLowerCase().includes(value.toLowerCase()) ||
-          option.courseNickname?.toLowerCase().includes(value.toLowerCase())
+      filteredOptions[key] = options[key]?.filter(option =>
+        option.contextName.toLowerCase().startsWith(value.toLowerCase())
       )
     }
   })
@@ -49,7 +47,7 @@ const filterOptions = (value, options) => {
 const getOptionById = (id, options) => {
   return Object.values(options)
     .flat()
-    .find(o => o?.assetString === id)
+    .find(({assetString}) => id === assetString)
 }
 
 const getCourseName = (courseAssetString, options) => {
@@ -110,7 +108,6 @@ export class CourseSelect extends React.Component {
     if (props.options !== state.options) {
       return {
         filteredOptions: filterOptions(state.inputValue, props.options),
-        inputValue: getCourseName(props.activeCourseFilterID, props.options),
       }
     }
     return null
@@ -258,7 +255,7 @@ export class CourseSelect extends React.Component {
               isHighlighted={option.assetString === highlightedOptionId}
               isSelected={option.assetString === selectedOptionId}
             >
-              {option.courseNickname || option.contextName}
+              {option.contextName}
             </Select.Option>
           ))}
         </Select.Group>

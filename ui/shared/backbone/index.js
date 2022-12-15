@@ -27,8 +27,8 @@ const Backbone = require('backbone')
 
 // Apply all of our patches
 require('./Backbone.syncWithMultipart')
-require('./Model')
-require('./View')
-require('./Collection')
+require('./Model.coffee')
+require('./View.coffee')
+require('./Collection.coffee')
 
 module.exports = Backbone

@@ -407,7 +407,7 @@ class DiscussionTopicsController < ApplicationController
                             when Course
                               context_url(@context, :context_settings_url, anchor: "tab-features")
                             when Group
-                              ((@context.context&.is_a? Course) || (@context.context&.is_a? Account)) ? context_url(@context.context, :context_settings_url, anchor: "tab-features") : nil
+                              (@context.context&.is_a? Course) || (@context.context&.is_a? Account) ? context_url(@context.context, :context_settings_url, anchor: "tab-features") : nil
                             else
                               nil
                             end
@@ -427,8 +427,11 @@ class DiscussionTopicsController < ApplicationController
           discussion_topic_menu_tools: external_tools_display_hashes(:discussion_topic_menu),
           student_reporting_enabled: @context.feature_enabled?(:react_discussions_post),
           discussion_anonymity_enabled: @context.feature_enabled?(:react_discussions_post),
-          discussion_topic_index_menu_tools: external_tools_display_hashes(:discussion_topic_index_menu),
-          show_additional_speed_grader_links: Account.site_admin.feature_enabled?(:additional_speedgrader_links),
+          discussion_topic_index_menu_tools: (if @domain_root_account&.feature_enabled?(:commons_favorites)
+                                                external_tools_display_hashes(:discussion_topic_index_menu)
+                                              else
+                                                []
+                                              end),
         }
         if @context.is_a?(Course) && @context.grants_right?(@current_user, session, :read) && @js_env&.dig(:COURSE_ID).blank?
           hash[:COURSE_ID] = @context.id.to_s
@@ -454,9 +457,9 @@ class DiscussionTopicsController < ApplicationController
       end
 
       InstStatsd::Statsd.increment("discussion_topic.index.visit")
-      InstStatsd::Statsd.count("discussion_topic.index.visit.pinned", @topics&.select(&:pinned)&.count)
+      InstStatsd::Statsd.count("discussion_topic.index.visit.pinned", @topics&.select { |dt| dt.pinned }&.count)
       InstStatsd::Statsd.count("discussion_topic.index.visit.discussions", @topics&.length)
-      InstStatsd::Statsd.count("discussion_topic.index.visit.closed_for_comments", @topics&.select(&:locked)&.count)
+      InstStatsd::Statsd.count("discussion_topic.index.visit.closed_for_comments", @topics&.select { |dt| dt.locked }&.count)
 
       format.json do
         log_api_asset_access(["topics", @context], "topics", "other")
@@ -464,11 +467,8 @@ class DiscussionTopicsController < ApplicationController
           mc_status = setup_master_course_restrictions(@topics, @context)
         end
         root_topic_fields = [:delayed_post_at, :lock_at]
-        render json: discussion_topics_api_json(@topics,
-                                                @context,
-                                                @current_user,
-                                                session,
-                                                user_can_moderate:,
+        render json: discussion_topics_api_json(@topics, @context, @current_user, session,
+                                                user_can_moderate: user_can_moderate,
                                                 plain_messages: value_to_boolean(params[:plain_messages]),
                                                 exclude_assignment_description: value_to_boolean(params[:exclude_assignment_descriptions]),
                                                 include_all_dates: include_params.include?("all_dates"),
@@ -476,7 +476,7 @@ class DiscussionTopicsController < ApplicationController
                                                 include_sections_user_count: include_params.include?("sections_user_count"),
                                                 include_overrides: include_params.include?("overrides"),
                                                 master_course_status: mc_status,
-                                                root_topic_fields:)
+                                                root_topic_fields: root_topic_fields)
       end
     end
   end
@@ -503,7 +503,7 @@ class DiscussionTopicsController < ApplicationController
       js_env({ is_announcement: params[:is_announcement] })
       js_bundle :discussion_topic_edit_v2
       css_bundle :discussions_index, :learning_outcomes
-      render html: "", layout: (params[:embed] == "true") ? "mobile_embed" : true
+      render html: "", layout: params[:embed] == "true" ? "mobile_embed" : true
       return
     end
     edit
@@ -545,7 +545,7 @@ class DiscussionTopicsController < ApplicationController
         @current_user,
         session,
         override_dates: false,
-        include_usage_rights:
+        include_usage_rights: include_usage_rights
       )
     end
     (hash[:ATTRIBUTES] ||= {})[:is_announcement] = @topic.is_announcement
@@ -554,7 +554,7 @@ class DiscussionTopicsController < ApplicationController
 
     categories = []
     if can_set_group_category
-      categories = @context.group_categories.to_a
+      categories = @context.group_categories
       # if discussion has entries and is attached to a deleted group category,
       # add that category to the ENV list so it will be shown on the edit page.
       if @topic.group_category_deleted_with_entries?
@@ -660,7 +660,7 @@ class DiscussionTopicsController < ApplicationController
 
     set_master_course_js_env_data(@topic, @context)
     conditional_release_js_env(@topic.assignment)
-    render :edit, layout: (params[:embed] == "true") ? "mobile_embed" : true
+    render :edit, layout: params[:embed] == "true" ? "mobile_embed" : true
   end
 
   def show
@@ -713,7 +713,6 @@ class DiscussionTopicsController < ApplicationController
         entry = @topic.discussion_entries.find(params[:entry_id])
         env_hash[:discussions_deep_link] = {
           root_entry_id: entry.root_entry_id,
-          parent_id: entry.parent_id,
           entry_id: entry.id
         }
         if entry.root_entry_id.nil?
@@ -795,8 +794,7 @@ class DiscussionTopicsController < ApplicationController
                DISCUSSION: {
                  GRADED_RUBRICS_URL: (@topic.assignment ? context_url(@topic.assignment.context, :context_assignment_rubric_url, @topic.assignment.id) : nil),
                  CONTEXT_RUBRICS_URL: can_do(@topic.assignment, @current_user, :update) ? context_url(@topic.assignment.context, :context_rubrics_url) : "",
-                 ATTACHMENTS_FOLDER_ID: @current_user.nil? ? Folder.unfiled_folder(@context).id : Folder.unfiled_folder(@current_user).id,
-                 ASSIGNMENT: @topic.assignment ? @topic.assignment.asset_string : nil,
+                 ATTACHMENTS_FOLDER_ID: (@topic.for_assignment? && !@current_user.nil?) ? @current_user.submissions_folder(@context).id : Folder.unfiled_folder(@context).id,
                  preferences: {
                    discussions_splitscreen_view: @current_user&.discussions_splitscreen_view? || false
                  }
@@ -804,7 +802,7 @@ class DiscussionTopicsController < ApplicationController
                apollo_caching: @current_user &&
                  Account.site_admin.feature_enabled?(:apollo_caching),
                discussion_cache_key: @current_user &&
-                 Base64.encode64("#{@current_user.uuid}vyfW=;[p-0?:{P_=HUpgraqe;njalkhpvoiulkimmaqewg")
+                 Base64.encode64("#{@current_user.uuid}vyfW=;[p-0?:{P_\=HUpgraqe;njalkhpvoiulkimmaqewg")
              })
 
       unless @locked
@@ -815,7 +813,7 @@ class DiscussionTopicsController < ApplicationController
 
       js_bundle :discussion_topics_post
       css_bundle :discussions_index, :learning_outcomes
-      render html: "", layout: (params[:embed] == "true") ? "mobile_embed" : true
+      render html: "", layout: params[:embed] == "true" ? "mobile_embed" : true
       return
     end
 
@@ -1245,34 +1243,13 @@ class DiscussionTopicsController < ApplicationController
     @user_can_moderate
   end
 
-  API_ALLOWED_TOPIC_FIELDS = %w[title
-                                message
-                                discussion_type
-                                delayed_post_at
-                                lock_at
-                                podcast_enabled
-                                podcast_has_student_posts
-                                require_initial_post
-                                pinned
-                                todo_date
-                                group_category_id
-                                allow_rating
-                                only_graders_can_rate
-                                sort_by_rating
-                                anonymous_state
-                                is_anonymous_author].freeze
+  API_ALLOWED_TOPIC_FIELDS = %w[title message discussion_type delayed_post_at lock_at podcast_enabled
+                                podcast_has_student_posts require_initial_post pinned todo_date
+                                group_category_id allow_rating only_graders_can_rate sort_by_rating
+                                anonymous_state is_anonymous_author].freeze
 
-  API_ALLOWED_TOPIC_FIELDS_FOR_GROUP = %w[title
-                                          message
-                                          discussion_type
-                                          podcast_enabled
-                                          pinned
-                                          todo_date
-                                          allow_rating
-                                          only_graders_can_rate
-                                          sort_by_rating
-                                          anonymous_state
-                                          is_anonymous_author].freeze
+  API_ALLOWED_TOPIC_FIELDS_FOR_GROUP = %w[title message discussion_type podcast_enabled pinned todo_date
+                                          allow_rating only_graders_can_rate sort_by_rating anonymous_state is_anonymous_author].freeze
 
   def set_sections
     if params[:specific_sections] == "all"
@@ -1315,7 +1292,7 @@ class DiscussionTopicsController < ApplicationController
 
   def process_discussion_topic(is_new:)
     ActiveRecord::Base.transaction do
-      process_discussion_topic_runner(is_new:)
+      process_discussion_topic_runner(is_new: is_new)
     end
   end
 
@@ -1377,14 +1354,6 @@ class DiscussionTopicsController < ApplicationController
       verify_specific_section_visibilities # Make sure user actually has perms to modify this
     end
 
-    if params.include?(:assignment)
-      if is_new || @topic.assignment_id.nil?
-        return unless authorized_action(@context.assignments.temp_record, @current_user, :create)
-      else
-        return unless authorized_action(@topic.assignment, @current_user, :update)
-      end
-    end
-
     # It's possible customers already are using this API and haven't updated to
     # use the `specific_sections` key yet. In this case, we don't want to nuke
     # any specific setions out from under them when their existing scrit runs.
@@ -1397,7 +1366,7 @@ class DiscussionTopicsController < ApplicationController
     only_pinning = discussion_topic_hash.except(*%w[pinned]).blank?
 
     # allow pinning/unpinning if a subtopic and we can update the root
-    topic_to_check = (only_pinning && @topic.root_topic) ? @topic.root_topic : @topic
+    topic_to_check = only_pinning && @topic.root_topic ? @topic.root_topic : @topic
     return unless authorized_action(topic_to_check, @current_user, (is_new ? :create : :update))
 
     process_podcast_parameters(discussion_topic_hash)
@@ -1517,7 +1486,7 @@ class DiscussionTopicsController < ApplicationController
                                                  {
                                                    include_sections: true,
                                                    include_sections_user_count: true,
-                                                   include_usage_rights:
+                                                   include_usage_rights: include_usage_rights
                                                  })
         else
           render json: discussion_topic_api_json(@topic,
@@ -1525,14 +1494,14 @@ class DiscussionTopicsController < ApplicationController
                                                  @current_user,
                                                  session,
                                                  {
-                                                   include_usage_rights:
+                                                   include_usage_rights: include_usage_rights
                                                  })
         end
       else
         errors = @topic.errors.as_json[:errors]
         errors.merge!(@topic.root_topic.errors.as_json[:errors]) if @topic.root_topic
         errors["published"] = errors.delete(:workflow_state) if errors.key?(:workflow_state)
-        render json: { errors: }, status: :bad_request
+        render json: { errors: errors }, status: :bad_request
       end
     end
   end
@@ -1760,7 +1729,7 @@ class DiscussionTopicsController < ApplicationController
 
       unless hash[:assignment].nil?
         if params[:due_at]
-          hash[:assignment][:due_at] = (params[:due_at].empty? || params[:due_at] == "null") ? nil : params[:due_at]
+          hash[:assignment][:due_at] = params[:due_at].empty? || params[:due_at] == "null" ? nil : params[:due_at]
         end
         hash[:assignment][:points_possible] = params[:points_possible] if params[:points_possible]
         hash[:assignment][:assignment_group_id] = params[:assignment_group_id] if params[:assignment_group_id]
@@ -1780,7 +1749,8 @@ class DiscussionTopicsController < ApplicationController
       if @topic.podcast_enabled
         content_for_head helpers.auto_discovery_link_tag(:rss,
                                                          feeds_topic_format_path(@topic.id, rss_context.feed_code, :rss),
-                                                         { title: t(:discussion_podcast_feed_title, "Discussion Podcast Feed") })
+                                                         { title: t(:discussion_podcast_feed_title, "Discussion Podcast Feed"),
+                                                           id: "Discussion Podcast Feed" })
       end
     end
   end
@@ -1801,7 +1771,7 @@ class DiscussionTopicsController < ApplicationController
     end
 
     @group_topics = @groups.order(:id).map do |group|
-      { group:, topic: topics.find { |t| t.context == group } }
+      { group: group, topic: topics.find { |t| t.context == group } }
     end
     topics
   end

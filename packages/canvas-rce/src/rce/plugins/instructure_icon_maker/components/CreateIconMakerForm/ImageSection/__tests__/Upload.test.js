@@ -21,7 +21,7 @@ import {render, waitFor, fireEvent} from '@testing-library/react'
 import Upload, {onSubmit} from '../Upload'
 import {actions} from '../../../../reducers/imageSection'
 import {actions as svgActions} from '../../../../reducers/svgSettings'
-import FakeEditor from '../../../../../../__tests__/FakeEditor'
+import FakeEditor from '../../../../../shared/__tests__/FakeEditor'
 import fetchMock from 'fetch-mock'
 import {isAnUnsupportedGifPngImage} from '../utils'
 
@@ -33,8 +33,8 @@ jest.mock('../../../../../../../bridge', () => {
   }
 })
 
-jest.mock('../../../../../shared/compressionUtils', () => ({
-  ...jest.requireActual('../../../../../shared/compressionUtils'),
+jest.mock('../compressionUtils', () => ({
+  ...jest.requireActual('../compressionUtils'),
   compressImage: jest.fn().mockReturnValue(Promise.resolve('data:image/jpeg;base64,abcdefghijk==')),
 }))
 

@@ -46,10 +46,14 @@ class Auditors::Pseudonym
     end
   end
 
-  Stream = Auditors.stream do
+  Stream = Audits.stream do
     pseudonym_ar_type = Auditors::ActiveRecord::PseudonymRecord
+    backend_strategy -> { Audits.backend_strategy }
     active_record_type pseudonym_ar_type
+    database -> { CanvasCassandra::DatabaseBuilder.from_config(:auditors) }
+    table :pseudonyms
     record_type Auditors::Pseudonym::Record
+    read_consistency_level -> { CanvasCassandra::DatabaseBuilder.read_consistency_setting(:auditors) }
     self.raise_on_error = true
 
     add_index :pseudonym do
@@ -66,8 +70,9 @@ class Auditors::Pseudonym
 
     event_record = nil
     pseudonym.shard.activate do
-      event_record = Auditors::Pseudonym::Record.generate(pseudonym, performing_user, action:)
-      Auditors::Pseudonym::Stream.insert(event_record)
+      event_record = Auditors::Pseudonym::Record.generate(pseudonym, performing_user, action: action)
+      Auditors::Pseudonym::Stream.insert(event_record, { backend_strategy: :cassandra }) if Audits.write_to_cassandra?
+      Auditors::Pseudonym::Stream.insert(event_record, { backend_strategy: :active_record }) if Audits.write_to_postgres?
     end
     event_record
   end

@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require_dependency "lti/ims/concerns/advantage_services"
+
 shared_examples_for "advantage services" do
   let(:extra_tool_context) { raise "Override in spec" }
 
@@ -153,7 +155,7 @@ shared_examples_for "advantage services" do
           shared_secret: "secret2",
           name: "test tool 2",
           url: "http://www.tool2.com/launch",
-          developer_key:,
+          developer_key: developer_key,
           lti_version: "1.3",
           workflow_state: "public"
         )
@@ -185,7 +187,7 @@ shared_examples_for "advantage services" do
           shared_secret: "secret2",
           name: "test tool 2",
           url: "http://www.tool2.com/launch",
-          developer_key:,
+          developer_key: developer_key,
           lti_version: "1.3",
           workflow_state: "public"
         )
@@ -217,7 +219,7 @@ shared_examples_for "advantage services" do
           shared_secret: "secret2",
           name: "test tool 2",
           url: "http://www.tool2.com/launch",
-          developer_key:,
+          developer_key: developer_key,
           lti_version: "1.3",
           workflow_state: "public"
         )
@@ -251,7 +253,7 @@ shared_examples_for "advantage services" do
           shared_secret: "secret2",
           name: "test tool 2",
           url: "http://www.tool2.com/launch",
-          developer_key:,
+          developer_key: developer_key,
           lti_version: "1.3",
           workflow_state: "public"
         )
@@ -284,7 +286,7 @@ shared_examples_for "advantage services" do
           shared_secret: "secret2",
           name: "test tool 2",
           url: "http://www.tool2.com/launch",
-          developer_key:,
+          developer_key: developer_key,
           lti_version: "1.3",
           workflow_state: "public"
         )
@@ -310,7 +312,7 @@ shared_examples_for "advantage services" do
           shared_secret: "secret2",
           name: "test tool 2",
           url: "http://www.tool2.com/launch",
-          developer_key:,
+          developer_key: developer_key,
           lti_version: "1.3",
           workflow_state: "public"
         )

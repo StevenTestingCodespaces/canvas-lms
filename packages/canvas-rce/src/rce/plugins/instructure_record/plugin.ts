@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2018 - present Instructure, Inc.
  *
@@ -100,7 +99,7 @@ tinymce.PluginManager.add('instructure_record', function (ed) {
           onAction: () => doMenuItem(ed, item.value),
           onSetup: api => {
             api.setDisabled(!isOKToLink(ed.selection.getContent()))
-            return () => undefined
+            return () => {}
           },
         }
       }),

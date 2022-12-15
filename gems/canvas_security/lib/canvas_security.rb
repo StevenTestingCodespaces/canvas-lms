@@ -86,9 +86,7 @@ module CanvasSecurity
       path = Rails.root.join("config/security.yml")
       raise("config/security.yml missing, see security.yml.example") unless path.file?
 
-      result = YAML.safe_load(ERB.new(path.read).result, aliases: true)[Rails.env]
-      result["encryption_key"] ||= Rails.application.credentials.security_encryption_key
-      result
+      YAML.safe_load(ERB.new(path.read).result, aliases: true)[Rails.env]
     end
   end
 
@@ -180,24 +178,16 @@ module CanvasSecurity
   end
 
   def self.sign_hmac_sha512(string_to_sign, signing_secret = services_signing_secret)
-    sign_hmac(string_to_sign, signing_secret, "sha512")
+    OpenSSL::HMAC.digest("sha512", signing_secret, string_to_sign)
   end
 
   def self.verify_hmac_sha512(message, signature, signing_secret = services_signing_secret)
-    verify_hmac(message, signature, signing_secret, "sha512")
-  end
-
-  def self.sign_hmac(string_to_sign, signing_secret = services_signing_secret, hashing_alg = "sha512")
-    OpenSSL::HMAC.digest(hashing_alg, signing_secret, string_to_sign)
-  end
-
-  def self.verify_hmac(message, signature, signing_secret = services_signing_secret, hashing_alg = "sha512")
     secrets_to_check = [signing_secret]
     if signing_secret == services_signing_secret && services_previous_signing_secret
       secrets_to_check << services_previous_signing_secret
     end
     secrets_to_check.each do |cur_secret|
-      comparison = sign_hmac(message, cur_secret, hashing_alg)
+      comparison = sign_hmac_sha512(message, cur_secret)
       return true if ActiveSupport::SecurityUtils.secure_compare(signature, comparison)
     end
     false
@@ -264,7 +254,7 @@ module CanvasSecurity
 
     keys.each do |key|
       body = JSON::JWT.decode(token, key)
-      verify_jwt(body, ignore_expiration:)
+      verify_jwt(body, ignore_expiration: ignore_expiration)
       return body.with_indifferent_access
     rescue JSON::JWS::VerificationFailed
       # Keep looping, to try all the keys. If none succeed,
@@ -296,7 +286,7 @@ module CanvasSecurity
 
     secrets_to_check.each do |cur_secret|
       raw_jwt = JSON::JWT.decode(signed_coded_jwt.plain_text, cur_secret)
-      verify_jwt(raw_jwt, ignore_expiration:)
+      verify_jwt(raw_jwt, ignore_expiration: ignore_expiration)
       return raw_jwt.with_indifferent_access
     rescue JSON::JWS::VerificationFailed => e
       CanvasErrors.capture_exception(:security_auth, e, :info)
@@ -330,15 +320,15 @@ module CanvasSecurity
 
   class << self
     def services_encryption_secret
-      Rails.application&.credentials&.dig(:canvas_security, :encryption_secret)
+      DynamicSettings.find("canvas")["encryption-secret"]
     end
 
     def services_signing_secret
-      Rails.application&.credentials&.dig(:canvas_security, :signing_secret)
+      DynamicSettings.find("canvas")["signing-secret"]
     end
 
     def services_previous_signing_secret
-      Rails.application&.credentials&.dig(:canvas_security, :signing_secret_deprecated)
+      DynamicSettings.find("canvas")["signing-secret-deprecated"]
     end
 
     private

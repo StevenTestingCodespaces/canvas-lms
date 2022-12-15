@@ -19,7 +19,7 @@ import {useScope as useI18nScope} from '@canvas/i18n'
 import $ from 'jquery'
 import Backbone from '@canvas/backbone'
 import template from '../../jst/googleDocsTreeView.handlebars'
-import '@canvas/jquery/jquery.tree'
+import 'jquery-tree'
 
 const I18n = useI18nScope('titles')
 

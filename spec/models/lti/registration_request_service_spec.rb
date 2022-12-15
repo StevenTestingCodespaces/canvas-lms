@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "lti/registration_request_service"
+
 module Lti
   describe RegistrationRequestService do
     let(:registration_url) { "http://example.com/register" }
@@ -41,7 +43,7 @@ module Lti
           expect_any_instance_of(::IMS::LTI::Models::Messages::RegistrationRequest).to receive(:generate_key_and_password)
             .and_return(["key", "password"])
           expect(Rails.cache).to receive(:write)
-            .with("lti_registration_request/Account/#{account.global_id}/key", { reg_password: "password", registration_url: }, anything)
+            .with("lti_registration_request/Account/#{account.global_id}/key", { reg_password: "password", registration_url: registration_url }, anything)
 
           described_class.create_request(account, "profile_url", -> { "return_url" }, registration_url, tool_proxy_service_url)
         end

@@ -71,7 +71,7 @@ describe "conversations new" do
 
         f("textarea[data-testid='message-body']").send_keys("new recipient")
         ff("input[aria-label='Address Book']")[1].click
-        fj("div[data-testid='address-book-item']:contains('Users')").click
+        fj("div[data-testid='address-book-item']:contains('Students')").click
         fj("div[data-testid='address-book-item']:contains('first student')").click
         f("button[data-testid='send-button']").click
         wait_for_ajaximations
@@ -169,26 +169,6 @@ describe "conversations new" do
         wait_for_ajaximations
         participants = ConversationMessage.last.conversation_message_participants
         expect(participants.collect(&:user_id)).to match_array [@s2.id, @teacher.id, @s1.id]
-      end
-
-      it "successfully replies to convos with chars outside of latin1", ignore_js_errors: true do
-        @convo.add_message(@teacher, "✓")
-        expect(ConversationMessage.last.body).to eq "✓"
-
-        @convo.add_message(@teacher, "äöüÄÖÜçéèñ")
-        expect(ConversationMessage.last.body).to eq "äöüÄÖÜçéèñ"
-
-        get "/conversations"
-        f("div[data-testid='conversation']").click
-        wait_for_ajaximations
-
-        f("button[data-testid='message-detail-header-reply-btn']").click
-        f("textarea[data-testid='message-body']").send_keys("all good")
-
-        f("button[data-testid='send-button']").click
-        wait_for_ajaximations
-
-        expect(ConversationMessage.last.body).to eq "all good"
       end
     end
 

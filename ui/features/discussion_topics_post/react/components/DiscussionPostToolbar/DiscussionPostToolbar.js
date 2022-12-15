@@ -39,7 +39,6 @@ import {TextInput} from '@instructure/ui-text-input'
 import {Tooltip} from '@instructure/ui-tooltip'
 import {View} from '@instructure/ui-view'
 import {AnonymousAvatar} from '@canvas/discussions/react/components/AnonymousAvatar/AnonymousAvatar'
-import {ExpandCollapseThreadsButton} from './ExpandCollapseThreadsButton'
 
 const I18n = useI18nScope('discussions_posts')
 
@@ -141,8 +140,8 @@ export const DiscussionPostToolbar = props => {
                 )}
                 {/* Search */}
                 <Flex.Item
-                  shouldGrow={responsiveProps?.search?.shouldGrow}
-                  shouldShrink={responsiveProps?.search?.shouldShrink}
+                  shouldGrow={responsiveProps.search.shouldGrow}
+                  shouldShrink={responsiveProps.search.shouldShrink}
                   padding={responsiveProps.padding}
                 >
                   <span className="discussions-search-filter">
@@ -161,7 +160,7 @@ export const DiscussionPostToolbar = props => {
                       renderAfterInput={clearButton}
                       placeholder={I18n.t('Search entries or author...')}
                       shouldNotWrap={true}
-                      width={responsiveProps?.search?.width}
+                      width={responsiveProps.search.width}
                     />
                   </span>
                 </Flex.Item>
@@ -174,15 +173,15 @@ export const DiscussionPostToolbar = props => {
                 <Flex.Item
                   margin="0 small 0 0"
                   padding={responsiveProps.padding}
-                  shouldGrow={responsiveProps?.filter?.shouldGrow}
-                  shouldShrink={responsiveProps?.filter?.shouldShrink}
+                  shouldGrow={responsiveProps.filter.shouldGrow}
+                  shouldShrink={responsiveProps.filter.shouldShrink}
                 >
                   <span className="discussions-filter-by-menu">
                     <SimpleSelect
                       renderLabel={<ScreenReaderContent>{I18n.t('Filter by')}</ScreenReaderContent>}
                       defaultValue={props.selectedView}
                       onChange={props.onViewFilter}
-                      width={responsiveProps?.filter?.width}
+                      width={responsiveProps.filter.width}
                     >
                       <SimpleSelect.Group renderLabel={I18n.t('View')}>
                         {Object.entries(getMenuConfig(props)).map(
@@ -233,11 +232,6 @@ export const DiscussionPostToolbar = props => {
                     </span>
                   </Tooltip>
                 </Flex.Item>
-                {!ENV.isolated_view && !props.userSplitScreenPreference && (
-                  <Flex.Item margin="0 small 0 0" padding={responsiveProps.padding}>
-                    <ExpandCollapseThreadsButton />
-                  </Flex.Item>
-                )}
                 {ENV.split_screen_view && (
                   <Flex.Item margin="0 small 0 0" padding={responsiveProps.padding}>
                     <SplitScreenButton

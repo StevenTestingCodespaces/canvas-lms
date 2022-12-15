@@ -158,7 +158,7 @@ export default class Bridge {
         node: selection.getNode(),
         range: selection.getRng(),
       }
-      if (!link.text || link.text.trim().length === 0) {
+      if (!link.text) {
         link.text = link.title || link.href
       }
       this.focusedEditor.insertLink(link)
@@ -184,9 +184,8 @@ export default class Bridge {
 
   insertImage(image) {
     if (this.focusedEditor) {
-      const result = this.focusedEditor.insertImage(image)
+      this.focusedEditor.insertImage(image)
       this.controller(this.focusedEditor.id)?.hideTray()
-      return result
     } else {
       console.warn('clicked sidebar image without a focused editor')
     }
@@ -194,8 +193,7 @@ export default class Bridge {
 
   insertImagePlaceholder(fileMetaProps) {
     if (this.focusedEditor) {
-      // don't insert a placeholder if the user has selected content, because in some cases the selected
-      // content will be used as the content of a link
+      // don't insert a placeholder if the user has selected content
       if (!this.existingContentToLink()) {
         this.focusedEditor.insertImagePlaceholder(fileMetaProps)
       }

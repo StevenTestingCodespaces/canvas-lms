@@ -2,12 +2,11 @@
 # To update this file please edit the relevant template and run the generation
 # task `build/dockerfile_writer.rb --env development --compose-file docker-compose.yml,docker-compose.override.yml --in build/Dockerfile.template --out Dockerfile`
 
-ARG RUBY=3.1
+ARG RUBY=2.7
 
 FROM instructure/ruby-passenger:$RUBY
 LABEL maintainer="Instructure"
 
-ARG RUBY
 ARG POSTGRES_CLIENT=14
 ENV APP_HOME /usr/src/app/
 ENV RAILS_ENV development
@@ -16,13 +15,13 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV LC_CTYPE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
-ARG CANVAS_RAILS=7.0
+ARG CANVAS_RAILS=6.1
 ENV CANVAS_RAILS=${CANVAS_RAILS}
 
 ENV YARN_VERSION 1.19.1-1
-ENV BUNDLER_VERSION 2.3.26
+ENV BUNDLER_VERSION 2.2.17
 ENV GEM_HOME /home/docker/.gem/$RUBY
-ENV PATH ${APP_HOME}bin:$GEM_HOME/bin:$PATH
+ENV PATH $GEM_HOME/bin:$PATH
 ENV BUNDLE_APP_CONFIG /home/docker/.bundle
 
 WORKDIR $APP_HOME
@@ -76,8 +75,14 @@ RUN set -eux; \
     config/locales/generated \
     log \
     node_modules \
+    packages/canvas-media/es \
+    packages/canvas-media/lib \
+    packages/canvas-media/node_modules \
     packages/canvas-planner/lib \
     packages/canvas-planner/node_modules \
+    packages/canvas-rce/canvas \
+    packages/canvas-rce/lib \
+    packages/canvas-rce/node_modules \
     packages/jest-moxios-utils/node_modules \
     packages/js-utils/es \
     packages/js-utils/lib \

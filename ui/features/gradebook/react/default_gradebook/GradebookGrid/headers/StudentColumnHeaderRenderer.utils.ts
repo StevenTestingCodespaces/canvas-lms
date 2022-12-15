@@ -17,27 +17,20 @@
  */
 
 import type Gradebook from '../../Gradebook'
-import type {SortRowsSettingKey} from '../../gradebook.d'
-import React from 'react'
 
 export function getProps(gradebook: Gradebook, options: {ref: any}, columnHeaderName: string) {
   const columnId = columnHeaderName
   const sortRowsBySetting = gradebook.getSortRowsBySetting()
   const {columnId: currentColumnId, direction, settingKey} = sortRowsBySetting
 
-  const studentSettingKey: SortRowsSettingKey =
-    currentColumnId === columnHeaderName ? settingKey : 'sortable_name'
-
-  const getSortKey = (): SortRowsSettingKey => {
-    return columnId === 'student_firstname' ? 'name' : studentSettingKey
-  }
+  const studentSettingKey = currentColumnId === columnHeaderName ? settingKey : 'sortable_name'
 
   return {
     ref: options.ref,
     addGradebookElement: gradebook.keyboardNav?.addGradebookElement,
     disabled: !gradebook.contentLoadStates.studentsLoaded,
     loginHandleName: gradebook.options.login_handle_name,
-    onHeaderKeyDown: (event: React.KeyboardEvent) => {
+    onHeaderKeyDown: event => {
       gradebook.handleHeaderKeyDown(event, columnId)
     },
     onMenuDismiss() {
@@ -70,10 +63,10 @@ export function getProps(gradebook: Gradebook, options: {ref: any}, columnHeader
         gradebook.setSortRowsBySetting(columnId, 'login_id', direction)
       },
       onSortInAscendingOrder: () => {
-        gradebook.setSortRowsBySetting(columnId, getSortKey(), 'ascending')
+        gradebook.setSortRowsBySetting(columnId, studentSettingKey, 'ascending')
       },
       onSortInDescendingOrder: () => {
-        gradebook.setSortRowsBySetting(columnId, getSortKey(), 'descending')
+        gradebook.setSortRowsBySetting(columnId, studentSettingKey, 'descending')
       },
       // sort functions with additional sort options disabled
       onSortBySortableNameAscending: () => {

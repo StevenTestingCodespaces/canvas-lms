@@ -23,15 +23,10 @@ import ImageList from '../../../../instructure_image/Images'
 import {useStoreProps} from '../../../../shared/StoreContext'
 import useDataUrl from '../../../../shared/useDataUrl'
 import {actions} from '../../../reducers/imageSection'
-import {
-  canCompressImage,
-  compressImage,
-  shouldCompressImage,
-} from '../../../../shared/compressionUtils'
+import {canCompressImage, compressImage, shouldCompressImage} from './compressionUtils'
 import {isAnUnsupportedGifPngImage, MAX_GIF_PNG_SIZE_BYTES} from './utils'
 import {actions as svgActions} from '../../../reducers/svgSettings'
 import formatMessage from '../../../../../../format-message'
-import {PREVIEW_WIDTH, PREVIEW_HEIGHT} from '../../../../shared/ImageCropper/constants'
 
 const dispatchImage = async (dispatch, onChange, dataUrl, dataBlob) => {
   let image = dataUrl
@@ -54,11 +49,7 @@ const dispatchImage = async (dispatch, onChange, dataUrl, dataBlob) => {
     try {
       // If compression fails, use the original one
       // TODO: We can show the user that compression failed in some way
-      image = await compressImage({
-        encodedImage: dataUrl,
-        previewWidth: PREVIEW_WIDTH,
-        previewHeight: PREVIEW_HEIGHT,
-      })
+      image = await compressImage(dataUrl)
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error(e)
@@ -69,7 +60,7 @@ const dispatchImage = async (dispatch, onChange, dataUrl, dataBlob) => {
   onChange({type: svgActions.SET_EMBED_IMAGE, payload: image})
 }
 
-const Course = ({dispatch, onChange, onLoading, onLoaded, canvasOrigin}) => {
+const Course = ({dispatch, onChange, onLoading, onLoaded}) => {
   const storeProps = useStoreProps()
   const {files, bookmark, isLoading, hasMore} = storeProps.images[storeProps.contextType]
   const {setUrl, dataUrl, dataLoading, dataBlob} = useDataUrl()
@@ -122,7 +113,6 @@ const Course = ({dispatch, onChange, onLoading, onLoaded, canvasOrigin}) => {
           setUrl(file.download_url)
           dispatch({...actions.SET_IMAGE_NAME, payload: file.filename})
         }}
-        canvasOrigin={canvasOrigin}
       />
     </View>
   )
@@ -133,7 +123,6 @@ Course.propTypes = {
   onChange: PropTypes.func,
   onLoading: PropTypes.func,
   onLoaded: PropTypes.func,
-  canvasOrigin: PropTypes.string.isRequired,
 }
 
 Course.defaultProps = {

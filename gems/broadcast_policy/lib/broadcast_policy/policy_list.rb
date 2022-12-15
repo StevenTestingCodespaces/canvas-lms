@@ -25,8 +25,8 @@ module BroadcastPolicy
       @notifications = []
     end
 
-    def populate(&)
-      instance_eval(&)
+    def populate(&block)
+      instance_eval(&block)
       @current_notification = nil
     end
 

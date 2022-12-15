@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -18,22 +17,11 @@
  */
 
 import React from 'react'
+import {arrayOf, shape, string} from 'prop-types'
 import {statuses} from '../constants/statuses'
 import {darken} from '../constants/colors'
 
-type Props = {
-  colors: {
-    late: string
-    missing: string
-    resubmitted: string
-    dropped: string
-    excused: string
-    extended: string
-  }
-  statuses: string[]
-}
-
-function GridColor(props: Props) {
+function GridColor(props) {
   const styleRules = props.statuses
     .map(status =>
       [
@@ -49,6 +37,18 @@ function GridColor(props: Props) {
       {styleRules}
     </style>
   )
+}
+
+GridColor.propTypes = {
+  colors: shape({
+    late: string,
+    missing: string,
+    resubmitted: string,
+    dropped: string,
+    excused: string,
+    extended: string,
+  }).isRequired,
+  statuses: arrayOf(string),
 }
 
 GridColor.defaultProps = {

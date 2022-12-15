@@ -19,6 +19,7 @@
 #
 require_relative "../lti2_api_spec_helper"
 require_relative "../../api_spec_helper"
+require_dependency "lti/ims/tool_proxy_controller"
 
 module Lti
   module IMS
@@ -34,7 +35,7 @@ module Lti
           context: account,
           guid: SecureRandom.uuid,
           shared_secret: "abc",
-          product_family:,
+          product_family: product_family,
           product_version: "1",
           workflow_state: "disabled",
           raw_data: { "proxy" => "value" },
@@ -90,7 +91,7 @@ module Lti
           json[:format] = "json"
           json[:account_id] = @course.account.id
           headers = { "CONTENT_TYPE" => "application/json", "ACCEPT" => "application/json" }.merge(oauth1_header)
-          response = post("/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tool_proxy_fixture, headers:)
+          response = post "/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tool_proxy_fixture, headers: headers
           expect(response).to eq 201
           expect(JSON.parse(body).keys).to match_array ["@context", "@type", "@id", "tool_proxy_guid"]
         end
@@ -100,7 +101,7 @@ module Lti
           tool_proxy_fixture = Rails.root.join("spec/fixtures/lti/tool_proxy.json").read
           headers = { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolproxy+json",
                       "ACCEPT" => "application/vnd.ims.lti.v2.toolproxy.id+json" }.merge(oauth1_header)
-          post("/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tool_proxy_fixture, headers:)
+          post "/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tool_proxy_fixture, headers: headers
           expect(response.headers["Content-Type"]).to include "application/vnd.ims.lti.v2.toolproxy.id+json"
         end
 
@@ -110,7 +111,7 @@ module Lti
           tp = ::IMS::LTI::Models::ToolProxy.new.from_json(tool_proxy_fixture)
           tp.tool_profile.resource_handlers.first.messages.first.enabled_capability = ["extra_capability"]
           headers = { "CONTENT_TYPE" => "application/json", "ACCEPT" => "application/json" }.merge(oauth1_header)
-          response = post("/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tp.to_json, headers:)
+          response = post "/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tp.to_json, headers: headers
           expect(response).to eq 400
           expect(JSON.parse(body)).to eq({ "invalid_capabilities" => ["extra_capability"], "error" => "Invalid Capabilities" })
         end
@@ -123,7 +124,7 @@ module Lti
           tool_proxy_fixture["security_contract"].delete("shared_secret")
           tool_proxy_fixture["security_contract"]["tp_half_shared_secret"] = SecureRandom.hex(128)
           headers = { "CONTENT_TYPE" => "application/json", "ACCEPT" => "application/json" }.merge(oauth1_header)
-          response = post("/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tool_proxy_fixture.to_json, headers:)
+          response = post "/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tool_proxy_fixture.to_json, headers: headers
           expect(response).to eq 201
           expect(JSON.parse(body).keys).to match_array ["@context", "@type", "@id", "tool_proxy_guid", "tc_half_shared_secret"]
         end
@@ -131,7 +132,7 @@ module Lti
         context "custom tool consumer profile" do
           let(:account) { Account.create! }
           let(:dev_key) do
-            dev_key = DeveloperKey.create(api_key: "test-api-key", vendor_code:)
+            dev_key = DeveloperKey.create(api_key: "test-api-key", vendor_code: vendor_code)
             dev_key
           end
           let!(:tcp) do
@@ -145,7 +146,7 @@ module Lti
           let(:tcp_url) { polymorphic_url([account, :tool_consumer_profile], tool_consumer_profile_id: tcp.uuid) }
           let(:access_token) do
             aud = host rescue (@request || request).host
-            Lti::OAuth2::AccessToken.create_jwt(aud:, sub: developer_key.global_id, reg_key: "reg_key")
+            Lti::OAuth2::AccessToken.create_jwt(aud: aud, sub: developer_key.global_id, reg_key: "reg_key")
           end
           let(:request_headers) { { Authorization: "Bearer #{access_token}" } }
 
@@ -161,7 +162,7 @@ module Lti
             message.enabled_capability = *Lti::ToolConsumerProfile::RESTRICTED_CAPABILITIES
             headers = { "CONTENT_TYPE" => "application/json", "ACCEPT" => "application/json" }
             headers.merge!(request_headers)
-            response = post("/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tp.to_json, headers:)
+            response = post "/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tp.to_json, headers: headers
             expect(response).to eq 201
           end
         end
@@ -170,8 +171,8 @@ module Lti
       describe "POST #create with JWT access token" do
         let(:access_token) do
           aud = host rescue (@request || request).host
-          developer_key.update(vendor_code:)
-          Lti::OAuth2::AccessToken.create_jwt(aud:, sub: developer_key.global_id, reg_key: "reg_key")
+          developer_key.update(vendor_code: vendor_code)
+          Lti::OAuth2::AccessToken.create_jwt(aud: aud, sub: developer_key.global_id, reg_key: "reg_key")
         end
         let(:request_headers) { { Authorization: "Bearer #{access_token}" } }
 
@@ -210,7 +211,7 @@ module Lti
         it "routes to the reregistration action based on header" do
           course_with_teacher_logged_in(active_all: true)
           headers = { "VND-IMS-CONFIRM-URL" => "Routing based on arbitrary headers, Barf!" }.merge(oauth1_header)
-          post("/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: "sad times", headers:)
+          post "/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: "sad times", headers: headers
           expect(controller.params[:action]).to eq "re_reg"
         end
 
@@ -220,7 +221,7 @@ module Lti
           allow(OAuth::Signature).to receive(:build).and_return(mock_siq)
           course_with_teacher_logged_in(active_all: true)
           headers = { "VND-IMS-CONFIRM-URL" => "Routing based on arbitrary headers, Barf!" }.merge(oauth1_header)
-          response = post("/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: "sad times", headers:)
+          response = post "/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: "sad times", headers: headers
           expect(response).to eq 401
         end
 
@@ -237,7 +238,7 @@ module Lti
           tool_proxy_fixture["tool_consumer_profile"] = tcp_url
 
           headers = { "VND-IMS-CONFIRM-URL" => "Routing based on arbitrary headers, Barf!" }.merge(oauth1_header)
-          response = post("/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tool_proxy_fixture.to_json, headers:)
+          response = post "/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: tool_proxy_fixture.to_json, headers: headers
 
           expect(response).to eq 201
 
@@ -254,7 +255,7 @@ module Lti
           allow(OAuth::Signature).to receive(:build).and_return(mock_siq)
           course_with_teacher_logged_in(active_all: true)
           headers = { "VND-IMS-CONFIRM-URL" => "Routing based on arbitrary headers, Barf!" }.merge(oauth1_header)
-          response = post("/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: "sad times", headers:)
+          response = post "/api/lti/accounts/#{@course.account.id}/tool_proxy.json", params: "sad times", headers: headers
           expect(response).to eq 400
 
           tool_proxy.reload

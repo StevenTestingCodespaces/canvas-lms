@@ -17,7 +17,7 @@
  */
 
 import $ from 'jquery'
-import ValidatedMixin from '@canvas/forms/backbone/views/ValidatedMixin'
+import ValidatedMixin from '@canvas/forms/backbone/views/ValidatedMixin.coffee'
 import RichContentEditor from '@canvas/rce/RichContentEditor'
 
 let textarea = null

@@ -41,11 +41,9 @@ class DeveloperKey < ActiveRecord::Base
 
   has_one :tool_consumer_profile, class_name: "Lti::ToolConsumerProfile", inverse_of: :developer_key
   has_one :tool_configuration, class_name: "Lti::ToolConfiguration", dependent: :destroy, inverse_of: :developer_key
-  has_one :lti_registration, class_name: "Lti::IMS::Registration", dependent: :destroy, inverse_of: :developer_key
   serialize :scopes, Array
 
   before_validation :normalize_public_jwk_url
-  before_validation :normalize_scopes
   before_validation :validate_scopes!
   before_create :generate_api_key
   before_create :set_auto_expire_tokens
@@ -95,7 +93,7 @@ class DeveloperKey < ActiveRecord::Base
     state :deleted
   end
 
-  self.ignored_columns += %i[oidc_login_uri tool_id]
+  self.ignored_columns = %i[oidc_login_uri tool_id]
 
   alias_method :destroy_permanently!, :destroy
   def destroy
@@ -128,8 +126,6 @@ class DeveloperKey < ActiveRecord::Base
       value, _ = CanvasHttp.validate_url(value, allowed_schemes: nil)
       value
     end
-
-    errors.add :redirect_uris, "a redirect_uri is too long" if uris.any? { |uri| uri.length > 4096 }
 
     self.redirect_uris = uris unless uris == redirect_uris
   rescue URI::Error, ArgumentError
@@ -173,6 +169,14 @@ class DeveloperKey < ActiveRecord::Base
       Shard.birth.activate do
         @special_keys ||= {}
 
+        if Rails.env.test?
+          # TODO: we have to do this because tests run in transactions
+          testkey = DeveloperKey.where(name: default_key_name).first_or_initialize
+          testkey.auto_expire_tokens = false if testkey.new_record?
+          testkey.save! if testkey.changed?
+          return @special_keys[default_key_name] = testkey
+        end
+
         key = @special_keys[default_key_name]
         return key if key
 
@@ -190,14 +194,13 @@ class DeveloperKey < ActiveRecord::Base
     end
 
     # for now, only one AWS account for SNS is supported
-    def sns(region:)
-      @sns ||= {}
-
-      unless @sns[region].present?
-        settings = Rails.application.credentials.sns_creds
-        @sns[region] = Aws::SNS::Client.new(settings.merge(region:)) if settings
+    def sns
+      unless defined?(@sns)
+        settings = ConfigFile.load("sns")
+        @sns = nil
+        @sns = Aws::SNS::Client.new(settings) if settings
       end
-      @sns[region]
+      @sns
     end
 
     def test_cluster_checks_enabled?
@@ -215,7 +218,7 @@ class DeveloperKey < ActiveRecord::Base
 
     def by_cached_vendor_code(vendor_code)
       MultiCache.fetch("developer_keys/#{vendor_code}") do
-        DeveloperKey.shard([Shard.current, Account.site_admin.shard].uniq).where(vendor_code:).to_a
+        DeveloperKey.shard([Shard.current, Account.site_admin.shard].uniq).where(vendor_code: vendor_code).to_a
       end
     end
   end
@@ -389,10 +392,6 @@ class DeveloperKey < ActiveRecord::Base
     self.public_jwk_url = nil if public_jwk_url.blank?
   end
 
-  def normalize_scopes
-    self.scopes = scopes.uniq
-  end
-
   def manage_external_tools(enqueue_args, method, affected_account)
     return if tool_configuration.blank?
 
@@ -424,11 +423,11 @@ class DeveloperKey < ActiveRecord::Base
     stat_prefix = "developer_key.manage_external_tools"
     stat_prefix += ".error" if exception
 
-    tags = { method: }
+    tags = { method: method }
     latency = (Time.zone.now.to_i - start_time) * 1000 # ms for DD
 
-    InstStatsd::Statsd.increment("#{stat_prefix}.count", tags:)
-    InstStatsd::Statsd.timing("#{stat_prefix}.latency", latency, tags:)
+    InstStatsd::Statsd.increment("#{stat_prefix}.count", tags: tags)
+    InstStatsd::Statsd.timing("#{stat_prefix}.latency", latency, tags: tags)
 
     if exception
       Canvas::Errors.capture_exception(:developer_keys, exception, :error)

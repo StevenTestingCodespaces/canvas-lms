@@ -20,6 +20,7 @@
 require_relative "concerns/advantage_services_shared_context"
 require_relative "concerns/advantage_services_shared_examples"
 require_relative "concerns/lti_services_shared_examples"
+require_dependency "lti/ims/line_items_controller"
 
 module Lti
   module IMS
@@ -36,7 +37,7 @@ module Lti
         end
       end
       let(:assignment) do
-        opts = { course: }
+        opts = { course: course }
         if tool.present?
           opts[:submission_types] = "external_tool"
           opts[:external_tool_tag_attributes] = {
@@ -47,7 +48,7 @@ module Lti
         end
         assignment_model(opts)
       end
-      let(:parsed_response_body) { response.parsed_body }
+      let(:parsed_response_body) { JSON.parse(response.body) }
       let(:label) { "Originality Score" }
       let(:tag) { "some_tag" }
       let(:resource_id) { "orig-123" }
@@ -69,7 +70,7 @@ module Lti
         end
         let(:line_item) do
           line_item_model(
-            course:,
+            course: course,
             with_resource_link: true,
             tool: other_tool
           )
@@ -86,10 +87,10 @@ module Lti
         let(:params_overrides) do
           {
             scoreMaximum: score_max,
-            label:,
+            label: label,
             endDateTime: end_date_time.iso8601,
             resourceId: resource_id,
-            tag:,
+            tag: tag,
             resourceLinkId: assignment.lti_context_id,
             course_id: context_id
           }
@@ -102,11 +103,11 @@ module Lti
         it_behaves_like "advantage services"
 
         before do
-          resource_link.original_context_external_tool.update!(developer_key:)
+          resource_link.original_context_external_tool.update!(developer_key: developer_key)
           resource_link.line_items.create(
             score_maximum: 1,
             label: "Canvas Created",
-            assignment:
+            assignment: assignment
           )
         end
 
@@ -119,7 +120,7 @@ module Lti
 
           it "sets coupled to false on the new line item" do
             send_request
-            expect(Lti::LineItem.last.coupled).to be(false)
+            expect(Lti::LineItem.last.coupled).to eq(false)
           end
 
           it "responds with the line item mime type" do
@@ -138,36 +139,14 @@ module Lti
             expected_response = {
               id: "http://test.host/api/lti/courses/#{course.id}/line_items/#{item.id}",
               scoreMaximum: score_max.to_f,
-              label:,
+              label: label,
               resourceId: resource_id,
-              tag:,
+              tag: tag,
               endDateTime: end_date_time.iso8601,
               resourceLinkId: item.resource_link.resource_link_uuid
             }.with_indifferent_access
 
             expect(parsed_response_body).to eq expected_response
-          end
-
-          context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is on" do
-            it "uses the Account#domain in the line item id" do
-              course.root_account.enable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-              allow_any_instance_of(Account).to receive(:domain).and_return("canonical.host")
-              send_request
-              expect(parsed_response_body["id"]).to start_with(
-                "http://canonical.host/api/lti/courses/#{course.id}/line_items/"
-              )
-            end
-          end
-
-          context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is off" do
-            it "uses the host domain in the line item id" do
-              course.root_account.disable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-              allow_any_instance_of(Account).to receive(:domain).and_return("canonical.host")
-              send_request
-              expect(parsed_response_body["id"]).to start_with(
-                "http://test.host/api/lti/courses/#{course.id}/line_items/"
-              )
-            end
           end
 
           it "associates the line item with the correct assignment" do
@@ -219,9 +198,9 @@ module Lti
             expected_response = {
               id: "http://test.host/api/lti/courses/#{course.id}/line_items/#{item.id}",
               scoreMaximum: score_max.to_f,
-              label:,
+              label: label,
               resourceId: resource_id,
-              tag:,
+              tag: tag,
               endDateTime: end_date_time.iso8601
             }.with_indifferent_access
 
@@ -238,7 +217,7 @@ module Lti
           it "does not create a resource_link record" do
             expect do
               send_request
-            end.not_to change { Lti::ResourceLink.count }
+            end.to change { Lti::ResourceLink.count }.by(0)
           end
 
           context "when a new assignment is created" do
@@ -374,8 +353,8 @@ module Lti
       describe "#update" do
         let(:line_item) do
           line_item_model(
-            assignment:,
-            resource_link:
+            assignment: assignment,
+            resource_link: resource_link
           )
         end
         let(:line_item_id) { line_item.id }
@@ -448,7 +427,7 @@ module Lti
 
         context "if not the default line item" do
           let(:line_item_two) do
-            li = line_item_model(resource_link:, assignment:)
+            li = line_item_model(resource_link: resource_link, assignment: assignment)
             li.update!(created_at: line_item.created_at + 5.seconds)
             li
           end
@@ -531,9 +510,9 @@ module Lti
       describe "#show" do
         let!(:line_item) do
           line_item_model(
-            assignment:,
-            resource_link:,
-            tag:
+            assignment: assignment,
+            resource_link: resource_link,
+            tag: tag
           )
         end
         let(:line_item_id) { line_item.id }
@@ -561,7 +540,7 @@ module Lti
             id: "http://test.host/api/lti/courses/#{course.id}/line_items/#{line_item.id}",
             scoreMaximum: 10.0,
             label: "Test Line Item",
-            tag:,
+            tag: tag,
             resourceLinkId: line_item.resource_link.resource_link_uuid
           }.with_indifferent_access
           expect(parsed_response_body).to eq expected_response
@@ -642,20 +621,20 @@ module Lti
         end
         let!(:line_item_with_tag) do
           line_item_model(
-            assignment:,
-            tag:
+            assignment: assignment,
+            tag: tag
           )
         end
         let!(:line_item_with_resource_id) do
           line_item_model(
-            assignment:,
-            resource_id:
+            assignment: assignment,
+            resource_id: resource_id
           )
         end
         let!(:line_item_with_resource_link_id) do
           line_item_model(
-            assignment:,
-            resource_link:
+            assignment: assignment,
+            resource_link: resource_link
           )
         end
         let(:line_item_list) do
@@ -692,7 +671,7 @@ module Lti
         end
 
         context do
-          let(:params_overrides) { super().merge(tag:) }
+          let(:params_overrides) { super().merge(tag: tag) }
 
           it "correctly queries by tag" do
             send_request
@@ -703,7 +682,7 @@ module Lti
         end
 
         context do
-          let(:params_overrides) { super().merge(resource_id:) }
+          let(:params_overrides) { super().merge(resource_id: resource_id) }
 
           it "correctly queries by resource_id" do
             send_request
@@ -716,9 +695,9 @@ module Lti
         context do
           let(:line_item_new_lti_link) do
             line_item_model(
-              course:,
+              course: course,
               with_resource_link: true,
-              tool:
+              tool: tool
             )
           end
           let(:params_overrides) { super().merge(resource_link_id: line_item_new_lti_link.resource_link.resource_link_uuid) }
@@ -733,13 +712,13 @@ module Lti
         end
 
         context do
-          let(:params_overrides) { super().merge(tag:, resource_id:) }
+          let(:params_overrides) { super().merge(tag: tag, resource_id: resource_id) }
 
           it "allows querying by multiple valid fields at the same time" do
             tag_and_resource = line_item_model(
-              assignment:,
-              tag:,
-              resource_id:
+              assignment: assignment,
+              tag: tag,
+              resource_id: resource_id
             )
             send_request
             expect(line_item_list).to match_array([
@@ -802,8 +781,8 @@ module Lti
         context "when using the coupled model" do
           let(:coupled_line_item) do
             assignment.line_items.first.update!(
-              tag:,
-              resource_id:,
+              tag: tag,
+              resource_id: resource_id,
               coupled: true
             )
             assignment.line_items.first
@@ -811,10 +790,10 @@ module Lti
 
           let!(:second_line_item) do
             line_item_model(
-              assignment:,
-              resource_link:,
-              tag:,
-              resource_id:,
+              assignment: assignment,
+              resource_link: resource_link,
+              tag: tag,
+              resource_id: resource_id,
               coupled: false
             )
           end
@@ -838,9 +817,9 @@ module Lti
         context "when using the uncoupled model" do
           let(:line_item) do
             line_item_model(
-              course:,
-              tag:,
-              resource_id:,
+              course: course,
+              tag: tag,
+              resource_id: resource_id,
               client_id: developer_key.global_id,
               coupled: false
             )
@@ -861,8 +840,8 @@ module Lti
         context "when the line item is a tool-created (uncoupled) assignment line item" do
           let(:line_item) do
             assignment.line_items.first.update!(
-              tag:,
-              resource_id:,
+              tag: tag,
+              resource_id: resource_id,
               coupled: false
             )
             assignment.line_items.first

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -17,13 +16,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {type GlobalEnv} from '@canvas/global/env/GlobalEnv'
-
 export enum Feature {
   IconMaker,
 }
 
-export default function shouldUseFeature(feature: Feature, windowEnv: GlobalEnv): boolean {
+export default function shouldUseFeature(feature: Feature, windowEnv: object): boolean {
   switch (feature) {
     case Feature.IconMaker:
       return shouldUseIconMaker(windowEnv)
@@ -32,7 +29,7 @@ export default function shouldUseFeature(feature: Feature, windowEnv: GlobalEnv)
   }
 }
 
-function shouldUseIconMaker(windowEnv: GlobalEnv): boolean {
+function shouldUseIconMaker(windowEnv: object): boolean {
   return !!(
     windowEnv.RICH_CONTENT_CAN_UPLOAD_FILES &&
     windowEnv.RICH_CONTENT_CAN_EDIT_FILES &&

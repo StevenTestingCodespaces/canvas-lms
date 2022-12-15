@@ -36,13 +36,8 @@
 class DynamoQuery
   attr_reader :partition_key, :sort_key
 
-  def initialize(db,
-                 table,
-                 partition_key:,
-                 key_condition_expression:,
-                 expression_attribute_values:,
-                 value:,
-                 sort_key:,
+  def initialize(db, table, partition_key:, key_condition_expression:,
+                 expression_attribute_values:, value:, sort_key:,
                  scan_index_forward: true)
     @db = db
     @table = table
@@ -72,8 +67,8 @@ class DynamoQuery
     self
   end
 
-  def each(&)
-    query.items.each(&)
+  def each(&block)
+    query.items.each(&block)
   end
 
   def map

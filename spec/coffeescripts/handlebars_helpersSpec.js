@@ -18,10 +18,11 @@
 
 import Handlebars from '@canvas/handlebars-helpers'
 import $ from 'jquery'
-import _ from 'lodash'
+import _ from 'underscore'
 import assertions from 'helpers/assertions'
 import fakeENV from 'helpers/fakeENV'
 import numberFormat from '@canvas/i18n/numberFormat'
+import tz from '@canvas/timezone'
 import tzInTest from '@canvas/timezone/specHelpers'
 import timezone from 'timezone'
 import detroit from 'timezone/America/Detroit'
@@ -318,21 +319,6 @@ test('should parse and format relative to profile timezone', () => {
   })
 
   equal(helpers.datetimeFormatted('1970-01-01 00:00:00'), 'Jan 1, 1970 at 12am')
-})
-
-test('accepts formatting options', () => {
-  tzInTest.configureAndRestoreLater({
-    tz: timezone(detroit, 'America/Detroit'),
-    tzData: {
-      'America/Detroit': detroit,
-    },
-    formats: getI18nFormats(),
-  })
-
-  const now = new Date()
-  const options = {format: 'medium'}
-  const formattedDate = helpers.datetimeFormatted(now.toISOString(), {hash: options})
-  ok(formattedDate.includes(now.getFullYear()))
 })
 
 QUnit.module('ifSettingIs')

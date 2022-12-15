@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -43,7 +42,6 @@ import {actions as uiActions} from '../../actions/ui'
 import {
   CoursePace,
   OptionalDate,
-  Pace,
   PaceContext,
   PaceDuration,
   ResponsiveSizes,
@@ -103,11 +101,11 @@ type ResponsiveComponentProps = ComponentProps & {
   readonly outerResponsiveSize: ResponsiveSizes
 }
 
-export const PaceModal = ({
+export const PaceModal: React.FC<ResponsiveComponentProps> = ({
   outerResponsiveSize,
   setOuterResponsiveSize,
   ...props
-}: ResponsiveComponentProps) => {
+}) => {
   const [pendingContext, setPendingContext] = useState('')
   const [trayOpen, setTrayOpen] = useState(false)
   const closeButtonRef = useRef<HTMLElement | null>(null)
@@ -168,7 +166,6 @@ export const PaceModal = ({
       label={modalTitle()}
       shouldCloseOnDocumentClick={true}
       overflow="fit"
-      aria-modal={true}
     >
       <Modal.Header>
         <Flex>
@@ -208,7 +205,6 @@ export const PaceModal = ({
               contextName={props.paceName}
             />
             <PaceModalStats
-              appliedPace={props.selectedPaceContext?.applied_pace as Pace}
               coursePace={props.coursePace}
               assignments={props.assignmentsCount}
               paceDuration={props.paceDuration}
@@ -262,7 +258,7 @@ export const PaceModal = ({
   )
 }
 
-export const ResponsivePaceModal = (props: ComponentProps) => (
+export const ResponsivePaceModal: React.FC<ComponentProps> = props => (
   <Responsive
     match="media"
     query={{

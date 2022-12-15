@@ -31,7 +31,7 @@ require "dynamic_settings/prefix_proxy"
 module DynamicSettings
   CONSUL_READ_OPTIONS = %i[recurse stale].freeze
   KV_NAMESPACE = "config/canvas"
-  CACHE_KEY_PREFIX = "dynamic_settings/"
+  CACHE_KEY_PREFIX = "dynamic_settings/*"
 
   class << self
     attr_accessor :environment
@@ -136,11 +136,11 @@ module DynamicSettings
       if use_consul
         PrefixProxy.new(
           prefix,
-          tree:,
-          service:,
+          tree: tree,
+          service: service,
           environment: @environment,
-          cluster:,
-          default_ttl:,
+          cluster: cluster,
+          default_ttl: default_ttl,
           data_center: data_center || @data_center,
           query_logging: @config.fetch("query_logging", true),
           retry_limit: @config.fetch("retry_limit", 1),
@@ -159,7 +159,7 @@ module DynamicSettings
 
     def reset_cache!
       # Only Redis glob strings are supported! see: https://redis.io/commands/keys/
-      cache.delete_matched("#{CACHE_KEY_PREFIX}*")
+      cache.delete_matched(CACHE_KEY_PREFIX)
     end
   end
 end

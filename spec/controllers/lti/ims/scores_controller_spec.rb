@@ -21,6 +21,7 @@ require "apis/api_spec_helper"
 require_relative "./concerns/advantage_services_shared_context"
 require_relative "./concerns/advantage_services_shared_examples"
 require_relative "./concerns/lti_services_shared_examples"
+require_dependency "lti/ims/scores_controller"
 
 module Lti::IMS
   RSpec.describe ScoresController do
@@ -29,7 +30,7 @@ module Lti::IMS
     let(:admin) { account_admin_user }
     let(:context) { course }
     let(:assignment) do
-      opts = { course: }
+      opts = { course: course }
       if tool.present? && tool.use_1_3?
         opts[:submission_types] = "external_tool"
         opts[:external_tool_tag_attributes] = {
@@ -43,23 +44,23 @@ module Lti::IMS
       if assignment.external_tool? && tool.use_1_3?
         assignment.line_items.first
       else
-        line_item_model(course:)
+        line_item_model(course: course)
       end
     end
-    let(:user) { student_in_course(course:, active_all: true).user }
+    let(:user) { student_in_course(course: course, active_all: true).user }
     let(:line_item_id) { line_item.id }
     let(:result) do
-      lti_result_model line_item:, user:, scoreGiven: nil, scoreMaximum: nil
+      lti_result_model line_item: line_item, user: user, scoreGiven: nil, scoreMaximum: nil
     end
     let(:submission) { nil }
-    let(:json) { response.parsed_body }
+    let(:json) { JSON.parse(response.body) }
     let(:access_token_scopes) { "https://purl.imsglobal.org/spec/lti-ags/scope/score" }
     let(:userId) { user.id }
     let(:params_overrides) do
       {
         course_id: context_id,
-        line_item_id:,
-        userId:,
+        line_item_id: line_item_id,
+        userId: userId,
         activityProgress: "Completed",
         gradingProgress: "FullyGraded",
         timestamp: Time.zone.now.iso8601(3)
@@ -89,28 +90,6 @@ module Lti::IMS
           expect(json["resultUrl"]).to include "results"
         end
 
-        context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is on" do
-          it "uses the Account#domain in the resultUrl" do
-            allow_any_instance_of(Account).to receive(:domain).and_return("canonical.host")
-            course.root_account.enable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-            send_request
-            expect(json["resultUrl"]).to start_with(
-              "http://canonical.host/api/lti/courses/#{course.id}/line_items/"
-            )
-          end
-        end
-
-        context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is off" do
-          it "uses the host domain in the resultUrl" do
-            course.root_account.disable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-            allow_any_instance_of(Account).to receive(:domain).and_return("canonical.host")
-            send_request
-            expect(json["resultUrl"]).to start_with(
-              "http://test.host/api/lti/courses/#{course.id}/line_items/"
-            )
-          end
-        end
-
         context "with no existing result" do
           it "creates a new result" do
             expect { send_request }.to change(Lti::Result, :count).by(1)
@@ -132,7 +111,7 @@ module Lti::IMS
 
             it "updates result" do
               result
-              expect { send_request }.not_to change(Lti::Result, :count)
+              expect { send_request }.to change(Lti::Result, :count).by(0)
               expect(result.reload.result_score).to eq 5.0
             end
           end
@@ -159,7 +138,7 @@ module Lti::IMS
           let(:line_item_no_submission) do
             line_item_model assignment: line_item.assignment,
                             resource_link: line_item.resource_link,
-                            tool:
+                            tool: tool
           end
           let(:line_item_id) { line_item_no_submission.id }
 
@@ -187,7 +166,7 @@ module Lti::IMS
         end
 
         context "when line_item is an assignment" do
-          let(:result) { lti_result_model line_item:, user: }
+          let(:result) { lti_result_model line_item: line_item, user: user }
 
           shared_examples_for "creates a new submission" do
             it "increments attempt" do
@@ -356,8 +335,8 @@ module Lti::IMS
 
             context "with submission already graded" do
               let(:result) do
-                lti_result_model line_item:,
-                                 user:,
+                lti_result_model line_item: line_item,
+                                 user: user,
                                  result_score: 100,
                                  result_maximum: 10
               end
@@ -411,7 +390,7 @@ module Lti::IMS
 
           context "with submitted_at extension" do
             let(:params_overrides) do
-              super().merge(Lti::Result::AGS_EXT_SUBMISSION => { submitted_at: })
+              super().merge(Lti::Result::AGS_EXT_SUBMISSION => { submitted_at: submitted_at })
             end
 
             shared_examples_for "updates submission time" do
@@ -454,7 +433,7 @@ module Lti::IMS
               let(:params_overrides) do
                 super().merge(
                   Lti::Result::AGS_EXT_SUBMISSION => {
-                    submitted_at:, new_submission: false
+                    submitted_at: submitted_at, new_submission: false
                   }
                 )
               end
@@ -480,7 +459,7 @@ module Lti::IMS
             end
             let(:submitted_at) { 5.minutes.ago.iso8601(3) }
             let(:params_overrides) do
-              super().merge(Lti::Result::AGS_EXT_SUBMISSION => { content_items:, new_submission: false, submitted_at: }, :scoreGiven => 10, :scoreMaximum => line_item.score_maximum)
+              super().merge(Lti::Result::AGS_EXT_SUBMISSION => { content_items: content_items, new_submission: false, submitted_at: submitted_at }, :scoreGiven => 10, :scoreMaximum => line_item.score_maximum)
             end
             let(:expected_progress_url) do
               "http://test.host/api/lti/courses/#{context_id}/progress/"
@@ -518,7 +497,7 @@ module Lti::IMS
 
               context "with a new submission" do
                 let(:params_overrides) do
-                  super().merge(Lti::Result::AGS_EXT_SUBMISSION => { content_items:, new_submission: true })
+                  super().merge(Lti::Result::AGS_EXT_SUBMISSION => { content_items: content_items, new_submission: true })
                 end
 
                 context "when under attempt limit" do
@@ -554,28 +533,11 @@ module Lti::IMS
                 expect(result.submission.attachments).to include attachment
               end
 
-              let(:actual_progress_url) do
-                json[Lti::Result::AGS_EXT_SUBMISSION]["content_items"].first["progress"]
-              end
-
-              context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is on" do
-                it "returns a progress URL with the Account#domain" do
-                  course.root_account.enable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-                  allow_any_instance_of(Account).to receive(:domain).and_return("canonical.host")
-                  send_request
-                  expect(actual_progress_url)
-                    .to start_with("http://canonical.host/api/lti/courses/#{context_id}/progress/")
-                end
-              end
-
-              context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is off" do
-                it "returns a progress URL with the Account#domain" do
-                  course.root_account.disable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-                  allow_any_instance_of(Account).to receive(:domain).and_return("canonical.host")
-                  send_request
-                  expect(actual_progress_url)
-                    .to start_with("http://test.host/api/lti/courses/#{context_id}/progress/")
-                end
+              it "returns a progress url" do
+                send_request
+                progress_url =
+                  json[Lti::Result::AGS_EXT_SUBMISSION]["content_items"].first["progress"]
+                expect(progress_url).to include expected_progress_url
               end
 
               it "calculates content_type from extension" do
@@ -585,7 +547,7 @@ module Lti::IMS
 
               context "with FF on" do
                 let(:params_overrides) do
-                  super().merge(Lti::Result::AGS_EXT_SUBMISSION => { content_items:, new_submission: true, submitted_at: })
+                  super().merge(Lti::Result::AGS_EXT_SUBMISSION => { content_items: content_items, new_submission: true, submitted_at: submitted_at })
                 end
 
                 before do
@@ -600,18 +562,17 @@ module Lti::IMS
                 context "and multiple file content items" do
                   let(:params_overrides) do
                     super().merge(Lti::Result::AGS_EXT_SUBMISSION => { content_items: [
-                                                                         {
-                                                                           type: "file",
-                                                                           url: "https://filesamples.com/samples/document/txt/sample1.txt",
-                                                                           title: "sample1.txt"
-                                                                         },
-                                                                         {
-                                                                           type: "file",
-                                                                           url: "https://filesamples.com/samples/document/txt/sample2.txt",
-                                                                           title: "sample2.txt"
-                                                                         },
-                                                                       ],
-                                                                       new_submission: true })
+                                    {
+                                      type: "file",
+                                      url: "https://filesamples.com/samples/document/txt/sample1.txt",
+                                      title: "sample1.txt"
+                                    },
+                                    {
+                                      type: "file",
+                                      url: "https://filesamples.com/samples/document/txt/sample2.txt",
+                                      title: "sample2.txt"
+                                    },
+                                  ], new_submission: true })
                   end
 
                   it "handles multiple attachments" do
@@ -806,7 +767,7 @@ module Lti::IMS
 
                     it "returns 504 and specific error message" do
                       send_request
-                      expect(response).to have_http_status :gateway_timeout
+                      expect(response.code).to eq "504"
                       expect(response.body).to include("file url timed out")
                     end
                   end
@@ -820,7 +781,7 @@ module Lti::IMS
 
                     it "returns 504 and specific error message" do
                       send_request
-                      expect(response).to have_http_status :gateway_timeout
+                      expect(response.code).to eq "504"
                       expect(response.body).to include("file url timed out")
                     end
                   end
@@ -866,7 +827,7 @@ module Lti::IMS
               super().merge(
                 Lti::Result::AGS_EXT_SUBMISSION => extension_overrides.merge({
                                                                                new_submission: false,
-                                                                               submission_type:
+                                                                               submission_type: submission_type
                                                                              }),
                 :scoreGiven => 10,
                 :scoreMaximum => 10
@@ -890,7 +851,7 @@ module Lti::IMS
               super().merge(
                 Lti::Result::AGS_EXT_SUBMISSION => extension_overrides.merge({
                                                                                new_submission: true,
-                                                                               submission_type:
+                                                                               submission_type: submission_type
                                                                              }),
                 :scoreGiven => 10,
                 :scoreMaximum => 10
@@ -914,7 +875,7 @@ module Lti::IMS
               super().merge(
                 Lti::Result::AGS_EXT_SUBMISSION => extension_overrides.merge({
                                                                                new_submission: true,
-                                                                               submission_type:
+                                                                               submission_type: submission_type
                                                                              }),
                 :scoreGiven => 10,
                 :scoreMaximum => 10
@@ -952,7 +913,7 @@ module Lti::IMS
                 super().merge(
                   Lti::Result::AGS_EXT_SUBMISSION => extension_overrides.merge({
                                                                                  new_submission: true,
-                                                                                 submission_type:
+                                                                                 submission_type: submission_type
                                                                                }),
                   :scoreGiven => 10,
                   :scoreMaximum => 10
@@ -1006,22 +967,6 @@ module Lti::IMS
               send_request
               expect(response.status.to_i).to eq(422)
               expect(response.body).to include("cannot be zero if line item's maximum is not zero")
-            end
-          end
-
-          context "when an assignment previously had a max score of zero AND the student was graded at that time" do
-            let(:params_overrides) do
-              super().merge(scoreGiven: 0, scoreMaximum: 1)
-            end
-
-            before do
-              line_item.update score_maximum: 0
-            end
-
-            it "assignment now has a max score of non-zero" do
-              lti_result_model line_item:, user:, score_given: 0, score_maximum: 0
-              send_request
-              expect(response.status.to_i).to eq(200)
             end
           end
         end
@@ -1154,8 +1099,8 @@ module Lti::IMS
 
         context "when previously graded and score not given" do
           let(:result) do
-            lti_result_model line_item:,
-                             user:,
+            lti_result_model line_item: line_item,
+                             user: user,
                              result_score: 100,
                              result_maximum: 200
           end
@@ -1179,7 +1124,7 @@ module Lti::IMS
 
       context "when user_id is a fake student in course" do
         let(:user) do
-          course_with_user("StudentViewEnrollment", course:, active_all: true).user
+          course_with_user("StudentViewEnrollment", course: course, active_all: true).user
         end
 
         it_behaves_like "a successful scores request"
@@ -1262,14 +1207,14 @@ module Lti::IMS
         end
 
         context "when user_id is not a student in course" do
-          let(:user) { ta_in_course(course:, active_all: true).user }
+          let(:user) { ta_in_course(course: course, active_all: true).user }
 
           it_behaves_like "an unprocessable entity"
         end
 
         context "when timestamp is a timestamp, but not an iso8601 timestamp" do
           let(:timestamp) { 1.minute.from_now.to_s }
-          let(:params_overrides) { super().merge(timestamp:) }
+          let(:params_overrides) { super().merge(timestamp: timestamp) }
 
           it "processes request (legacy behavior)" do
             result
@@ -1302,7 +1247,7 @@ module Lti::IMS
             # the future than the current time, which returns a different exception
             # and obscures this behavior
             let(:timestamp) { 3_022_101_316 }
-            let(:params_overrides) { super().merge(timestamp:) }
+            let(:params_overrides) { super().merge(timestamp: timestamp) }
 
             it_behaves_like "a bad request"
           end
@@ -1330,7 +1275,7 @@ module Lti::IMS
         context "when submitted_at is in the future" do
           let(:params_overrides) do
             super().merge(
-              Lti::Result::AGS_EXT_SUBMISSION => { submitted_at: 5.minutes.from_now }
+              Lti::Result::AGS_EXT_SUBMISSION => { submitted_at: Time.zone.now + 5.minutes }
             )
           end
 

@@ -16,60 +16,36 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import React, {Component} from 'react'
-import {arrayOf, func, objectOf, shape, string, element, oneOfType} from 'prop-types'
-import {StyleSheet, css} from 'aphrodite'
-import {Alert} from '@instructure/ui-alerts'
+import {arrayOf, func, objectOf, shape, string} from 'prop-types'
+import formatMessage from 'format-message'
+
 import {Button, IconButton} from '@instructure/ui-buttons'
 import {Flex} from '@instructure/ui-flex'
 import {IconTrashLine} from '@instructure/ui-icons'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {Text} from '@instructure/ui-text'
 import {View} from '@instructure/ui-view'
-import formatMessage from '../format-message'
+
 import CanvasSelect from '../shared/CanvasSelect'
-import {CC_FILE_MAX_BYTES} from '../shared/constants'
 
 export default class ClosedCaptionCreatorRow extends Component {
   static propTypes = {
     languages: arrayOf(
       shape({
         id: string,
-        label: string,
+        label: string
       })
     ),
     liveRegion: func,
     uploadMediaTranslations: shape({
       UploadMediaStrings: objectOf(string),
-      SelectStrings: objectOf(string),
+      SelectStrings: objectOf(string)
     }),
     onDeleteRow: func,
     onFileSelected: func,
     onLanguageSelected: func,
     selectedFile: shape({name: string.isRequired}), // there's more, but his is all I care about
-    selectedLanguage: shape({id: string.isRequired, label: string.isRequired}),
-    mountNode: oneOfType([element, func]),
-  }
-
-  styles = StyleSheet.create({
-    messageErrorContainer: {
-      position: 'relative',
-      minWidth: '350px',
-    },
-    messageErrorContent: {
-      marginTop: '0.5rem',
-      position: 'absolute',
-      botton: 0,
-      left: 0,
-    },
-  })
-
-  constructor(props) {
-    super(props)
-
-    this.state = {
-      isValidCC: true,
-      messageErrorCC: '',
-    }
+    selectedLanguage: shape({id: string.isRequired, label: string.isRequired})
   }
 
   _langSelectRef = React.createRef()
@@ -82,31 +58,6 @@ export default class ClosedCaptionCreatorRow extends Component {
 
   handleDeleteRow = _e => {
     this.props.onDeleteRow(this.props.selectedLanguage.id)
-  }
-
-  handleUploadClosedCaption = event => {
-    const uploadedCCFileSize = event.target.files[0].size
-    const maxCCFileSize = CC_FILE_MAX_BYTES
-
-    if (maxCCFileSize && uploadedCCFileSize > maxCCFileSize) {
-      this.props.onFileSelected(null)
-      const fileSizeMessageError = formatMessage(
-        'The selected file exceeds the {maxSize} Byte limit',
-        {
-          maxSize: maxCCFileSize,
-        }
-      )
-      this.setState({
-        isValidCC: false,
-        messageErrorCC: fileSizeMessageError,
-      })
-    } else {
-      this.props.onFileSelected(event.target.files[0])
-      this.setState({
-        isValidCC: true,
-        messageErrorCC: '',
-      })
-    }
   }
 
   get isReadonly() {
@@ -148,7 +99,6 @@ export default class ClosedCaptionCreatorRow extends Component {
           onChange={this.handleLanguageChange}
           placeholder={CLOSED_CAPTIONS_SELECT_LANGUAGE}
           translatedStrings={this.props.uploadMediaTranslations.SelectStrings}
-          mountNode={this.props.mountNode}
         >
           {this.props.languages.map(o => {
             return (
@@ -163,8 +113,12 @@ export default class ClosedCaptionCreatorRow extends Component {
   }
 
   renderChooseFile() {
-    const {NO_FILE_CHOSEN, SUPPORTED_FILE_TYPES, CLOSED_CAPTIONS_CHOOSE_FILE} =
-      this.props.uploadMediaTranslations.UploadMediaStrings
+    const {
+      NO_FILE_CHOSEN,
+      SUPPORTED_FILE_TYPES,
+      CLOSED_CAPTIONS_CHOOSE_FILE
+    } = this.props.uploadMediaTranslations.UploadMediaStrings
+
     return (
       <Flex.Item margin="0 small small 0">
         <input
@@ -173,13 +127,16 @@ export default class ClosedCaptionCreatorRow extends Component {
           ref={element => {
             this.fileInput = element
           }}
-          onChange={this.handleUploadClosedCaption}
+          onChange={e => {
+            this.props.onFileSelected(e.target.files[0])
+          }}
           style={{display: 'none'}}
           type="file"
         />
         <View as="div">
           <Text as="div">{SUPPORTED_FILE_TYPES}</Text>
           <Button
+            margin="xx-small 0 0 0"
             id="attachmentFileButton"
             onClick={() => {
               this.fileInput.click()
@@ -189,26 +146,10 @@ export default class ClosedCaptionCreatorRow extends Component {
             }}
           >
             {this.props.selectedFile ? this.props.selectedFile.name : CLOSED_CAPTIONS_CHOOSE_FILE}
-            <ScreenReaderContent>{this.state.messageErrorCC}</ScreenReaderContent>
           </Button>
           {!this.props.selectedFile && (
             <View display="inline-block" margin="0 0 0 small">
               <Text color="secondary">{NO_FILE_CHOSEN}</Text>
-            </View>
-          )}
-          {!this.state.isValidCC && (
-            <View as="div" className={css(this.styles.messageErrorContainer)}>
-              <div className={css(this.styles.messageErrorContent)}>
-                <Text color="danger">{this.state.messageErrorCC}</Text>
-                <Alert
-                  variant="error"
-                  screenReaderOnly={true}
-                  isLiveRegionAtomic={true}
-                  liveRegion={this.props.liveRegion}
-                >
-                  {this.state.messageErrorCC}
-                </Alert>
-              </div>
             </View>
           )}
         </View>
@@ -246,7 +187,7 @@ export default class ClosedCaptionCreatorRow extends Component {
                   withBorder={false}
                   onClick={this.handleDeleteRow}
                   screenReaderLabel={formatMessage(REMOVE_FILE, {
-                    lang: this.props.selectedLanguage.label,
+                    lang: this.props.selectedLanguage.label
                   })}
                 >
                   <IconTrashLine />
@@ -260,10 +201,6 @@ export default class ClosedCaptionCreatorRow extends Component {
   }
 
   render() {
-    return (
-      <Flex as="div" display="flex" direction="column" width="100%">
-        {this.isReadonly ? this.renderChosen() : this.renderChoosing()}
-      </Flex>
-    )
+    return this.isReadonly ? this.renderChosen() : this.renderChoosing()
   }
 }

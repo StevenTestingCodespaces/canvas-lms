@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -357,7 +356,7 @@ export const STUDENT_PACE: CoursePace = {
   start_date: '2021-10-01',
   start_date_context: 'user',
   end_date: '2021-12-15',
-  end_date_context: 'user',
+  end_date_context: 'course',
   workflow_state: 'active',
   exclude_weekends: true,
   modules: [PACE_MODULE_1, PACE_MODULE_2],
@@ -380,13 +379,11 @@ export const PACE_CONTEXTS_DEFAULT_STATE: PaceContextsState = {
   sortBy: 'name',
   isLoadingDefault: false,
   defaultPaceContext: COURSE_PACE_CONTEXT,
-  contextsPublishing: [],
 }
 
 export const PROGRESS_RUNNING = {
   id: '900',
   completion: 25,
-  context_id: '30',
   message: undefined,
   workflow_state: 'running',
   url: '/api/v1/progress/900',

@@ -18,8 +18,7 @@
 
 import $ from 'jquery'
 import authenticity_token from '@canvas/authenticity-token'
-
-if (!('INST' in window)) window.INST = {}
+import INST from 'browser-sniffer'
 
 const DONE_READY_STATE = 4
 

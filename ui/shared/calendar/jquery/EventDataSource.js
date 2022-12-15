@@ -18,7 +18,7 @@
 
 import $ from 'jquery'
 import _ from 'lodash'
-import fcUtil from './fcUtil'
+import fcUtil from './fcUtil.coffee'
 import commonEventFactory from './CommonEvent/index'
 import '@canvas/jquery/jquery.ajaxJSON'
 import 'jquery-tinypubsub'

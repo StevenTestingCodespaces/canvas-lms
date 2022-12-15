@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -102,10 +101,6 @@ export default class StudentColumnHeader extends ColumnHeader<Props, State> {
 
   getColumnHeaderOptions() {
     return I18n.t('Student Name Options')
-  }
-
-  getHeaderTestId() {
-    return 'student-column-header'
   }
 
   showDisplayAsViewOption() {
@@ -268,7 +263,7 @@ export default class StudentColumnHeader extends ColumnHeader<Props, State> {
                 <View
                   className="Gradebook__ColumnHeaderDetail Gradebook__ColumnHeaderDetail--OneLine"
                   padding="0 0 0 small"
-                  data-testid={this.getHeaderTestId()}
+                  data-testid="student-column-header"
                 >
                   <Text fontStyle="normal" size="x-small" weight="bold">
                     {this.getColumnHeaderName()}

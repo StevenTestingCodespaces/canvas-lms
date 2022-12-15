@@ -148,7 +148,7 @@ describe TextHelper do
     end
 
     it "does not say the day of the week if it's exactly a few years away" do
-      aday = 2.days.from_now
+      aday = Time.zone.now + 2.days
       nextyear = aday.advance(years: 1)
       expect(th.date_string(aday)).to eq aday.strftime("%A")
       expect(th.date_string(nextyear)).not_to eq nextyear.strftime("%A")
@@ -235,8 +235,7 @@ describe TextHelper do
       end
 
       it "allows wrapper with markdown" do
-        expect(th.mt(:foo,
-                     %(Dolore jerky bacon officia t-bone aute magna. Officia corned beef et ut bacon.
+        expect(th.mt(:foo, %(Dolore jerky bacon officia t-bone aute magna. Officia corned beef et ut bacon.
 
 Commodo in ham, *short ribs %{name} pastrami* sausage elit sunt dolore eiusmod ut ea proident ribeye.
 

@@ -41,9 +41,8 @@ export default class DeveloperKeyModalTrigger extends React.Component {
   }
 
   developerKeyMenuItem(title, onClick) {
-    const buttonIdTitle = title.toLowerCase().replace(' ', '-')
     return (
-      <Menu.Item onClick={onClick} type="button" id={`add-${buttonIdTitle}-button`}>
+      <Menu.Item onClick={onClick} type="button">
         <Flex>
           <Flex.Item padding="0 x-small 0 0" margin="0 0 xxx-small 0">
             <IconPlusLine />
@@ -59,12 +58,7 @@ export default class DeveloperKeyModalTrigger extends React.Component {
 
   triggerButton() {
     return (
-      <Button
-        data-heap="add-developer-key-button"
-        color="primary"
-        elementRef={this.props.setAddKeyButtonRef}
-        renderIcon={IconPlusLine}
-      >
+      <Button color="primary" elementRef={this.props.setAddKeyButtonRef} renderIcon={IconPlusLine}>
         <ScreenReaderContent>{I18n.t('Create a')}</ScreenReaderContent>
         {I18n.t('Developer Key')}
       </Button>

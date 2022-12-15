@@ -17,7 +17,7 @@
  */
 
 import PropTypes from 'prop-types'
-import {ImageCropperSettingsPropTypes} from '../../../../shared/ImageCropper/propTypes'
+import {ImageCropperSettingsPropTypes} from '../ImageCropper/propTypes'
 
 export const ImageSettingsPropTypes = PropTypes.shape({
   mode: PropTypes.string,

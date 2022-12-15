@@ -281,18 +281,9 @@ class SubmissionsController < SubmissionsBaseController
     return unless valid_resource_link_lookup_uuid?
 
     submission_params = params[:submission].permit(
-      :body,
-      :url,
-      :submission_type,
-      :submitted_at,
-      :comment,
-      :group_comment,
-      :media_comment_type,
-      :media_comment_id,
-      :eula_agreement_timestamp,
-      :resource_link_lookup_uuid,
-      :annotatable_attachment_id,
-      attachment_ids: []
+      :body, :url, :submission_type, :submitted_at, :comment, :group_comment,
+      :media_comment_type, :media_comment_id, :eula_agreement_timestamp,
+      :resource_link_lookup_uuid, :annotatable_attachment_id, attachment_ids: []
     )
     submission_params[:group_comment] = value_to_boolean(submission_params[:group_comment])
     submission_params[:attachments] = Attachment.copy_attachments_to_submissions_folder(@context, params[:submission][:attachments].compact.uniq)
@@ -337,12 +328,11 @@ class SubmissionsController < SubmissionsBaseController
           if api_request?
             includes = %(submission_comments attachments)
             json = submission_json(@submission, @assignment, @current_user, session, @context, includes, params)
-            render json:,
+            render json: json,
                    status: :created,
                    location: api_v1_course_assignment_submission_url(@context, @assignment, @current_user)
           else
-            render json: @submission.as_json(include: :submission_comments, methods: :late),
-                   status: :created,
+            render json: @submission.as_json(include: :submission_comments, methods: :late), status: :created,
                    location: course_gradebook_url(@submission.assignment.context)
           end
         end
@@ -389,12 +379,11 @@ class SubmissionsController < SubmissionsBaseController
     respond_to do |format|
       format.json do
         render json: {
-                 audit_events: audit_events.as_json(include_root: false),
-                 users: audit_event_data(data: user_data, submission:),
-                 tools: audit_event_data(data: tool_data, role: "grader"),
-                 quizzes: audit_event_data(data: quiz_data, role: "grader", name_field: :title),
-               },
-               status: :ok
+          audit_events: audit_events.as_json(include_root: false),
+          users: audit_event_data(data: user_data, submission: submission),
+          tools: audit_event_data(data: tool_data, role: "grader"),
+          quizzes: audit_event_data(data: quiz_data, role: "grader", name_field: :title),
+        }, status: :ok
       end
     end
   end
@@ -404,7 +393,7 @@ class SubmissionsController < SubmissionsBaseController
       {
         id: datum.id,
         name: datum.public_send(name_field),
-        role: role.presence || auditing_user_role(user: datum, submission:)
+        role: role.presence || auditing_user_role(user: datum, submission: submission)
       }
     end
   end
@@ -436,8 +425,8 @@ class SubmissionsController < SubmissionsBaseController
     params[:submission][:attachments] = []
 
     attachment_ids.each do |id|
-      params[:submission][:attachments] << @submission_user.attachments.active.where(id:).first if @submission_user
-      params[:submission][:attachments] << @group.attachments.active.where(id:).first if @group
+      params[:submission][:attachments] << @submission_user.attachments.active.where(id: id).first if @submission_user
+      params[:submission][:attachments] << @group.attachments.active.where(id: id).first if @group
       params[:submission][:attachments].compact!
     end
   end
@@ -486,8 +475,7 @@ class SubmissionsController < SubmissionsBaseController
       render(json: {
                message: "Invalid parameters for submission_type #{submission_type}. " \
                         "Required: #{API_SUBMISSION_TYPES[submission_type].map { |p| "submission[#{p}]" }.join(", ")}"
-             },
-             status: :bad_request)
+             }, status: :bad_request)
       return false
     end
     params[:submission][:comment] = params[:comment].try(:delete, :text_comment)
@@ -580,7 +568,9 @@ class SubmissionsController < SubmissionsBaseController
 
     Dir.mktmpdir do |dirname|
       path = File.join(dirname, filename)
-      File.binwrite(path, document_response.body)
+      File.open(path, "wb") do |f|
+        f.write(document_response.body)
+      end
       store_google_doc_attachment(attachment, Rack::Test::UploadedFile.new(path, content_type, true))
       attachment.save!
     end
@@ -622,7 +612,7 @@ class SubmissionsController < SubmissionsBaseController
     # Homework submission is done by API request, but I saw other parts of code
     # that are handling HTML and JSON format. So, I kept the same logic here...
     if api_request?
-      render(json: { message: }, status: :bad_request)
+      render(json: { message: message }, status: :bad_request)
     else
       flash[:error] = message
       redirect_to named_context_url(@context, :context_assignment_url, @assignment)

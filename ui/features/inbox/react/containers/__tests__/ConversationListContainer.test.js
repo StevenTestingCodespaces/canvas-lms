@@ -134,30 +134,6 @@ describe('ConversationListContainer', () => {
       )
     })
 
-    it('should not error out when no conversation message is retrieved', async () => {
-      const component = setup()
-      expect(await component.findByText('This is an inbox conversation')).toBeInTheDocument()
-
-      // Change scope
-      const scope = 'null_nodes'
-      const conversationsQuery = {data: getConversationsQuery(scope).data, loading: false}
-      const submissionCommentsQuery = {data: null, loading: false}
-
-      component.rerender(
-        <ApolloProvider client={mswClient}>
-          <ConversationListContainer
-            scope={scope}
-            conversationsQuery={conversationsQuery}
-            submissionCommentsQuery={submissionCommentsQuery}
-          />
-        </ApolloProvider>
-      )
-
-      await waitFor(() =>
-        expect(component.queryByText('This is an inbox conversation')).not.toBeInTheDocument()
-      )
-    })
-
     it('should change list of conversations when course and scope changes', async () => {
       const component = setup()
 
@@ -274,29 +250,6 @@ describe('ConversationListContainer', () => {
   })
 
   describe('responsiveness', () => {
-    describe('mobile', () => {
-      beforeEach(() => {
-        responsiveQuerySizes.mockImplementation(() => ({
-          mobile: {maxWidth: '67'},
-        }))
-      })
-
-      it('should emit correct test id for mobile', async () => {
-        const component = setup()
-        expect(component.container).toBeTruthy()
-        const listItem = await component.findByTestId('list-items-mobile')
-        expect(listItem).toBeTruthy()
-      })
-
-      it('should correctly truncate for mobile', async () => {
-        const component = setup()
-        expect(component.container).toBeTruthy()
-        const listItem = await component.findByTestId('last-message-content')
-
-        expect(listItem.textContent.length).toBe(93)
-      })
-    })
-
     describe('tablet', () => {
       beforeEach(() => {
         responsiveQuerySizes.mockImplementation(() => ({
@@ -309,14 +262,6 @@ describe('ConversationListContainer', () => {
         expect(component.container).toBeTruthy()
         const listItem = await component.findByTestId('list-items-tablet')
         expect(listItem).toBeTruthy()
-      })
-
-      it('should correctly truncate for tablet', async () => {
-        const component = setup()
-        expect(component.container).toBeTruthy()
-        const listItem = await component.findByTestId('last-message-content')
-
-        expect(listItem.textContent.length).toBe(43)
       })
     })
 
@@ -332,14 +277,6 @@ describe('ConversationListContainer', () => {
         expect(component.container).toBeTruthy()
         const listItem = await screen.findByTestId('list-items-desktop')
         expect(listItem).toBeTruthy()
-      })
-
-      it('should correctly truncate for desktop', async () => {
-        const component = setup()
-        expect(component.container).toBeTruthy()
-        const listItem = await component.findByTestId('last-message-content')
-
-        expect(listItem.textContent.length).toBe(43)
       })
     })
   })

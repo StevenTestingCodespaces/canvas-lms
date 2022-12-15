@@ -46,11 +46,7 @@ module TatlTael
 
       DEFAULT_CONFIG_PATH = File.join(File.dirname(__FILE__), "../../config/default.yml")
       def config
-        @config ||= if YAML::VERSION < "4.0"
-                      YAML.load_file(DEFAULT_CONFIG_PATH)
-                    else
-                      YAML.load_file(DEFAULT_CONFIG_PATH, permitted_classes: [Symbol, Regexp])
-                    end
+        @config ||= YAML.load_file(DEFAULT_CONFIG_PATH)
       end
 
       def config_for_linter(linter_class)
@@ -67,8 +63,8 @@ module TatlTael
         @comments ||= linters.map do |linter_class|
           linter_class.new(
             config: config_for_linter(linter_class),
-            changes:,
-            auto_correct:
+            changes: changes,
+            auto_correct: auto_correct
           ).run
         end.flatten.compact
       end
@@ -100,4 +96,4 @@ module TatlTael
   end
 end
 
-Dir[File.dirname(__FILE__) + "/linters/**/*_linter.rb"].each { |file| require file }
+Dir[File.dirname(__FILE__) + "/linters/**/*_linter.rb"].sort.each { |file| require file }

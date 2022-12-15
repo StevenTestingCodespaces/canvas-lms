@@ -17,7 +17,7 @@
  */
 
 import WikiPage from '@canvas/wiki/backbone/models/WikiPage'
-import _ from 'lodash'
+import _ from 'underscore'
 
 const wikiPageObj = function (options = {}) {
   return {

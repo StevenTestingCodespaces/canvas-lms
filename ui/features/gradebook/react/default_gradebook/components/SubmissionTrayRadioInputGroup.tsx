@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -22,11 +21,10 @@ import {FormFieldGroup} from '@instructure/ui-form-field'
 import SubmissionTrayRadioInput from './SubmissionTrayRadioInput'
 import {statusesTitleMap} from '../constants/statuses'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import {CamelizedSubmission, CamelizedAssignment} from '@canvas/grading/grading.d'
 
 const I18n = useI18nScope('gradebook')
 
-function checkedValue(submission: CamelizedSubmission, assignment: CamelizedAssignment) {
+function checkedValue(submission, assignment) {
   // If students are anonymized we don't want to leak any information about the submission
   if (assignment.anonymizeStudents) {
     return 'none'
@@ -60,7 +58,7 @@ type Props = {
     late: boolean
     missing: boolean
     secondsLate: number
-    latePolicyStatus: string | null
+    latePolicyStatus: string
   }
   submissionUpdating: boolean
   updateSubmission: (arg0: PendingUpdateData) => void

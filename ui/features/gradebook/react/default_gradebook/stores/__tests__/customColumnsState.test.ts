@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -149,7 +148,7 @@ describe('customColumnsState', () => {
     })
 
     it('does not send additional requests', () => {
-      expect(getRequests().length).toStrictEqual(2)
+      expect(getRequests().length).toStrictEqual(1)
     })
   })
 })

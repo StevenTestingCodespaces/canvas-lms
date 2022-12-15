@@ -17,31 +17,19 @@
  */
 
 import React, {Component} from 'react'
+import {arrayOf, bool, func, number, oneOf, shape, string} from 'prop-types'
 import {TextInput} from '@instructure/ui-text-input'
 import {Text} from '@instructure/ui-text'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import type {PendingGradeInfo} from '../gradebook.d'
-import type {
-  CamelizedAssignment,
-  GradeEntryMode,
-  GradeResult,
-  GradingStandard,
-  SubmissionData,
-} from '@canvas/grading/grading.d'
+
 import GradeFormatHelper from '@canvas/grading/GradeFormatHelper'
 import {parseTextValue} from '@canvas/grading/GradeInputHelper'
 import {isUnusuallyHigh} from '@canvas/grading/OutlierScoreHelper'
 import CompleteIncompleteGradeInput from './GradeInput/CompleteIncompleteGradeInput'
-import type {TextInputInteraction} from '@instructure/ui-text-input/types/index'
 
 const I18n = useI18nScope('gradebook')
 
-type Message = {
-  text: string
-  type: 'error' | 'hint'
-}
-
-function normalizeSubmissionGrade(props: Props) {
+function normalizeSubmissionGrade(props) {
   const {submission, assignment, enterGradesAs: formatType, gradingScheme} = props
   const gradeToNormalize = submission.enteredGrade
 
@@ -66,7 +54,7 @@ function normalizeSubmissionGrade(props: Props) {
   return GradeFormatHelper.formatSubmissionGrade(submission, formatOptions)
 }
 
-function hasGradeChanged(props: Props, state: {grade: string}) {
+function hasGradeChanged(props, state) {
   if (props.pendingGradeInfo) {
     if (props.pendingGradeInfo.valid) {
       return false
@@ -79,7 +67,7 @@ function hasGradeChanged(props: Props, state: {grade: string}) {
   return normalizedEnteredGrade !== state.grade && props.submission.enteredGrade !== state.grade
 }
 
-function assignmentLabel(assignment: CamelizedAssignment, formatType: GradeEntryMode) {
+function assignmentLabel(assignment, formatType) {
   switch (formatType) {
     case 'points': {
       const points = I18n.n(assignment.pointsPossible, {
@@ -105,7 +93,7 @@ function assignmentLabel(assignment: CamelizedAssignment, formatType: GradeEntry
   }
 }
 
-function stateFromProps(props: Props) {
+function stateFromProps(props) {
   let normalizedGrade
 
   if (props.enterGradesAs === 'passFail') {
@@ -127,23 +115,38 @@ function stateFromProps(props: Props) {
   }
 }
 
-type Props = {
-  assignment: CamelizedAssignment
-  disabled: boolean
-  enterGradesAs: GradeEntryMode
-  gradingScheme: GradingStandard[] | null
-  onSubmissionUpdate: (submission: SubmissionData, gradeInfo: GradeResult) => void
-  pendingGradeInfo: PendingGradeInfo
-  submission: SubmissionData
-  submissionUpdating: boolean
-}
+export default class GradeInput extends Component {
+  static propTypes = {
+    assignment: shape({
+      anonymizeStudents: bool.isRequired,
+      gradingType: oneOf([
+        'gpa_scale',
+        'letter_grade',
+        'not_graded',
+        'pass_fail',
+        'points',
+        'percent',
+      ]).isRequired,
+      pointsPossible: number,
+    }).isRequired,
+    disabled: bool,
+    enterGradesAs: oneOf(['points', 'percent', 'passFail', 'gradingScheme']).isRequired,
+    gradingScheme: arrayOf(Array),
+    onSubmissionUpdate: func,
+    pendingGradeInfo: shape({
+      excused: bool.isRequired,
+      grade: string,
+      valid: bool.isRequired,
+    }),
+    submission: shape({
+      enteredGrade: string,
+      enteredScore: number,
+      excused: bool.isRequired,
+      id: string,
+    }).isRequired,
+    submissionUpdating: bool,
+  }
 
-type State = {
-  formattedGrade: string
-  grade: string
-}
-
-export default class GradeInput extends Component<Props, State> {
   static defaultProps = {
     disabled: false,
     gradingScheme: null,
@@ -152,7 +155,7 @@ export default class GradeInput extends Component<Props, State> {
     submissionUpdating: false,
   }
 
-  constructor(props: Props) {
+  constructor(props) {
     super(props)
 
     this.handleSelectChange = this.handleSelectChange.bind(this)
@@ -163,7 +166,7 @@ export default class GradeInput extends Component<Props, State> {
     this.state = stateFromProps(props)
   }
 
-  UNSAFE_componentWillReceiveProps(nextProps: Props) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     const submissionChanged = this.props.submission.id !== nextProps.submission.id
     const submissionUpdated = this.props.submissionUpdating && !nextProps.submissionUpdating
 
@@ -193,14 +196,14 @@ export default class GradeInput extends Component<Props, State> {
     )
   }
 
-  handleTextChange(event: React.ChangeEvent<HTMLInputElement>) {
+  handleTextChange(event) {
     this.setState({
       formattedGrade: event.target.value,
       grade: event.target.value,
     })
   }
 
-  handleSelectChange(grade: string) {
+  handleSelectChange(grade) {
     this.setState({grade}, this.handleGradeChange)
   }
 
@@ -226,7 +229,7 @@ export default class GradeInput extends Component<Props, State> {
     const isDisabled = this.props.disabled
     const isBusy = this.props.submissionUpdating
 
-    let currentGradeInfo: PendingGradeInfo
+    let currentGradeInfo
     if (this.props.pendingGradeInfo) {
       currentGradeInfo = this.props.pendingGradeInfo
     } else if (this.props.submission.excused) {
@@ -257,18 +260,18 @@ export default class GradeInput extends Component<Props, State> {
       )
     }
 
-    let interaction: TextInputInteraction = 'enabled'
+    let interaction = 'enabled'
     if (!isDisabled && isBusy) {
       interaction = 'readonly'
     } else if (isDisabled || currentGradeInfo.excused) {
       interaction = 'disabled'
     }
 
-    const messages: Message[] = []
+    const messages = []
     const score = this.props.submission.enteredScore
     if (this.props.pendingGradeInfo && !this.props.pendingGradeInfo.valid) {
       messages.push({type: 'error', text: I18n.t('This is not a valid grade')})
-    } else if (typeof score === 'number' && score < 0) {
+    } else if (score < 0) {
       messages.push({type: 'hint', text: I18n.t('This grade has negative points')})
     } else if (isUnusuallyHigh(score, this.props.assignment.pointsPossible)) {
       messages.push({type: 'hint', text: I18n.t('This grade is unusually high')})
@@ -280,7 +283,6 @@ export default class GradeInput extends Component<Props, State> {
         id="grade-detail-tray--grade-input"
         interaction={interaction}
         messages={messages}
-        // @ts-expect-error
         onInput={this.handleTextChange}
         onBlur={this.handleTextBlur}
         placeholder="–"

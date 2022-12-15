@@ -42,7 +42,7 @@ module RspecMockAnyInstantiation
       ar_obj
     end
 
-    def instantiate(record, column_types = {}, &)
+    def instantiate(record, column_types = {}, &block)
       if (obj = @@any_instantiation[[base_class, record["id"].to_i]])
         obj
       else
@@ -50,7 +50,7 @@ module RspecMockAnyInstantiation
       end
     end
 
-    def instantiate_instance_of(klass, record, column_types = {}, &)
+    def instantiate_instance_of(klass, record, column_types = {}, &block)
       if (obj = @@any_instantiation[[klass, record["id"].to_i]])
         obj
       else

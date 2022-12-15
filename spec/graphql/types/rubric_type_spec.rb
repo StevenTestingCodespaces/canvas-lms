@@ -22,7 +22,7 @@ require_relative "../graphql_spec_helper"
 
 describe Types::RubricType do
   let_once(:course) { course_factory(active_all: true) }
-  let_once(:student) { student_in_course(course:, active_all: true).user }
+  let_once(:student) { student_in_course(course: course, active_all: true).user }
   let(:rubric) { rubric_for_course }
   let(:rubric_type) { GraphQLTypeTester.new(rubric, current_user: student) }
 
@@ -32,7 +32,7 @@ describe Types::RubricType do
 
   it "requires permission" do
     user2 = User.create!
-    expect(rubric_type.resolve("_id", current_user: user2)).to be_nil
+    expect(rubric_type.resolve("_id", current_user: user2)).to eq nil
   end
 
   describe "works for the field" do
@@ -45,11 +45,11 @@ describe Types::RubricType do
     it "free_form_criterion_comments" do
       expect(
         rubric_type.resolve("freeFormCriterionComments")
-      ).to be false
+      ).to eq false
     end
 
     it "hide_score_total" do
-      expect(rubric_type.resolve("hideScoreTotal")).to be false
+      expect(rubric_type.resolve("hideScoreTotal")).to eq false
     end
 
     it "points_possible" do

@@ -16,7 +16,7 @@
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import Backbone from '@canvas/backbone'
-import ExternalTool from '@canvas/external-tools/backbone/models/ExternalTool'
+import ExternalTool from '@canvas/external-tools/backbone/models/ExternalTool.coffee'
 
 export default class ExternalToolCollection extends Backbone.Collection {}
 ExternalToolCollection.prototype.model = ExternalTool

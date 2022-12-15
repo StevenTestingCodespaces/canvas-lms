@@ -17,7 +17,7 @@
  */
 
 import ready from '@instructure/ready'
-import UserObserveesView from './backbone/views/UserObserveesView'
+import UserObserveesView from './backbone/views/UserObserveesView.coffee'
 import UserObserveesCollection from './backbone/collections/UserObserveesCollection'
 
 const collection = new UserObserveesCollection()

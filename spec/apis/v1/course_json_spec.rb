@@ -19,6 +19,7 @@
 #
 
 require_relative "../../spec_helper"
+require_dependency "api/v1/course_json"
 
 module Api
   module V1
@@ -29,7 +30,7 @@ module Api
       let(:user) { double(:user) }
 
       describe "#to_hash" do
-        let_once(:student) { course_with_user("StudentEnrollment", course:, active_all: true).user }
+        let_once(:student) { course_with_user("StudentEnrollment", course: course, active_all: true).user }
 
         before(:once) do
           grading_period_group = course.grading_period_groups.create!
@@ -68,7 +69,7 @@ module Api
           let_once(:includes) { [:total_scores] }
 
           context "when user is the student" do
-            let_once(:student_enrollment) { course_with_user("StudentEnrollment", course:, active_all: true) }
+            let_once(:student_enrollment) { course_with_user("StudentEnrollment", course: course, active_all: true) }
             let_once(:student) { student_enrollment.user }
             let(:json_hash) { CourseJson.new(course, student, includes, [student_enrollment]).to_hash }
             let(:json_enrollments) { json_hash.fetch("enrollments") }
@@ -90,10 +91,6 @@ module Api
 
                 it "sets computed_current_score to the override score" do
                   expect(json_enrollment.fetch(:computed_current_score)).to be 99.0
-                end
-
-                it "sets computed_current_letter_grade to the letter grade equivalent of the override score" do
-                  expect(json_enrollment.fetch(:computed_current_letter_grade)).to eq "A"
                 end
 
                 it "sets computed_final_grade to the override grade" do
@@ -124,10 +121,6 @@ module Api
                   expect(json_enrollment.fetch(:computed_current_score)).to be 63.0
                 end
 
-                it "sets computed_current_letter_grade to the letter grade equivalent of the computed current score" do
-                  expect(json_enrollment.fetch(:computed_current_letter_grade)).to eq "D-"
-                end
-
                 it "sets computed_final_grade to the computed final grade" do
                   expect(json_enrollment.fetch(:computed_final_grade)).to eq "C-"
                 end
@@ -147,10 +140,6 @@ module Api
 
               it "sets computed_current_score to the computed current score" do
                 expect(json_enrollment.fetch(:computed_current_score)).to be 63.0
-              end
-
-              it "sets computed_current_letter_grade to the letter grade equivalent of the computed current score" do
-                expect(json_enrollment.fetch(:computed_current_letter_grade)).to eq "D-"
               end
 
               it "sets computed_final_grade to the computed final grade" do
@@ -173,10 +162,6 @@ module Api
                 expect(json_enrollment.fetch(:computed_current_score)).to be 63.0
               end
 
-              it "sets computed_current_letter_grade to the letter grade equivalent of the computed current score" do
-                expect(json_enrollment.fetch(:computed_current_letter_grade)).to eq "D-"
-              end
-
               it "sets computed_final_grade to the computed final grade" do
                 expect(json_enrollment.fetch(:computed_final_grade)).to eq "C-"
               end
@@ -188,9 +173,9 @@ module Api
           end
 
           context "when user is a teacher" do
-            let_once(:student_enrollment) { course_with_user("StudentEnrollment", course:, active_all: true) }
+            let_once(:student_enrollment) { course_with_user("StudentEnrollment", course: course, active_all: true) }
             let_once(:student) { student_enrollment.user }
-            let_once(:teacher) { course_with_user("TeacherEnrollment", course:, active_all: true).user }
+            let_once(:teacher) { course_with_user("TeacherEnrollment", course: course, active_all: true).user }
             let(:json_hash) { CourseJson.new(course, teacher, includes, [student_enrollment]).to_hash }
             let(:json_enrollments) { json_hash.fetch("enrollments") }
             let(:json_enrollment) { json_enrollments.detect { |enrollment| enrollment.fetch(:user_id) == student.id } }
@@ -274,7 +259,7 @@ module Api
           let_once(:includes) { [:current_grading_period_scores, :total_scores] }
 
           context "when user is the student" do
-            let_once(:student_enrollment) { course_with_user("StudentEnrollment", course:, active_all: true) }
+            let_once(:student_enrollment) { course_with_user("StudentEnrollment", course: course, active_all: true) }
             let_once(:student) { student_enrollment.user }
             let(:json_hash) { CourseJson.new(course, student, includes, [student_enrollment]).to_hash }
             let(:json_enrollments) { json_hash.fetch("enrollments") }
@@ -384,9 +369,9 @@ module Api
           end
 
           context "when user is a teacher" do
-            let_once(:student_enrollment) { course_with_user("StudentEnrollment", course:, active_all: true) }
+            let_once(:student_enrollment) { course_with_user("StudentEnrollment", course: course, active_all: true) }
             let_once(:student) { student_enrollment.user }
-            let_once(:teacher) { course_with_user("TeacherEnrollment", course:, active_all: true).user }
+            let_once(:teacher) { course_with_user("TeacherEnrollment", course: course, active_all: true).user }
             let(:json_hash) { CourseJson.new(course, teacher, includes, [student_enrollment]).to_hash }
             let(:json_enrollments) { json_hash.fetch("enrollments") }
             let(:json_enrollment) { json_enrollments.detect { |enrollment| enrollment.fetch(:user_id) == student.id } }
@@ -652,7 +637,7 @@ module Api
       end
 
       describe "#set_sis_course_id" do
-        let(:sis_course) { double(grants_right?: @has_right, sis_source_id: @sis_id, sis_batch_id: @batch, root_account:) }
+        let(:sis_course) { double(grants_right?: @has_right, sis_source_id: @sis_id, sis_batch_id: @batch, root_account: root_account) }
         let(:sis_course_json) { CourseJson.new(sis_course, user, includes, []) }
         let(:root_account) { double(grants_right?: @has_right) }
         let(:hash) { {} }
@@ -679,7 +664,7 @@ module Api
             end
 
             it "allows the nil value to go into the has" do
-              expect(hash["sis_course_id"]).to be_nil
+              expect(hash["sis_course_id"]).to eq nil
             end
 
             it "does not get cleared out before translation to json" do
@@ -695,7 +680,7 @@ module Api
 
         it "uses precalculated permissions if available" do
           precalculated_permissions = { read_sis: false, manage_sis: true }
-          course_json_with_perms = CourseJson.new(sis_course, user, includes, [], precalculated_permissions:)
+          course_json_with_perms = CourseJson.new(sis_course, user, includes, [], precalculated_permissions: precalculated_permissions)
           expect(sis_course).to_not receive(:grants_right?)
           course_json_with_perms.set_sis_course_id(hash)
           expect(hash["sis_course_id"]).to eq 1357

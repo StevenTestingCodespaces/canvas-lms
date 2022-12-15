@@ -27,7 +27,7 @@ import RichContentEditor from '@canvas/rce/RichContentEditor'
 import {recordEulaAgreement, verifyPledgeIsChecked} from './helper'
 import '@canvas/rails-flash-notifications'
 import '@canvas/jquery/jquery.ajaxJSON'
-import '@canvas/jquery/jquery.tree'
+import 'jquery-tree'
 import '@canvas/forms/jquery/jquery.instructure_forms' /* ajaxJSONPreparedFiles, getFormData */
 import 'jqueryui/dialog'
 import '@canvas/jquery/jquery.instructure_misc_plugins' /* fragmentChange, showIf, /\.log\(/ */
@@ -310,9 +310,7 @@ $(document).ready(function () {
   })
 
   function showSubmissionContent() {
-    const el = $('#submit_assignment')
-    el.show()
-    el[0].scrollIntoView({behavior: 'smooth', block: 'end'})
+    $('#submit_assignment').show()
     $('.submit_assignment_link').hide()
     createSubmitAssignmentTabs()
   }
@@ -476,7 +474,7 @@ $(document).ready(function () {
     )
   }
 
-  $(document).on('click', '#auth-google', function (e) {
+  $('#auth-google').live('click', function (e) {
     e.preventDefault()
     const href = $(this).attr('href')
     reauth(href)
@@ -550,7 +548,7 @@ $(document).ready(function () {
     }
     fileInput.parent().find('img').attr('alt', altText)
   }
-  $(document).on('change', '.submission_attachment input[type=file]', function () {
+  $('.submission_attachment input[type=file]').live('change', function () {
     updateRemoveLinkAltText($(this))
     if ($(this).val() === '') return
 

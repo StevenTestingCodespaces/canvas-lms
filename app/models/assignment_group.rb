@@ -42,18 +42,13 @@ class AssignmentGroup < ActiveRecord::Base
   has_many :scores, -> { active }
   has_many :assignments, -> { order("position, due_at, title") }
 
-  has_many :active_assignments,
-           lambda {
-             where("assignments.workflow_state<>'deleted'").order("assignments.position, assignments.due_at, assignments.title")
-           },
-           class_name: "Assignment",
-           dependent: :destroy
+  has_many :active_assignments, lambda {
+    where("assignments.workflow_state<>'deleted'").order("assignments.position, assignments.due_at, assignments.title")
+  }, class_name: "Assignment", dependent: :destroy
 
-  has_many :published_assignments,
-           lambda {
-             where(workflow_state: "published").order("assignments.position, assignments.due_at, assignments.title")
-           },
-           class_name: "Assignment"
+  has_many :published_assignments, lambda {
+    where(workflow_state: "published").order("assignments.position, assignments.due_at, assignments.title")
+  }, class_name: "Assignment"
 
   validates :context_id, :context_type, :workflow_state, presence: true
   validates :rules, length: { maximum: maximum_text_length }, allow_blank: true
@@ -284,8 +279,8 @@ class AssignmentGroup < ActiveRecord::Base
       user,
       context,
       [self],
-      includes:,
-      assignment_ids:
+      includes: includes,
+      assignment_ids: assignment_ids
     )
   end
 
@@ -338,7 +333,7 @@ class AssignmentGroup < ActiveRecord::Base
     score_ids = Score.where(
       assignment_group_id: self,
       enrollment_id: student_enrollments,
-      workflow_state: (new_workflow_state == :active) ? :deleted : :active
+      workflow_state: new_workflow_state == :active ? :deleted : :active
     ).pluck(:id)
 
     score_ids.each_slice(1000) do |score_ids_batch|

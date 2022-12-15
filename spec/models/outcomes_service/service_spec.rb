@@ -22,7 +22,7 @@ require_relative "../../spec_helper"
 
 describe OutcomesService::Service do
   let(:root_account) { account_model }
-  let(:course) { course_model(root_account:) }
+  let(:course) { course_model(root_account: root_account) }
 
   context "without settings" do
     describe ".url" do
@@ -33,7 +33,7 @@ describe OutcomesService::Service do
 
     describe ".enabled_in_context?" do
       it "returns not enabled" do
-        expect(described_class.enabled_in_context?(course)).to be false
+        expect(described_class.enabled_in_context?(course)).to eq false
       end
     end
 
@@ -66,14 +66,14 @@ describe OutcomesService::Service do
           allow(ApplicationController).to receive(:test_cluster_name).and_return("beta")
           expect(described_class.url(course)).to eq "http://canvas.beta"
           allow(ApplicationController).to receive(:test_cluster_name).and_return("invalid")
-          expect(described_class.url(course)).to be_nil
+          expect(described_class.url(course)).to eq nil
         end
       end
     end
 
     describe ".enabled_in_context?" do
       it "returns enabled" do
-        expect(described_class.enabled_in_context?(course)).to be true
+        expect(described_class.enabled_in_context?(course)).to eq true
       end
     end
 

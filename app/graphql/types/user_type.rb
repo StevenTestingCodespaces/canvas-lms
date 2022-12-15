@@ -40,12 +40,10 @@ module Types
     global_id_field :id
 
     field :name, String, null: true
-    field :sortable_name,
-          String,
+    field :sortable_name, String,
           "The name of the user that is should be used for sorting groups of users, such as in the gradebook.",
           null: true
-    field :short_name,
-          String,
+    field :short_name, String,
           "A short name the user has selected, for use in conversations or other less formal places through the site.",
           null: true
 
@@ -86,12 +84,8 @@ module Types
         Loaders::AssociationLoader.for(User, :pseudonyms)
                                   .load(object)
                                   .then do
-          pseudonym = SisPseudonym.for(object,
-                                       domain_root_account,
-                                       type: :implicit,
-                                       require_sis: false,
-                                       root_account: domain_root_account,
-                                       in_region: true)
+          pseudonym = SisPseudonym.for(object, domain_root_account, type: :implicit, require_sis: false,
+                                                                    root_account: domain_root_account, in_region: true)
           pseudonym&.sis_user_id
         end
       end
@@ -105,33 +99,25 @@ module Types
         Loaders::AssociationLoader.for(User, :pseudonyms)
                                   .load(object)
                                   .then do
-          pseudonym = SisPseudonym.for(object,
-                                       domain_root_account,
-                                       type: :implicit,
-                                       require_sis: false,
-                                       root_account: domain_root_account,
-                                       in_region: true)
+          pseudonym = SisPseudonym.for(object, domain_root_account, type: :implicit, require_sis: false,
+                                                                    root_account: domain_root_account, in_region: true)
           pseudonym&.integration_id
         end
       end
     end
 
     field :enrollments, [EnrollmentType], null: false do
-      argument :course_id,
-               ID,
+      argument :course_id, ID,
                "only return enrollments for this course",
                required: false,
                prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
-      argument :current_only,
-               Boolean,
+      argument :current_only, Boolean,
                "Whether or not to restrict results to `active` enrollments in `available` courses",
                required: false
-      argument :order_by,
-               [String],
+      argument :order_by, [String],
                "The fields to order the results by",
                required: false
-      argument :exclude_concluded,
-               Boolean,
+      argument :exclude_concluded, Boolean,
                "Whether or not to exclude `completed` enrollments",
                required: false
     end
@@ -157,10 +143,10 @@ module Types
     def enrollments(course_id: nil, current_only: false, order_by: [], exclude_concluded: false)
       course_ids = [course_id].compact
       Loaders::UserCourseEnrollmentLoader.for(
-        course_ids:,
-        order_by:,
-        current_only:,
-        exclude_concluded:
+        course_ids: course_ids,
+        order_by: order_by,
+        current_only: current_only,
+        exclude_concluded: exclude_concluded
       ).load(object.id).then do |enrollments|
         (enrollments || []).select do |enrollment|
           object == context[:current_user] ||
@@ -207,29 +193,31 @@ module Types
     end
     def conversations_connection(scope: nil, filter: nil)
       if object == context[:current_user]
-        conversations_scope = case scope
-                              when "unread"
-                                InstStatsd::Statsd.increment("inbox.visit.scope.unread.pages_loaded.react")
-                                object.conversations.unread
-                              when "starred"
-                                InstStatsd::Statsd.increment("inbox.visit.scope.starred.pages_loaded.react")
-                                object.starred_conversations
-                              when "sent"
-                                InstStatsd::Statsd.increment("inbox.visit.scope.sent.pages_loaded.react")
-                                object.all_conversations.sent
-                              when "archived"
-                                InstStatsd::Statsd.increment("inbox.visit.scope.archived.pages_loaded.react")
-                                object.conversations.archived
-                              else
-                                InstStatsd::Statsd.increment("inbox.visit.scope.inbox.pages_loaded.react")
-                                object.conversations.default
-                              end
+        load_association(:all_conversations).then do
+          conversations_scope = case scope
+                                when "unread"
+                                  InstStatsd::Statsd.increment("inbox.visit.scope.unread.pages_loaded.react")
+                                  object.conversations.unread
+                                when "starred"
+                                  InstStatsd::Statsd.increment("inbox.visit.scope.starred.pages_loaded.react")
+                                  object.starred_conversations
+                                when "sent"
+                                  InstStatsd::Statsd.increment("inbox.visit.scope.sent.pages_loaded.react")
+                                  object.all_conversations.sent
+                                when "archived"
+                                  InstStatsd::Statsd.increment("inbox.visit.scope.archived.pages_loaded.react")
+                                  object.conversations.archived
+                                else
+                                  InstStatsd::Statsd.increment("inbox.visit.scope.inbox.pages_loaded.react")
+                                  object.conversations.default
+                                end
 
-        filter_mode = :and
-        filter = filter.presence || []
-        filters = filter.select(&:presence)
-        conversations_scope = conversations_scope.tagged(*filters, mode: filter_mode) if filters.present?
-        conversations_scope
+          filter_mode = :and
+          filter = filter.presence || []
+          filters = filter.select(&:presence)
+          conversations_scope = conversations_scope.tagged(*filters, mode: filter_mode) if filters.present?
+          conversations_scope
+        end
       end
     end
 
@@ -261,18 +249,35 @@ module Types
       )
 
       collections = search_contexts_and_users(
-        search:,
-        context:,
+        search: search,
+        context: context,
         synthetic_contexts: true,
         messageable_only: true,
         base_url: self.context[:request].base_url
       )
 
+      per_page = 100
       contexts_collection = collections.select { |c| c[0] == "contexts" }
-      users_collection = collections.select { |c| c[0] == "participants" }
+      contexts = []
+      if contexts_collection.count > 0
+        batch = contexts_collection[0][1].paginate(per_page: per_page)
+        contexts += batch
+        while batch.next_page
+          batch = contexts_collection[0][1].paginate(page: batch.next_page, per_page: per_page)
+          contexts += batch
+        end
+      end
 
-      contexts_collection = contexts_collection[0][1] if contexts_collection.count > 0
-      users_collection = users_collection[0][1] if users_collection.count > 0
+      users_collection = collections.select { |c| c[0] == "participants" }
+      users = []
+      if users_collection.count > 0
+        batch = users_collection[0][1].paginate(per_page: per_page)
+        users += batch
+        while batch.next_page
+          batch = users_collection[0][1].paginate(page: batch.next_page, per_page: per_page)
+          users += batch
+        end
+      end
 
       can_send_all = if search_context.nil?
                        false
@@ -282,12 +287,10 @@ module Types
                        search_context.course.grants_any_right?(object, :send_messages_all)
                      end
 
-      # The contexts_connection and users_connection return types of custom Collections
-      # These special data structures are handled in the collection_connection.rb files
       {
         sendMessagesAll: !!can_send_all,
-        contexts_connection: contexts_collection,
-        users_connection: users_collection
+        contexts_connection: contexts,
+        users_connection: users
       }
     rescue ActiveRecord::RecordNotFound
       nil
@@ -306,11 +309,11 @@ module Types
 
       # Setting this global variable is required for helper functions to run correctly
       @current_user = object
-      normalized_recipient_ids = normalize_recipients(recipients: recipient_ids, context_code:).map(&:id)
+      normalized_recipient_ids = normalize_recipients(recipients: recipient_ids, context_code: context_code).map(&:id)
       course_observers_observing_recipients_ids = course_context.enrollments.not_fake.active_by_date.of_observer_type.where(associated_user_id: normalized_recipient_ids).distinct.pluck(:user_id)
 
       # Normalize recipients should remove any observers that the current user is not able to message
-      normalize_recipients(recipients: course_observers_observing_recipients_ids, context_code:)
+      normalize_recipients(recipients: course_observers_observing_recipients_ids, context_code: context_code)
     end
 
     # TODO: deprecate this
@@ -334,8 +337,7 @@ module Types
     end
 
     field :summary_analytics, StudentSummaryAnalyticsType, null: true do
-      argument :course_id,
-               ID,
+      argument :course_id, ID,
                "returns summary analytics for this course",
                required: true,
                prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
@@ -344,8 +346,7 @@ module Types
     def summary_analytics(course_id:)
       Loaders::CourseStudentAnalyticsLoader.for(
         course_id,
-        current_user: context[:current_user],
-        session: context[:session]
+        current_user: context[:current_user], session: context[:session]
       ).load(object)
     end
 
@@ -460,14 +461,14 @@ module Types
       # contains a discussionRoles field
       return if course_id.nil?
 
-      Loaders::CourseRoleLoader.for(course_id:, role_types:, built_in_only:).load(object)
+      Loaders::CourseRoleLoader.for(course_id: course_id, role_types: role_types, built_in_only: built_in_only).load(object)
     end
   end
 end
 
 module Loaders
   class UserCourseEnrollmentLoader < Loaders::ForeignKeyLoader
-    def initialize(course_ids:, order_by: [], current_only: false, exclude_concluded: false, exclude_pending_enrollments: true)
+    def initialize(course_ids:, order_by: [], current_only: false, exclude_concluded: false)
       scope = Enrollment.joins(:course)
 
       scope = if current_only
@@ -480,8 +481,6 @@ module Loaders
       scope = scope.where(course_id: course_ids) if course_ids.present?
 
       scope = scope.where.not(enrollments: { workflow_state: "completed" }) if exclude_concluded
-
-      scope = scope.active_by_date_or_completed if exclude_pending_enrollments
 
       order_by.each { |o| scope = scope.order(o) }
 

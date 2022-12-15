@@ -16,7 +16,7 @@
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 //
 
-import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection'
+import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection.coffee'
 
 import Submission from '../models/Submission'
 

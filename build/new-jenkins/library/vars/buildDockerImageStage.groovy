@@ -21,11 +21,11 @@ def getFuzzyTagSuffix() {
 }
 
 def getRailsLoadAllLocales() {
-  return configuration.isChangeMerged() ? 1 : commitMessageFlag('rails-load-all-locales').asBooleanInteger()
+  return configuration.isChangeMerged() ? 1 : (configuration.getBoolean('rails-load-all-locales', 'false') ? 1 : 0)
 }
 
 def handleDockerBuildFailure(imagePrefix, e) {
-  if (configuration.isChangeMerged() || commitMessageFlag('upload-docker-image-failures') as Boolean) {
+  if (configuration.isChangeMerged() || configuration.getBoolean('upload-docker-image-failures', 'false')) {
     // DEBUG: In some cases, such as the the image build failing only on Jenkins, it can be useful to be able to
     // download the last successful layer to debug locally. If we ever start using buildkit for the relevant
     // images, then this approach will have to change as buildkit doesn't save the intermediate layers as images.
@@ -124,7 +124,7 @@ def preloadCacheImagesAsync() {
   libraryScript.load('bash/docker-with-flakey-network-protection.sh', '/tmp/docker-with-flakey-network-protection.sh')
 
   sh """#!/bin/bash
-    /tmp/docker-with-flakey-network-protection.sh pull starlord.inscloudgate.net/jenkins/dockerfile:1.5.2 &
+    /tmp/docker-with-flakey-network-protection.sh pull starlord.inscloudgate.net/jenkins/dockerfile:1.0-experimental &
     {
       /tmp/docker-with-flakey-network-protection.sh pull ${env.WEBPACK_ASSETS_PREFIX}:${getFuzzyTagSuffix()}
       /tmp/docker-with-flakey-network-protection.sh pull ${env.WEBPACK_BUILDER_PREFIX}:${getFuzzyTagSuffix()}
@@ -176,7 +176,7 @@ def premergeCacheImage() {
   }
 }
 
-def patchsetImage(asyncStepsStr = '', platformSuffix = '') {
+def patchsetImage(asyncStepsStr = '') {
   credentials.withStarlordCredentials {
     def cacheScope = configuration.isChangeMerged() ? env.IMAGE_CACHE_MERGE_SCOPE : env.IMAGE_CACHE_BUILD_SCOPE
     def readBuildCache = configuration.isChangeMerged() ? 0 : 1
@@ -193,7 +193,6 @@ def patchsetImage(asyncStepsStr = '', platformSuffix = '') {
         "COMPILE_ADDITIONAL_ASSETS=${configuration.isChangeMerged() ? 1 : 0}",
         "CRYSTALBALL_MAP=${env.CRYSTALBALL_MAP}",
         "JS_BUILD_NO_UGLIFY=${configuration.isChangeMerged() ? 0 : 1}",
-        "PLATFORM_SUFFIX=${platformSuffix}",
         "RAILS_LOAD_ALL_LOCALES=${getRailsLoadAllLocales()}",
         "RUBY_RUNNER_PREFIX=${env.RUBY_RUNNER_PREFIX}",
         "WEBPACK_BUILDER_PREFIX=${env.WEBPACK_BUILDER_PREFIX}",
@@ -208,21 +207,21 @@ def patchsetImage(asyncStepsStr = '', platformSuffix = '') {
           sh """#!/bin/bash
           set -ex
 
-          build/new-jenkins/docker-build.sh $PATCHSET_TAG$platformSuffix
+          build/new-jenkins/docker-build.sh $PATCHSET_TAG
 
            $asyncStepsStr
           """
         } catch (e) {
-          handleDockerBuildFailure("$PATCHSET_TAG$platformSuffix", e)
+          handleDockerBuildFailure(PATCHSET_TAG, e)
         }
       }
     }
 
-    sh "./build/new-jenkins/docker-with-flakey-network-protection.sh push $PATCHSET_TAG$platformSuffix"
+    sh "./build/new-jenkins/docker-with-flakey-network-protection.sh push $PATCHSET_TAG"
 
     if (configuration.isChangeMerged()) {
       final GIT_REV = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-      sh "docker tag $PATCHSET_TAG$platformSuffix \$BUILD_IMAGE:${GIT_REV}"
+      sh "docker tag \$PATCHSET_TAG \$BUILD_IMAGE:${GIT_REV}"
 
       sh "./build/new-jenkins/docker-with-flakey-network-protection.sh push \$BUILD_IMAGE:${GIT_REV}"
     }

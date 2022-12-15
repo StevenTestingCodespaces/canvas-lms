@@ -43,7 +43,7 @@ def import_data_exists?(sub_folder, hash_name)
 end
 
 def get_import_data(sub_folder, hash_name)
-  json = File.read(File.join(IMPORT_JSON_DIR, sub_folder, "#{hash_name}.json"))
+  json = File.open(File.join(IMPORT_JSON_DIR, sub_folder, "#{hash_name}.json")).read
   data = JSON.parse(json)
   data = data.with_indifferent_access if data.is_a? Hash
   data

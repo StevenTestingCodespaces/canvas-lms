@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+require_dependency "lti/message_authenticator"
 
 module Lti
   describe MessageAuthenticator do
@@ -76,30 +77,15 @@ module Lti
             :oauth_signature => "TL8PLA/V43D21+JkGg8i9Cj+Dqg=",
             "lti_message_type" => "ContentItemSelection",
             "lti_version" => "LTI-1p0",
-            "content_items" => <<~JSON.gsub(/\s*\n\s*/, ""),
-              {
-                "@graph":[{
-                  "windowTarget":"",
-                  "text":"Arch Linux",
-                  "title":"Its your computer",
-                  "url":"http://lti-tool-provider-example.dev/messages/blti",
-                  "thumbnail":{
-                    "height":128,
-                    "width":128,
-                    "@id":"http://www.runeaudio.com/assets/img/banner-archlinux.png"
-                  },
-                  "placementAdvice":{
-                    "displayHeight":600,
-                    "displayWidth":800,
-                    "presentationDocumentTarget":"iframe"
-                  },
-                  "mediaType":"application/vnd.ims.lti.v1.ltilink",
-                  "@type":"LtiLinkItem",
-                  "@id":"http://lti-tool-provider-example.dev/messages/blti"
-                }],
-                "@context":"http://purl.imsglobal.org/ctx/lti/v1/ContentItem"
-              }
-            JSON
+            "content_items" => "{\"@graph\":[{\"windowTarget\":\"\",\"text\":\"Arch Linux\",\"title\":\"Its your " \
+                               "computer\",\"url\":\"http://lti-tool-provider-example.dev/messages/blti\"" \
+                               ",\"thumbnail\":{\"height\":128,\"width\":128,\"@id\"" \
+                               ":\"http://www.runeaudio.com/assets/img/banner-archlinux.png\"}" \
+                               ",\"placementAdvice\":{\"displayHeight\":600,\"displayWidth\":800" \
+                               ",\"presentationDocumentTarget\":\"iframe\"},\"mediaType\"" \
+                               ":\"application/vnd.ims.lti.v1.ltilink\",\"@type\":\"LtiLinkItem\",\"@id\"" \
+                               ":\"http://lti-tool-provider-example.dev/messages/blti\"}],\"@context\"" \
+                               ":\"http://purl.imsglobal.org/ctx/lti/v1/ContentItem\"}",
             "lti_msg" => "",
             "lti_log" => "",
             "lti_errormsg" => "",
@@ -110,7 +96,7 @@ module Lti
         it "validates the message" do
           message_authenticator = MessageAuthenticator.new(launch_url, signed_params)
           Timecop.freeze(Time.at(signed_params[:oauth_timestamp].to_i)) do
-            expect(message_authenticator.valid?).to be true
+            expect(message_authenticator.valid?).to eq true
           end
         end
       end
@@ -151,22 +137,6 @@ module Lti
           validator = described_class.new(launch_url, message.signed_post_params("invalid"))
           expect(validator.valid?).to be false
           expect(Rails.cache.exist?(validator.send(:cache_key))).to be_falsey
-        end
-      end
-
-      context "no lti_version param is passed along" do
-        let(:signed_params) do
-          m = message.signed_post_params(tool.shared_secret)
-          m.delete(:lti_version)
-          m
-        end
-
-        it "doesn't throw any errors and still shows as invalid" do
-          message_authenticator = MessageAuthenticator.new(launch_url, signed_params)
-          Timecop.freeze(Time.at(signed_params[:oauth_timestamp].to_i)) do
-            expect { message_authenticator.valid? }.not_to raise_error
-            expect(message_authenticator.valid?).to be false
-          end
         end
       end
     end

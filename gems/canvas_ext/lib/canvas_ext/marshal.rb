@@ -31,7 +31,11 @@ module CanvasExt
           raise e if viewed_class_names.include?(class_name)
 
           viewed_class_names << class_name
-          retry if class_name.constantize
+          begin
+            retry if class_name.constantize
+          rescue
+            raise
+          end
         else
           raise
         end

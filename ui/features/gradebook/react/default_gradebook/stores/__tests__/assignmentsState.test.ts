@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -21,8 +20,7 @@ import {NetworkFake} from '@canvas/network/NetworkFake/index'
 import store from '../index'
 
 describe('Gradebook > DataLoader > GradingPeriodAssignmentsLoader', () => {
-  const gradingPeriodAssignmentsUrl = '/courses/1201/gradebook/grading_period_assignments'
-  const assignmentGroupsUrl = '/api/v1/courses/1201/assignment_groups'
+  const url = '/courses/1201/gradebook/grading_period_assignments'
 
   let exampleData
   let network
@@ -30,29 +28,6 @@ describe('Gradebook > DataLoader > GradingPeriodAssignmentsLoader', () => {
   beforeEach(() => {
     exampleData = {
       gradingPeriodAssignments: {1401: ['2301']},
-      assignmentGroups: [
-        {
-          id: '2301',
-          name: 'Assignments',
-          position: 1,
-          group_weight: 100,
-          rules: {},
-          assignments: [
-            {
-              id: '2401',
-              name: 'Math Assignment',
-              points_possible: 10,
-              submission_types: ['online_text_entry'],
-              muted: false,
-              html_url: 'http://www.example.com/courses/1201/assignments/2401',
-              due_at: '2015-05-18T06:59:00Z',
-              assignment_group_id: '2301',
-              omit_from_final_grade: false,
-              published: true,
-            },
-          ],
-        },
-      ],
     }
   })
 
@@ -65,64 +40,36 @@ describe('Gradebook > DataLoader > GradingPeriodAssignmentsLoader', () => {
       network.restore()
     })
 
-    function getGradingPeriodRequests() {
-      return network.getRequests(request => {
-        return request.url.includes(gradingPeriodAssignmentsUrl)
-      })
-    }
-
-    function getAssignmentGroupRequests() {
-      return network.getRequests(request => {
-        return request.url.includes(assignmentGroupsUrl)
-      })
-    }
-
     function loadGradingPeriodAssignments() {
       store.getState().fetchGradingPeriodAssignments()
       return network.allRequestsReady()
     }
 
-    function loadAssignmentGroups() {
-      const loaded = store.getState().loadAssignmentGroups()
-      const requestsReady = network.allRequestsReady()
-      return [loaded, requestsReady]
-    }
-
-    function resolveGradingPeriodRequest() {
-      const [request] = getGradingPeriodRequests()
+    function resolveRequest() {
+      const [request] = getRequests()
       request.response.setJson({
         grading_period_assignments: exampleData.gradingPeriodAssignments,
       })
       request.response.send()
     }
 
-    function resolveAssignmentGroupRequest() {
-      const [request] = getAssignmentGroupRequests()
-      request.response.setJson(exampleData.assignmentGroups)
-      request.response.send()
+    function getRequests() {
+      return network.getRequests(request => request.url === url)
     }
 
     test('sends the request using the given course id', async () => {
       await loadGradingPeriodAssignments()
-      const requests = getGradingPeriodRequests()
+      const requests = getRequests()
       expect(requests.length).toStrictEqual(1)
     })
 
     test('includes the loaded grading period assignments when updating the gradebook', async () => {
       const loaded = await loadGradingPeriodAssignments()
-      resolveGradingPeriodRequest()
+      resolveRequest()
       await loaded
       expect(store.getState().gradingPeriodAssignments).toStrictEqual(
         exampleData.gradingPeriodAssignments
       )
-    })
-
-    test('loads assignment groups', async () => {
-      const [loaded, requestsReady] = await loadAssignmentGroups()
-      resolveAssignmentGroupRequest()
-      await loaded
-      await requestsReady
-      expect(store.getState().assignmentGroups).toStrictEqual(exampleData.assignmentGroups)
     })
   })
 })

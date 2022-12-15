@@ -18,8 +18,8 @@
 
 import $ from 'jquery'
 
-import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection'
-import Group from '../models/Group'
+import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection.coffee'
+import Group from '../models/Group.coffee'
 import natcompare from '@canvas/util/natcompare'
 
 export default class ContextGroupCollection extends PaginatedCollection {

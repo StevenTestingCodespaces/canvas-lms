@@ -9,6 +9,7 @@
     "url": "https://github.com/instructure/canvas-planner.git"
   },
   "scripts": {
+    "check-transifex": "node -r esm ./scripts/check-transifex.js",
     "i18n:extract": "format-message extract $(find src -name \"*.js\") -g underscored_crc32 -o locales/en.json",
     "lint-staged": "lint-staged",
     "lint": "eslint src/",
@@ -52,8 +53,8 @@
     "@instructure/ui-badge": "7",
     "@instructure/ui-buttons": "7",
     "@instructure/ui-checkbox": "7",
-    "@instructure/ui-date-time-input": "8",
     "@instructure/ui-flex": "7",
+    "@instructure/ui-forms": "6",
     "@instructure/ui-form-field": "7",
     "@instructure/ui-heading": "7",
     "@instructure/ui-icons": "7",

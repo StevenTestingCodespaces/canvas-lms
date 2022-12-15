@@ -27,6 +27,7 @@ import {
 import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 import {CloseButton} from '@instructure/ui-buttons'
 import {
+  CREATE_DISCUSSION_ENTRY,
   CREATE_DISCUSSION_ENTRY_DRAFT,
   DELETE_DISCUSSION_ENTRY,
   UPDATE_DISCUSSION_ENTRY_PARTICIPANT,
@@ -48,7 +49,6 @@ import React, {useCallback, useContext, useEffect, useMemo, useState} from 'reac
 import {Tray} from '@instructure/ui-tray'
 import {useMutation, useQuery} from 'react-apollo'
 import {View} from '@instructure/ui-view'
-import useCreateDiscussionEntry from '../../hooks/useCreateDiscussionEntry'
 
 const I18n = useI18nScope('discussion_topics_post')
 
@@ -75,21 +75,25 @@ export const IsolatedViewContainer = props => {
     props.setHighlightEntryId(newDiscussionEntry._id)
   }
 
-  const onEntryCreationCompletion = data => {
-    props.setHighlightEntryId(data.createDiscussionEntry.discussionEntry._id)
-    if (
-      props.discussionEntryId !== data.createDiscussionEntry.discussionEntry.rootEntryId ||
-      props.relativeEntryId
-    ) {
-      props.onOpenIsolatedView(
-        data.createDiscussionEntry.discussionEntry.rootEntryId,
-        data.createDiscussionEntry.discussionEntry.rootEntryId,
-        false
-      )
-    }
-  }
-
-  const {createDiscussionEntry} = useCreateDiscussionEntry(onEntryCreationCompletion, updateCache)
+  const [createDiscussionEntry] = useMutation(CREATE_DISCUSSION_ENTRY, {
+    update: updateCache,
+    onCompleted: data => {
+      setOnSuccess(I18n.t('The discussion entry was successfully created.'))
+      props.setHighlightEntryId(data.createDiscussionEntry.discussionEntry._id)
+      if (
+        props.discussionEntryId !== data.createDiscussionEntry.discussionEntry.rootEntryId ||
+        props.relativeEntryId
+      ) {
+        props.onOpenIsolatedView(
+          data.createDiscussionEntry.discussionEntry.rootEntryId,
+          data.createDiscussionEntry.discussionEntry.rootEntryId,
+          false
+        )
+      }
+    },
+    onError: () =>
+      setOnFailure(I18n.t('There was an unexpected error creating the discussion entry.')),
+  })
 
   const [deleteDiscussionEntry] = useMutation(DELETE_DISCUSSION_ENTRY, {
     onCompleted: data => {
@@ -179,13 +183,12 @@ export const IsolatedViewContainer = props => {
     }
   }
 
-  const onUpdate = (discussionEntry, message, file) => {
+  const onUpdate = (discussionEntry, message, fileId) => {
     updateDiscussionEntry({
       variables: {
         discussionEntryId: discussionEntry._id,
         message,
-        removeAttachment: !file?._id,
-        fileId: file?._id,
+        removeAttachment: !fileId,
       },
     })
   }
@@ -194,31 +197,29 @@ export const IsolatedViewContainer = props => {
     window.open(getSpeedGraderUrl(discussionEntry.author._id), '_blank')
   }
 
-  // This reply method is used for isolated view replies
-  const onReplySubmit = (message, file, quotedEntryId, replyId, isAnonymousAuthor) => {
-    const variables = {
-      discussionTopicId: props.discussionTopic._id,
-      parentEntryId: replyId,
-      isAnonymousAuthor,
-      message,
-      fileId: file?._id,
-      includeReplyPreview: !!quotedEntryId,
-      courseID: ENV.course_id,
-      quotedEntryId,
-    }
-    const optimisticResponse = getOptimisticResponse({
-      message,
-      attachment: file,
-      parentId: replyId,
-      rootEntryId: props.discussionEntryId,
-      quotedEntry: buildQuotedReply(
-        isolatedEntryOlderDirection.data?.legacyNode?.discussionSubentriesConnection.nodes,
-        props.replyFromId
-      ),
-      isAnonymous:
-        !!props.discussionTopic.anonymousState && props.discussionTopic.canReplyAnonymously,
+  const onReplySubmit = (message, fileId, includeReplyPreview, replyId, isAnonymousAuthor) => {
+    createDiscussionEntry({
+      variables: {
+        discussionTopicId: props.discussionTopic._id,
+        parentEntryId: replyId,
+        isAnonymousAuthor,
+        message,
+        fileId,
+        includeReplyPreview,
+        courseID: ENV.course_id,
+      },
+      optimisticResponse: getOptimisticResponse({
+        message,
+        parentId: replyId,
+        rootEntryId: props.discussionEntryId,
+        quotedEntry: buildQuotedReply(
+          isolatedEntryOlderDirection.data?.legacyNode?.discussionSubentriesConnection.nodes,
+          props.replyFromId
+        ),
+        isAnonymous:
+          !!props.discussionTopic.anonymousState && props.discussionTopic.canReplyAnonymously,
+      }),
     })
-    createDiscussionEntry({variables, optimisticResponse})
   }
 
   const [createDiscussionEntryDraft] = useMutation(CREATE_DISCUSSION_ENTRY_DRAFT, {
@@ -421,11 +422,11 @@ export const IsolatedViewContainer = props => {
                 rceIdentifier={props.replyFromId}
                 discussionAnonymousState={props.discussionTopic?.anonymousState}
                 canReplyAnonymously={props.discussionTopic?.canReplyAnonymously}
-                onSubmit={(message, quotedEntryId, file, anonymousAuthorState) => {
+                onSubmit={(message, includeReplyPreview, fileId, anonymousAuthorState) => {
                   onReplySubmit(
                     message,
-                    file,
-                    quotedEntryId,
+                    fileId,
+                    includeReplyPreview,
                     props.replyFromId,
                     anonymousAuthorState
                   )

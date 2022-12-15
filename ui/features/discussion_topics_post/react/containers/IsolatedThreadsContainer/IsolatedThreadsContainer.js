@@ -255,13 +255,13 @@ const IsolatedThreadContainer = props => {
     },
   })
 
-  const onUpdate = (message, _includeReplyPreview, file) => {
+  const onUpdate = (message, _includeReplyPreview, fileId) => {
     updateDiscussionEntry({
       variables: {
         discussionEntryId: props.discussionEntry._id,
         message,
-        fileId: file?._id,
-        removeAttachment: !file?._id,
+        fileId,
+        removeAttachment: !fileId,
       },
     })
   }

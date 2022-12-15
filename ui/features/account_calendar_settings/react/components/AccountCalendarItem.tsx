@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -17,8 +16,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useEffect, useState} from 'react'
+import React from 'react'
 
+import {ApplyTheme} from '@instructure/ui-themeable'
 import {Checkbox} from '@instructure/ui-checkbox'
 import {Flex} from '@instructure/ui-flex'
 import {IconCalendarMonthLine} from '@instructure/ui-icons'
@@ -28,8 +28,8 @@ import {View} from '@instructure/ui-view'
 
 import {useScope as useI18nScope} from '@canvas/i18n'
 
-import {Account, SubscriptionChange, VisibilityChange} from '../types'
-import SubscriptionsDropDown from './SubscriptionDropDown'
+import {accountListTheme} from '../theme'
+import {Account, VisibilityChange} from '../types'
 
 const I18n = useI18nScope('account_calendar_settings_account_calendar_item')
 
@@ -38,44 +38,22 @@ const CALENDAR_ICON_SIZE = '1.25rem'
 type ComponentProps = {
   readonly item: Account
   readonly visibilityChanges: VisibilityChange[]
-  readonly subscriptionChanges: SubscriptionChange[]
   readonly onAccountToggled: (id: number, visible: boolean) => void
-  readonly onAccountSubscriptionToggled: (id: number, autoSubscription: boolean) => void
   readonly padding?: string
   readonly showTopSeparator?: boolean
-  readonly autoSubscriptionEnabled: boolean
 }
 
 // Doing this to avoid TS2339 errors-- remove once we're on InstUI 8
 const {Item: FlexItem} = Flex as any
 
-export const AccountCalendarItem = ({
+export const AccountCalendarItem: React.FC<ComponentProps> = ({
   item,
   visibilityChanges,
-  subscriptionChanges,
   onAccountToggled,
-  onAccountSubscriptionToggled,
   padding,
   showTopSeparator = false,
-  autoSubscriptionEnabled,
-}: ComponentProps) => {
-  const [isVisible, setIsVisible] = useState(item.visible)
-  const [isAutoSubscription, setIsAutoSubscription] = useState(item.auto_subscribe)
-
-  useEffect(() => {
-    const accountVisibility =
-      visibilityChanges?.find(change => change.id === item.id)?.visible ?? item.visible
-    setIsVisible(accountVisibility)
-  }, [item.id, item.visible, visibilityChanges])
-
-  useEffect(() => {
-    const autoSubscription =
-      subscriptionChanges?.find(change => change.id === item.id)?.auto_subscribe ??
-      item.auto_subscribe
-    setIsAutoSubscription(autoSubscription)
-  }, [item.id, item.auto_subscribe, subscriptionChanges])
-
-  return (
+}) => (
+  <ApplyTheme theme={accountListTheme}>
     <View as="div" padding={padding} borderWidth={`${showTopSeparator ? 'small' : '0'} 0 0 0`}>
       <Flex data-testid="flex-calendar-item" as="div" alignItems="center">
         <FlexItem>
@@ -85,9 +63,12 @@ export const AccountCalendarItem = ({
                 {I18n.t('Show account calendar for %{name}', {name: item.name})}
               </ScreenReaderContent>
             }
-            data-testid="account-calendar-checkbox"
             inline={true}
-            checked={isVisible}
+            checked={
+              visibilityChanges.find(change => change.id === item.id)
+                ? visibilityChanges.find(change => change.id === item.id)!.visible
+                : item.visible
+            }
             onChange={e => onAccountToggled(item.id, e.target.checked)}
           />
         </FlexItem>
@@ -97,18 +78,7 @@ export const AccountCalendarItem = ({
         <FlexItem>
           <Text data-testid="account-calendar-name">{item.name}</Text>
         </FlexItem>
-        {autoSubscriptionEnabled && (
-          <FlexItem margin="0 0 0 auto">
-            <SubscriptionsDropDown
-              accountId={item.id}
-              autoSubscription={isAutoSubscription}
-              disabled={!isVisible}
-              onChange={onAccountSubscriptionToggled}
-              accountName={item.name}
-            />
-          </FlexItem>
-        )}
       </Flex>
     </View>
-  )
-}
+  </ApplyTheme>
+)

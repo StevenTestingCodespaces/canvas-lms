@@ -34,8 +34,7 @@ const I18n = useI18nScope('discussion_topics_post')
 
 export const DiscussionTopicRepliesContainer = props => {
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
-  const {filter, searchTerm, setPageNumber, setSearchPageNumber, setExpandedThreads} =
-    useContext(SearchContext)
+  const {filter, searchTerm, setPageNumber, setSearchPageNumber} = useContext(SearchContext)
 
   const [discussionEntriesToUpdate, setDiscussionEntriesToUpdate] = useState(new Set())
 
@@ -97,7 +96,6 @@ export const DiscussionTopicRepliesContainer = props => {
   }
 
   const setPage = pageNum => {
-    setExpandedThreads([])
     props.isSearchResults ? setSearchPageNumber(pageNum) : setPageNumber(pageNum)
   }
 

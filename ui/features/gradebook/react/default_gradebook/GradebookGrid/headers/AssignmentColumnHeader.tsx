@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -34,7 +33,11 @@ import ColumnHeader from './ColumnHeader'
 import SecondaryDetailLine from './SecondaryDetailLine'
 import {Link} from '@instructure/ui-link'
 import {Text} from '@instructure/ui-text'
-import type {CamelizedAssignment, PartialStudent} from '@canvas/grading/grading.d'
+import type {
+  CamelizedAssignment,
+  CamelizedSubmission,
+  PartialStudent,
+} from '@canvas/grading/grading.d'
 
 const {Separator: MenuSeparator, Item: MenuItem, Group: MenuGroup} = Menu as any
 
@@ -50,10 +53,7 @@ function labelForPostGradesAction(postGradesAction) {
   return I18n.t('No grades to post')
 }
 
-function labelForHideGradesAction(hideGradesAction: {
-  hasGradesOrCommentsToHide: boolean
-  hasGradesOrPostableComments: boolean
-}) {
+function labelForHideGradesAction(hideGradesAction) {
   if (hideGradesAction.hasGradesOrCommentsToHide) {
     return I18n.t('Hide grades')
   } else if (hideGradesAction.hasGradesOrPostableComments) {
@@ -81,11 +81,17 @@ export type AssignmentColumnHeaderProps = {
     onSelect: (cb: any) => void
   }
   enterGradesAsSetting: any
-  getCurrentlyShownStudents: () => PartialStudent[]
+  getCurrentlyShownStudents: () => {
+    id: string
+    name: string
+    sortableName: string
+    isInactive: boolean
+    isTestStudent: boolean
+    submission: CamelizedSubmission
+  }[]
   hideGradesAction: {
-    hasGradesOrPostableComments: boolean
     hasGradesOrCommentsToHide: boolean
-    onSelect: (cb: any) => void
+    onSelect: () => void
   }
   messageAttachmentUploadFolderId: string
   onMenuDismiss: () => void
@@ -101,13 +107,12 @@ export type AssignmentColumnHeaderProps = {
     onSelect: (cb: any) => Promise<void>
   }
   showGradePostingPolicyAction: {
-    onSelect: (cb: any) => void
+    onSelect: (cb: any) => Promise<void>
   }
   sortBySetting: {
     direction: string
     disabled: boolean
     isSortColumn: boolean
-    onSortByExcused: () => void
     onSortByGradeAscending: () => void
     onSortByGradeDescending: () => void
     onSortByLate: () => void
@@ -117,6 +122,7 @@ export type AssignmentColumnHeaderProps = {
   }
   submissionsLoaded: boolean
   showMessageStudentsWithObserversDialog: boolean
+  showUnpostedMenuItem: boolean
   onSendMessageStudentsWho: (args: {recipientsIds: string[]; subject: string; body: string}) => void
   userId: string
 }
@@ -185,7 +191,7 @@ export default class AssignmentColumnHeader extends ColumnHeader<
     // this is because the onToggle handler in ColumnHeader.js is going to get
     // called synchronously, before the SetState takes effect, and it needs to
     // know to skipFocusOnClose
-    // @ts-expect-error
+    // @ts-ignore
     this.state.skipFocusOnClose = true
 
     this.setState({skipFocusOnClose: true}, () => action.onSelect(this.focusAtEnd))
@@ -226,7 +232,7 @@ export default class AssignmentColumnHeader extends ColumnHeader<
   }
 
   showMessageStudentsWhoDialog = async () => {
-    // @ts-expect-error
+    // @ts-ignore
     this.state.skipFocusOnClose = true
     this.setState({skipFocusOnClose: true})
 
@@ -370,21 +376,15 @@ export default class AssignmentColumnHeader extends ColumnHeader<
               {I18n.t('Late')}
             </MenuItem>
 
-            <MenuItem
-              selected={selectedSortSetting === 'excused'}
-              disabled={sortBySetting.disabled}
-              onSelect={sortBySetting.onSortByExcused}
-            >
-              {I18n.t('Excused')}
-            </MenuItem>
-
-            <MenuItem
-              selected={selectedSortSetting === 'unposted'}
-              disabled={sortBySetting.disabled}
-              onSelect={sortBySetting.onSortByUnposted}
-            >
-              {I18n.t('Unposted')}
-            </MenuItem>
+            {this.props.showUnpostedMenuItem && (
+              <MenuItem
+                selected={selectedSortSetting === 'unposted'}
+                disabled={sortBySetting.disabled}
+                onSelect={sortBySetting.onSortByUnposted}
+              >
+                {I18n.t('Unposted')}
+              </MenuItem>
+            )}
           </MenuGroup>
         </Menu>
 

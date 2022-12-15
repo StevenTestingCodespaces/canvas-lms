@@ -33,11 +33,7 @@ class DockerUtils
       end
 
       compose_files.inject({}) do |config, file|
-        if YAML::VERSION < "4.0"
-          config.merge(YAML.load_file(file), &merger)
-        else
-          config.merge(YAML.load_file(file, aliases: true), &merger)
-        end
+        config.merge(YAML.load_file(file), &merger)
       end
     end
   end

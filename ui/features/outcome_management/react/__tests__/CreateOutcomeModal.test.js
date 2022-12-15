@@ -31,9 +31,6 @@ import {
   createOutcomeGroupMocks,
 } from '@canvas/outcomes/mocks/Management'
 import * as FlashAlert from '@canvas/alerts/react/FlashAlert'
-import injectGlobalAlertContainers from '@canvas/util/react/testing/injectGlobalAlertContainers'
-
-injectGlobalAlertContainers()
 
 jest.useFakeTimers()
 

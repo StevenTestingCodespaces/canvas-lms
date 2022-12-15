@@ -20,29 +20,19 @@ begin
       t.before = proc { `script/generate_lti_variable_substitution_markdown` }
       t.files = %w[
         app/controllers/**/*.rb
-        {gems,vendor}/plugins/*/app/controllers/**/*.rb
+        {gems,vendor}/plugins/*/app/controllers/*.rb
         {gems,vendor}/plugins/*/lib/*.rb
       ]
 
       t.options = %W[
-        -e
-        doc/api/api_routes.rb
-        --title
-        "Canvas
-        REST
-        API"
-        -p
-        doc
-        -t
-        api
-        --readme
-        doc/api/README.md
-        -o
-        #{API_DOC_DIR}
-        --asset
-        doc/images:images
-        --asset
-        doc/examples:examples
+        -e doc/api/api_routes.rb
+        --title "Canvas REST API"
+        -p doc
+        -t api
+        --readme doc/api/README.md
+        -o #{API_DOC_DIR}
+        --asset doc/images:images
+        --asset doc/examples:examples
       ]
 
       # t.options << '--verbose'

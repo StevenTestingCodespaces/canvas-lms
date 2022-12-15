@@ -5,6 +5,7 @@
   "add_to_do_7def3c37": { "message": "Tambah Untuk Dilakukan" },
   "address_3159962f": { "message": "Alamat:" },
   "all_day_fb42c4fc": { "message": "Semua Hari" },
+  "all_items_loaded_aa256183": { "message": "Semua item dimuatkan" },
   "an_amazing_discussion_assignment_e5c8bd6b": {
     "message": "Tugasan perbincangan yang menakjubkan"
   },
@@ -256,7 +257,6 @@
   "starttime_to_endtime_d7cc249d": {
     "message": "{ startTime } kepada { endTime }"
   },
-  "student_to_do_c018c835": { "message": "Untuk Dilakukan Pelajar" },
   "submitted_318fad53": { "message": "Diserahkan" },
   "success_to_do_created_e34ed395": {
     "message": "Berjaya: Untuk Dilakukan dicipta"

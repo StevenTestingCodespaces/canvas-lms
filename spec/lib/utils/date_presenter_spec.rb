@@ -32,6 +32,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 
 require_relative "../../spec_helper"
+require_dependency "utils/date_presenter"
 
 module Utils
   describe DatePresenter do
@@ -51,7 +52,7 @@ module Utils
       it "can use the full format" do
         date = Date.parse("2010-10-1")
         string = DatePresenter.new(date).as_string(:full)
-        expect(string).to eq("Oct 1, 2010 12:00am")
+        expect(string).to eq("Oct 1, 2010 12:00")
       end
 
       describe "on relative dates" do

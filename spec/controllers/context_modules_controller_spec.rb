@@ -65,7 +65,7 @@ describe ContextModulesController do
       new_quizzes_assignment(course: @course, title: "B")
       get "index", params: { course_id: @course.id }
       combined_active_quizzes_includes_both_types = controller.instance_variable_get(:@combined_active_quizzes_includes_both_types)
-      expect(combined_active_quizzes_includes_both_types).to be true
+      expect(combined_active_quizzes_includes_both_types).to eq true
     end
 
     it "@combined_active_quizzes_includes_both_types should return false when only classic quizzes are included" do
@@ -74,7 +74,7 @@ describe ContextModulesController do
       @course.quizzes.create!(title: "C")
       get "index", params: { course_id: @course.id }
       combined_active_quizzes_includes_both_types = controller.instance_variable_get(:@combined_active_quizzes_includes_both_types)
-      expect(combined_active_quizzes_includes_both_types).to be false
+      expect(combined_active_quizzes_includes_both_types).to eq false
     end
 
     it "@combined_active_quizzes_includes_both_types should return false when only new quizzes are included" do
@@ -82,7 +82,7 @@ describe ContextModulesController do
       new_quizzes_assignment(course: @course, title: "B")
       get "index", params: { course_id: @course.id }
       combined_active_quizzes_includes_both_types = controller.instance_variable_get(:@combined_active_quizzes_includes_both_types)
-      expect(combined_active_quizzes_includes_both_types).to be false
+      expect(combined_active_quizzes_includes_both_types).to eq false
     end
 
     it "touches modules if necessary" do
@@ -136,7 +136,7 @@ describe ContextModulesController do
 
       it "is true if account setting is on" do
         get "index", params: { course_id: @course.id }
-        expect(controller.js_env[:DEFAULT_POST_TO_SIS]).to be true
+        expect(controller.js_env[:DEFAULT_POST_TO_SIS]).to eq true
       end
 
       it "is false if a due date is required" do
@@ -145,7 +145,7 @@ describe ContextModulesController do
           a.save!
         end
         get "index", params: { course_id: @course.id }
-        expect(controller.js_env[:DEFAULT_POST_TO_SIS]).to be false
+        expect(controller.js_env[:DEFAULT_POST_TO_SIS]).to eq false
       end
     end
 
@@ -167,8 +167,20 @@ describe ContextModulesController do
         subject
       end
 
-      it "sends tray placement tool definitions" do
-        expect(tool_definitions[:module_index_menu].first[:id]).to eq tool.id
+      context "when commons favorites FF is off" do
+        it "ignores tray placement tools" do
+          expect(tool_definitions[:module_index_menu]).to eq []
+        end
+      end
+
+      context "when commons favorites FF is on" do
+        before :once do
+          @course.root_account.enable_feature! :commons_favorites
+        end
+
+        it "sends tray placement tool definitions" do
+          expect(tool_definitions[:module_index_menu].first[:id]).to eq tool.id
+        end
       end
 
       it "sends modal placement tool definitions" do
@@ -206,13 +218,13 @@ describe ContextModulesController do
     it "publishes modules" do
       put "update", params: { course_id: @course.id, id: @m1.id, publish: "1" }
       @m1.reload
-      expect(@m1.active?).to be true
+      expect(@m1.active?).to eq true
     end
 
     it "unpublishes modules" do
       put "update", params: { course_id: @course.id, id: @m2.id, unpublish: "1" }
       @m2.reload
-      expect(@m2.unpublished?).to be true
+      expect(@m2.unpublished?).to eq true
     end
 
     it "updates the name" do
@@ -346,10 +358,7 @@ describe ContextModulesController do
 
         @module = @course.context_modules.create!
         @tool = @course.context_external_tools.create!(
-          name: "a",
-          url: "http://www.google.com",
-          consumer_key: "12345",
-          shared_secret: "secret",
+          name: "a", url: "http://www.google.com", consumer_key: "12345", shared_secret: "secret",
           custom_fields: { "canvas_module_id" => "$Canvas.module.id", "canvas_module_item_id" => "$Canvas.moduleItem.id" }
         )
 
@@ -374,7 +383,7 @@ describe ContextModulesController do
 
         get "item_redirect", params: { course_id: @course.id, id: tag1.id }
         expect(response).to be_redirect
-        expect(assigns[:tool]).to be_nil
+        expect(assigns[:tool]).to eq nil
       end
     end
 
@@ -811,7 +820,7 @@ describe ContextModulesController do
         assignment = @course.assignments.create!(title: "hello")
         @mod1.add_item(type: "assignment", id: assignment.id)
         get "content_tag_assignment_data", params: { course_id: @course.id }, format: "json"
-        expect(response).to have_http_status :ok
+        expect(response.code).to eql "200"
       end
     end
 
@@ -880,7 +889,7 @@ describe ContextModulesController do
         @assign.save!
         get "content_tag_assignment_data", params: { course_id: @course.id }, format: "json"
         json = json_parse(response.body)
-        expect(json[@tag.id.to_s]["points_possible"].to_i).to be 456
+        expect(json[@tag.id.to_s]["points_possible"].to_i).to eql 456
       end
     end
 
@@ -923,15 +932,9 @@ describe ContextModulesController do
       json = json_parse(response.body)
       expect(json[@tag.id.to_s]["due_date"]).to be_nil
 
-      # overridden date for nonactive enrollment; "everyone" date on assignment gets used
+      # overridden date
       student1 = student_in_course(course: @course, section: section1).user
       user_session(student1)
-      get "content_tag_assignment_data", params: { course_id: @course.id }, format: "json"
-      json = json_parse(response.body)
-      expect(json[@tag.id.to_s]["due_date"]).to be_nil
-
-      # overridden date for active enrollment; override gets used
-      @course.enrollments.find_by(user: student1, course_section: section1).accept(:force)
       get "content_tag_assignment_data", params: { course_id: @course.id }, format: "json"
       json = json_parse(response.body)
       expect(json[@tag.id.to_s]["due_date"].to_date).to eq new_due_date.to_date
@@ -1100,12 +1103,9 @@ describe ContextModulesController do
       course_with_teacher_logged_in(active_all: true)
       @tool = factory_with_protected_attributes(@course.context_external_tools,
                                                 url: "http://www.justanexamplenotarealwebsite.com/tool1",
-                                                shared_secret: "test123",
-                                                consumer_key: "test123",
-                                                name: "mytool")
+                                                shared_secret: "test123", consumer_key: "test123", name: "mytool")
       @mod = @course.context_modules.create!
-      @assign = @course.assignments.create! title: "WHAT",
-                                            submission_types: "external_tool",
+      @assign = @course.assignments.create! title: "WHAT", submission_types: "external_tool",
                                             external_tool_tag_attributes: { content: @tool, url: @tool.url, external_data: ext_data.to_json }
       @tag = @mod.add_item(type: "assignment", id: @assign.id)
 
@@ -1311,11 +1311,8 @@ describe ContextModulesController do
     end
 
     it "redirects to the assignment edit mastery paths page for new quizzes" do
-      @course.context_external_tools.create! tool_id: ContextExternalTool::QUIZ_LTI,
-                                             name: "Q.N",
-                                             consumer_key: "1",
-                                             shared_secret: "1",
-                                             domain: "quizzes.example.com"
+      @course.context_external_tools.create! tool_id: ContextExternalTool::QUIZ_LTI, name: "Q.N",
+                                             consumer_key: "1", shared_secret: "1", domain: "quizzes.example.com"
       assignment = @course.assignments.create!
       assignment.quiz_lti!
       assignment.save!

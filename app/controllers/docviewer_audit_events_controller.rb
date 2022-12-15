@@ -42,11 +42,11 @@ class DocviewerAuditEventsController < ApplicationController
 
     event_params = docviewer_audit_event_params
     event = AnonymousOrModerationEvent.new(
-      assignment:,
-      canvadoc:,
+      assignment: assignment,
+      canvadoc: canvadoc,
       event_type: "docviewer_#{event_params[:event_type]}",
-      submission:,
-      user:,
+      submission: submission,
+      user: user,
       payload: {
         annotation_body: event_params[:annotation_body],
         annotation_id: event_params[:annotation_id],
@@ -69,7 +69,7 @@ class DocviewerAuditEventsController < ApplicationController
   def admin_or_student(user, course)
     return true if course.account_membership_allows(user)
 
-    enrollment = user.enrollments.find_by!(course:)
+    enrollment = user.enrollments.find_by!(course: course)
     enrollment.student_or_fake_student?
   end
 

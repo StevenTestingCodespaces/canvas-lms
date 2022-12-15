@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2018 - present Instructure, Inc.
  *
@@ -18,19 +17,12 @@
  */
 
 import React, {Component} from 'react'
+import {arrayOf, bool, element, instanceOf, oneOf, number, shape, string} from 'prop-types'
 import {TextInput} from '@instructure/ui-text-input'
 import GradeFormatHelper from '@canvas/grading/GradeFormatHelper'
 import {hasGradeChanged, parseTextValue} from '@canvas/grading/GradeInputHelper'
-import type {PendingGradeInfo} from '../../../gradebook.d'
-import type {GradingScheme} from '@canvas/grading/grading.d'
 
-function formatGrade(
-  submission,
-  assignment,
-  gradingScheme,
-  enterGradesAs,
-  pendingGradeInfo: PendingGradeInfo
-) {
+function formatGrade(submission, assignment, gradingScheme, enterGradesAs, pendingGradeInfo) {
   if (pendingGradeInfo) {
     return GradeFormatHelper.formatGradeInfo(pendingGradeInfo, {defaultValue: ''})
   }
@@ -54,45 +46,40 @@ function getGradeInfo(value, props) {
   })
 }
 
-type Props = {
-  assignment: {
-    pointsPossible: number
+export default class TextGradeInput extends Component {
+  static propTypes = {
+    assignment: shape({
+      pointsPossible: number,
+    }).isRequired,
+    disabled: bool,
+    enterGradesAs: oneOf(['gradingScheme', 'passFail', 'percent', 'points']).isRequired,
+    gradingScheme: instanceOf(Array).isRequired,
+    label: element.isRequired,
+    messages: arrayOf(
+      shape({
+        text: string.isRequired,
+        type: string.isRequired,
+      })
+    ).isRequired,
+    pendingGradeInfo: shape({
+      excused: bool,
+      grade: string,
+      valid: bool,
+    }),
+    submission: shape({
+      enteredGrade: string,
+      enteredScore: number,
+      excused: bool.isRequired,
+      id: string.isRequired,
+    }).isRequired,
   }
-  disabled: boolean
-  enterGradesAs: 'gradingScheme' | 'passFail' | 'percent' | 'points'
-  gradingScheme: GradingScheme[]
-  label: React.ReactElement
-  messages: Array<{
-    text: string
-    type: string
-  }>
-  pendingGradeInfo: PendingGradeInfo
-  submission: {
-    enteredGrade: string
-    enteredScore: number
-    excused: boolean
-    id: string
-  }
-}
-
-type State = {
-  gradeInfo: {
-    excused: boolean
-    grade: string | null
-    valid: boolean
-  }
-  grade: string
-}
-
-export default class TextGradeInput extends Component<Props, State> {
-  textInput: HTMLInputElement | null = null
 
   static defaultProps = {
     disabled: false,
     pendingGradeInfo: null,
   }
 
-  constructor(props: Props) {
+  constructor(props) {
     super(props)
 
     this.bindTextInput = ref => {
@@ -117,7 +104,7 @@ export default class TextGradeInput extends Component<Props, State> {
     }
   }
 
-  UNSAFE_componentWillReceiveProps(nextProps: Props) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (!this.isFocused()) {
       const {assignment, enterGradesAs, gradingScheme, pendingGradeInfo, submission} = nextProps
 

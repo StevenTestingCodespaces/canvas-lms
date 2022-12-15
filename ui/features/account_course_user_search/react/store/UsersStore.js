@@ -31,6 +31,5 @@ export default createStore({
     return `/api/v1/accounts/${this.context.accountId}/users`
   },
 
-  normalizeParams: params =>
-    omitFalsyValues({...defaultParms, ...params, search_term: params.search_term?.trim()}),
+  normalizeParams: params => omitFalsyValues({...defaultParms, ...params}),
 })

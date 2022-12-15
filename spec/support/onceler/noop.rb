@@ -27,18 +27,18 @@ module Onceler
     module ClassMethods
       def onceler!; end
 
-      def before(scope = nil, &)
+      def before(scope = nil, &block)
         scope = :each if scope == :once || scope.nil?
         return if scope == :record || scope == :replay
 
-        super(scope, &)
+        super(scope, &block)
       end
 
-      def after(scope = nil, &)
+      def after(scope = nil, &block)
         scope = :each if scope.nil?
         return if scope == :record || scope == :replay
 
-        super(scope, &)
+        super(scope, &block)
       end
 
       %w[let_once subject_once let_each let_each! subject_each subject_each!].each do |method|

@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "sis/group_membership_importer"
+
 module SIS
   describe GroupMembershipImporter do
     def create_group(opts = {})
@@ -56,7 +58,7 @@ module SIS
         group_category.self_signup = "restricted"
         group_category.save!
 
-        group = create_group(group_category:)
+        group = create_group(group_category: group_category)
 
         importer = GroupMembershipImporter.new(Account.default, { batch: Account.default.sis_batches.create! })
         expect do

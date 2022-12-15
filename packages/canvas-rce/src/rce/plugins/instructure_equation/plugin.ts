@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2018 - present Instructure, Inc.
  *
@@ -17,9 +16,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import htmlEscape from 'escape-html'
 import formatMessage from '../../../format-message'
-import clickCallback from './clickCallback'
+import clickCallback, {oldClickCallback} from './clickCallback'
 import {IconEquationLine} from '@instructure/ui-icons/es/svg'
+import RCEGlobals from '../../RCEGlobals'
 import tinymce from 'tinymce'
 
 function isEquationImage(node: Element) {
@@ -33,7 +34,11 @@ function isEquationImage(node: Element) {
 tinymce.PluginManager.add('instructure_equation', function (ed) {
   ed.ui.registry.addIcon('equation', IconEquationLine.src)
 
-  ed.addCommand('instructureEquation', () => clickCallback(ed, document))
+  if (RCEGlobals.getFeatures()?.new_equation_editor) {
+    ed.addCommand('instructureEquation', () => clickCallback(ed, document))
+  } else {
+    ed.addCommand('instructureEquation', () => oldClickCallback(ed, document))
+  }
 
   ed.ui.registry.addMenuItem('instructure_equation', {
     text: formatMessage('Equation'),
@@ -42,10 +47,12 @@ tinymce.PluginManager.add('instructure_equation', function (ed) {
   })
 
   ed.ui.registry.addToggleButton('instructure_equation', {
-    tooltip: formatMessage({
-      default: 'Insert Math Equation',
-      description: 'Title for RCE button to insert a math equation',
-    }),
+    tooltip: htmlEscape(
+      formatMessage({
+        default: 'Insert Math Equation',
+        description: 'Title for RCE button to insert a math equation',
+      })
+    ),
     onAction: () => ed.execCommand('instructureEquation'),
     icon: 'equation',
     onSetup(buttonApi) {

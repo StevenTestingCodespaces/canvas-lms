@@ -105,7 +105,7 @@ class MicrosoftSync::GroupsController < ApplicationController
     # If a non-active group exists for the course, restore it.
     # Otherwise create a new group
     new_group = (already_existing_group&.restore! && already_existing_group) ||
-                MicrosoftSync::Group.create!(course:)
+                MicrosoftSync::Group.create!(course: course)
 
     render json: group_json(new_group), status: :created
   end
@@ -226,12 +226,12 @@ class MicrosoftSync::GroupsController < ApplicationController
 
   # Group, whether deleted or not.
   def already_existing_group
-    @already_existing_group ||= MicrosoftSync::Group.find_by(course:)
+    @already_existing_group ||= MicrosoftSync::Group.find_by(course: course)
   end
 
   # The group, but only if not deleted.
   def group
-    @group ||= MicrosoftSync::Group.not_deleted.find_by(course:) ||
+    @group ||= MicrosoftSync::Group.not_deleted.find_by(course: course) ||
                (raise ActiveRecord::RecordNotFound)
   end
 

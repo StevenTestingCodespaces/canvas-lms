@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require "active_support"
+
 class CanvasLogger < ActiveSupport::Logger
   attr_reader :log_path
 
@@ -54,9 +56,9 @@ class CanvasLogger < ActiveSupport::Logger
     old_logdev.close
   end
 
-  def capture_messages(&)
+  def capture_messages(&block)
     CanvasLogger.prepend Capture unless CanvasLogger.include?(Capture)
-    capture_messages(&)
+    capture_messages(&block)
   end
 
   def capture_messages!

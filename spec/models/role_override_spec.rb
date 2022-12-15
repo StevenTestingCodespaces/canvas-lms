@@ -23,19 +23,17 @@ describe RoleOverride do
     @account = account_model(parent_account: Account.default)
 
     role = teacher_role
-    RoleOverride.create!(context: @account,
-                         permission: "moderate_forum",
-                         role:,
-                         enabled: false)
+    RoleOverride.create!(context: @account, permission: "moderate_forum",
+                         role: role, enabled: false)
     permissions = RoleOverride.permission_for(Account.default, :moderate_forum, role)
     expect(permissions[:enabled]).to be_truthy
     expect(permissions[:prior_default]).to be_truthy
-    expect(permissions[:explicit]).to be false
+    expect(permissions[:explicit]).to eq false
 
     permissions = RoleOverride.permission_for(@account, :moderate_forum, role)
     expect(permissions[:enabled]).to be_falsey
     expect(permissions[:prior_default]).to be_truthy
-    expect(permissions[:explicit]).to be true
+    expect(permissions[:explicit]).to eq true
   end
 
   it "uses the immediately parent context as the prior permission when there are multiple explicit levels" do
@@ -44,29 +42,25 @@ describe RoleOverride do
     a3 = account_model(parent_account: a2)
 
     role = teacher_role(root_account_id: a1.id)
-    RoleOverride.create!(context: a1,
-                         permission: "moderate_forum",
-                         role:,
-                         enabled: false)
-    RoleOverride.create!(context: a2,
-                         permission: "moderate_forum",
-                         role:,
-                         enabled: true)
+    RoleOverride.create!(context: a1, permission: "moderate_forum",
+                         role: role, enabled: false)
+    RoleOverride.create!(context: a2, permission: "moderate_forum",
+                         role: role, enabled: true)
 
     permissions = RoleOverride.permission_for(a1, :moderate_forum, role)
     expect(permissions[:enabled]).to be_falsey
     expect(permissions[:prior_default]).to be_truthy
-    expect(permissions[:explicit]).to be true
+    expect(permissions[:explicit]).to eq true
 
     permissions = RoleOverride.permission_for(a2, :moderate_forum, role)
     expect(permissions[:enabled]).to be_truthy
     expect(permissions[:prior_default]).to be_falsey
-    expect(permissions[:explicit]).to be true
+    expect(permissions[:explicit]).to eq true
 
     permissions = RoleOverride.permission_for(a3, :moderate_forum, role)
     expect(permissions[:enabled]).to be_truthy
     expect(permissions[:prior_default]).to be_truthy
-    expect(permissions[:explicit]).to be false
+    expect(permissions[:explicit]).to eq false
   end
 
   it "is able to be disabled for a custom course role even if enabled from above on the role account (if not locked)" do
@@ -77,18 +71,14 @@ describe RoleOverride do
 
     role = custom_student_role("some role", account: a1)
     u1 = user_factory
-    c1.enroll_student(u1, role:)
+    c1.enroll_student(u1, role: role)
     u2 = user_factory
-    c2.enroll_student(u2, role:)
+    c2.enroll_student(u2, role: role)
 
-    ro = RoleOverride.create!(context: a1,
-                              permission: "moderate_forum",
-                              role:,
-                              enabled: true)
-    RoleOverride.create!(context: a2,
-                         permission: "moderate_forum",
-                         role:,
-                         enabled: false)
+    ro = RoleOverride.create!(context: a1, permission: "moderate_forum",
+                              role: role, enabled: true)
+    RoleOverride.create!(context: a2, permission: "moderate_forum",
+                         role: role, enabled: false)
 
     expect(c1.grants_right?(u1, :moderate_forum)).to be_truthy
     expect(c2.grants_right?(u2, :moderate_forum)).to be_falsey
@@ -113,10 +103,8 @@ describe RoleOverride do
   it "updates the roles updated_at timestamp on save" do
     account = account_model(parent_account: Account.default)
     role = teacher_role
-    role_override = RoleOverride.create!(context: account,
-                                         permission: "moderate_forum",
-                                         role:,
-                                         enabled: false)
+    role_override = RoleOverride.create!(context: account, permission: "moderate_forum",
+                                         role: role, enabled: false)
     role.update!(updated_at: 1.day.ago)
     old_updated_at = role.updated_at
 
@@ -260,13 +248,13 @@ describe RoleOverride do
 
       it "only sets the parts that are specified" do
         override = RoleOverride.manage_role_override(@account, @role, @permission, override: false)
-        expect(override.enabled).to be false
-        expect(override.locked).to be false
+        expect(override.enabled).to eq false
+        expect(override.locked).to eq false
         override.destroy
 
         override = RoleOverride.manage_role_override(@account, @role, @permission, locked: true)
-        expect(override.enabled).to be true
-        expect(override.locked).to be true
+        expect(override.enabled).to eq true
+        expect(override.locked).to eq true
       end
     end
   end
@@ -293,10 +281,8 @@ describe RoleOverride do
     end
 
     def create_override(role, enabled)
-      RoleOverride.create!(context: @account,
-                           permission: @permission.to_s,
-                           role:,
-                           enabled:)
+      RoleOverride.create!(context: @account, permission: @permission.to_s,
+                           role: role, enabled: enabled)
     end
 
     it "does not mark a permission as explicit in a sub account when it's explicit in the root" do
@@ -502,12 +488,12 @@ describe RoleOverride do
           @account = Account.create!
           @account.role_overrides.create!(permission: "become_user", enabled: false, role: admin_role)
         end
-        expect(RoleOverride.permission_for(@account, :become_user, admin_role)[:enabled]).to be false
+        expect(RoleOverride.permission_for(@account, :become_user, admin_role)[:enabled]).to eq false
       end
 
       it "finds site-admin role overrides on a non-current shard" do
         role = custom_account_role("custom", account: Account.site_admin)
-        Account.site_admin.role_overrides.create!(permission: "become_user", enabled: true, role:)
+        Account.site_admin.role_overrides.create!(permission: "become_user", enabled: true, role: role)
         @shard1.activate do
           @account = Account.create!
         end
@@ -521,10 +507,8 @@ describe RoleOverride do
       role = Account.site_admin.roles.build(name: "role")
       role.base_role_type = "AccountMembership"
       role.save!
-      ro = RoleOverride.new(context: Account.site_admin,
-                            permission: "manage_role_overrides",
-                            role:,
-                            enabled: true)
+      ro = RoleOverride.new(context: Account.site_admin, permission: "manage_role_overrides",
+                            role: role, enabled: true)
       ro.applies_to_self = false
       ro.save!
       # for the UI - should be enabled
@@ -539,10 +523,8 @@ describe RoleOverride do
       role = Account.site_admin.roles.build(name: "role")
       role.base_role_type = "AccountMembership"
       role.save!
-      ro = RoleOverride.new(context: Account.site_admin,
-                            permission: "manage_role_overrides",
-                            role:,
-                            enabled: true)
+      ro = RoleOverride.new(context: Account.site_admin, permission: "manage_role_overrides",
+                            role: role, enabled: true)
       ro.applies_to_descendants = false
       ro.save!
       # for the UI - should be enabled
@@ -670,7 +652,7 @@ describe RoleOverride do
 
       expect(RoleOverride).to receive(:uncached_permission_for).once.and_call_original
       [enrollment1, enrollment2].each do |e|
-        expect(Course.find(e.course_id).grants_right?(e.user, :read_forum)).to be true
+        expect(Course.find(e.course_id).grants_right?(e.user, :read_forum)).to eq true
       end
     end
 
@@ -680,7 +662,7 @@ describe RoleOverride do
 
       expect(RoleOverride).to receive(:uncached_permission_for).once.and_call_original
       [enrollment1, enrollment2].each do |e|
-        expect(Course.find(e.course_id).grants_right?(e.user, :read_forum)).to be true
+        expect(Course.find(e.course_id).grants_right?(e.user, :read_forum)).to eq true
       end
     end
 
@@ -690,7 +672,7 @@ describe RoleOverride do
 
       expect(RoleOverride).to receive(:uncached_permission_for).twice.and_call_original
       [enrollment1, enrollment2].each do |e|
-        expect(Course.find(e.course_id).grants_right?(e.user, :read_forum)).to be true
+        expect(Course.find(e.course_id).grants_right?(e.user, :read_forum)).to eq true
       end
     end
 
@@ -702,36 +684,36 @@ describe RoleOverride do
       enrollment2 = student_in_course(active_all: true, course: course2)
 
       expect(RoleOverride).to receive(:uncached_permission_for).twice.and_call_original
-      expect(enrollment1.course.grants_right?(enrollment1.user, :read_forum)).to be true
-      expect(enrollment2.course.grants_right?(enrollment2.user, :read_forum)).to be false
+      expect(enrollment1.course.grants_right?(enrollment1.user, :read_forum)).to eq true
+      expect(enrollment2.course.grants_right?(enrollment2.user, :read_forum)).to eq false
     end
 
     it "uncaches correctly when role overrides change upstream" do
       expect(RoleOverride).to receive(:uncached_permission_for).twice.and_call_original
       @sub_account = Account.default.sub_accounts.create!
       course = course_factory(active_all: true, account: @sub_account)
-      student_in_course(active_all: true, course:)
+      student_in_course(active_all: true, course: course)
 
-      expect(course.grants_right?(@student, :read_forum)).to be true
+      expect(course.grants_right?(@student, :read_forum)).to eq true
       Account.default.role_overrides.create!(role: student_role, permission: :read_forum, enabled: false)
 
       @student.touch # clear the existing permissions cache
-      expect(Course.find(course.id).grants_right?(@student, :read_forum)).to be false
+      expect(Course.find(course.id).grants_right?(@student, :read_forum)).to eq false
     end
 
     it "uncaches correctly when the account chain changes" do
       expect(RoleOverride).to receive(:uncached_permission_for).twice.and_call_original
       @sub_account1 = Account.default.sub_accounts.create!
       course = course_factory(active_all: true, account: @sub_account1)
-      student_in_course(active_all: true, course:)
+      student_in_course(active_all: true, course: course)
       @sub_account2 = Account.default.sub_accounts.create!
       @sub_account2.role_overrides.create!(role: student_role, permission: :read_forum, enabled: false)
 
-      expect(course.grants_right?(@student, :read_forum)).to be true
+      expect(course.grants_right?(@student, :read_forum)).to eq true
 
       @sub_account1.update_attribute(:parent_account, @sub_account2)
       @student.touch
-      expect(Course.find(course.id).grants_right?(@student, :read_forum)).to be false
+      expect(Course.find(course.id).grants_right?(@student, :read_forum)).to eq false
     end
 
     it "does not try to hit caches inside permission_for if no_caching == true" do

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2018 - present Instructure, Inc.
  *
@@ -25,30 +24,33 @@ import {
   scoreToGrade,
 } from './GradingSchemeHelper'
 import numberHelper from '@canvas/i18n/numberHelper'
-import type {GradeInput, GradeResult} from './grading.d'
-import {EnvGradebookCommon} from '@canvas/global/env/EnvGradebook'
-import {GlobalEnv} from '@canvas/global/env/GlobalEnv'
-
-// Allow unchecked access to ENV variables that should exist in this context
-declare const ENV: GlobalEnv & EnvGradebookCommon
 
 const MAX_PRECISION = 15 // the maximum precision of a score persisted to the database
 const PERCENTAGES = /[%％﹪٪]/
+
+type PassFailResult = {
+  enteredAs: null | string
+  late_policy_status: null | string
+  excused: boolean
+  grade: string
+  score: null | number
+  valid: boolean
+}
 
 export const GradingSchemeBounds = Object.freeze({
   LOWER: 'LOWER',
   UPPER: 'UPPER',
 })
 
-function toNumber(bigValue: Big): number {
+function toNumber(bigValue: Big) {
   return parseFloat(bigValue.round(MAX_PRECISION).toString())
 }
 
-function pointsFromPercentage(percentage: number, pointsPossible: number): number {
+function pointsFromPercentage(percentage: number, pointsPossible: number) {
   return toNumber(new Big(percentage).div(100).times(pointsPossible))
 }
 
-function percentageFromPoints(points: number, pointsPossible: number): number {
+function percentageFromPoints(points: number, pointsPossible: number) {
   return toNumber(new Big(points).div(pointsPossible).times(100))
 }
 
@@ -63,7 +65,7 @@ function invalid(value) {
   }
 }
 
-function parseAsGradingScheme(value: number, options): null | GradeInput {
+function parseAsGradingScheme(value: string, options) {
   if (!options.gradingScheme) {
     return null
   }
@@ -82,7 +84,7 @@ function parseAsGradingScheme(value: number, options): null | GradeInput {
   }
 }
 
-function parseAsPercent(value: string, options): null | GradeInput {
+function parseAsPercent(value: string, options) {
   const percentage = numberHelper.parse(value.replace(PERCENTAGES, ''))
   if (Number.isNaN(Number(percentage))) {
     return null
@@ -107,7 +109,7 @@ function parseAsPercent(value: string, options): null | GradeInput {
   }
 }
 
-function parseAsPoints(value: string, options): null | GradeInput {
+function parseAsPoints(value: string, options) {
   const points = numberHelper.parse(value)
   if (Number.isNaN(Number(points))) {
     return null
@@ -123,8 +125,8 @@ function parseAsPoints(value: string, options): null | GradeInput {
   }
 }
 
-function parseForGradingScheme(value, options): GradeResult {
-  const result: null | GradeInput =
+function parseForGradingScheme(value, options) {
+  const result =
     parseAsGradingScheme(value, options) ||
     parseAsPoints(value, options) ||
     parseAsPercent(value, options)
@@ -143,9 +145,8 @@ function parseForGradingScheme(value, options): GradeResult {
   return invalid(value)
 }
 
-function parseForPercent(value, options): GradeResult {
-  const result: null | GradeInput =
-    parseAsPercent(value, options) || parseAsGradingScheme(value, options)
+function parseForPercent(value, options) {
+  const result = parseAsPercent(value, options) || parseAsGradingScheme(value, options)
 
   if (result) {
     return {
@@ -181,10 +182,10 @@ function parseForPoints(value, options) {
   return invalid(value)
 }
 
-function parseForPassFail(value: string, options: {pointsPossible: number}): GradeResult {
+function parseForPassFail(value: string, options: {pointsPossible: number}): PassFailResult {
   const cleanValue = value.toLowerCase()
 
-  const result: GradeResult = {
+  const result: PassFailResult = {
     enteredAs: 'passFail',
     late_policy_status: null,
     excused: false,
@@ -260,7 +261,7 @@ export function isMissing(grade) {
   return `${grade}`.trim().toLowerCase() === 'mi'
 }
 
-export function parseTextValue(value: string, options): GradeResult {
+export function parseTextValue(value: string, options) {
   const trimmedValue = value != null ? `${value}`.trim() : ''
 
   if (trimmedValue === '') {

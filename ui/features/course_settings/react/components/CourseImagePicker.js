@@ -24,6 +24,8 @@ import {Tabs} from '@instructure/ui-tabs'
 import {FileDrop} from '@instructure/ui-file-drop'
 import {Billboard} from '@instructure/ui-billboard'
 import {Text} from '@instructure/ui-text'
+import FlickrSearch from './FlickrSearch'
+import ImageSearch from './ImageSearch'
 import {getIconByType} from '@canvas/mime/react/mimeClassIconHelper'
 
 const I18n = useI18nScope('course_images')
@@ -34,11 +36,13 @@ export default class CourseImagePicker extends React.Component {
   static propTypes = {
     courseId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     handleFileUpload: PropTypes.func,
+    handleImageSearchUrlUpload: PropTypes.func,
     uploadingImage: PropTypes.bool,
   }
 
   static defaultProps = {
     handleFileUpload: () => {},
+    handleImageSearchUrlUpload: () => {},
     uploadingImage: false,
   }
 
@@ -100,6 +104,21 @@ export default class CourseImagePicker extends React.Component {
             />
           )}
         </Tabs.Panel>
+        {ENV.use_unsplash_image_search ? (
+          <Tabs.Panel renderTitle={I18n.t('Unsplash')} isSelected={selectedIndex === 1}>
+            <ImageSearch
+              selectImage={(imageUrl, confirmationId) =>
+                this.props.handleImageSearchUrlUpload(imageUrl, confirmationId)
+              }
+            />
+          </Tabs.Panel>
+        ) : (
+          <Tabs.Panel renderTitle={I18n.t('Flickr')} isSelected={selectedIndex === 1}>
+            <FlickrSearch
+              selectImage={imageUrl => this.props.handleImageSearchUrlUpload(imageUrl)}
+            />
+          </Tabs.Panel>
+        )}
       </Tabs>
     )
   }

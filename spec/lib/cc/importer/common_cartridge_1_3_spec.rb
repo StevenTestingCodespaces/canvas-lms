@@ -19,6 +19,8 @@
 
 require_relative "../cc_spec_helper"
 
+require "tmpdir"
+
 describe "Standard Common Cartridge importing" do
   context "in a cartridge" do
     before(:once) do
@@ -54,10 +56,8 @@ describe "Standard Common Cartridge importing" do
     unzipped_file_path = create_temp_dir!
     @course = course_factory
     @migration = ContentMigration.create(context: @course)
-    converter = CC::Importer::Standard::Converter.new(export_archive_path: archive_file_path,
-                                                      course_name: "oi",
-                                                      base_download_dir: unzipped_file_path,
-                                                      content_migration: @migration)
+    converter = CC::Importer::Standard::Converter.new(export_archive_path: archive_file_path, course_name: "oi",
+                                                      base_download_dir: unzipped_file_path, content_migration: @migration)
     converter.convert
     @course_data = converter.course.with_indifferent_access
 
@@ -107,7 +107,7 @@ describe "Standard Common Cartridge importing" do
 
     it "marks teacher role webcontent as locked and hidden" do
       att = @course.attachments.where(migration_id: "Resource5").first
-      expect(att.locked?).to be true
+      expect(att.locked?).to eq true
     end
   end
 

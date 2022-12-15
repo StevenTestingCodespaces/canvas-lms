@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+require "tmpdir"
 require "shellwords"
 module Canvas::Migration
   module MigratorHelper
@@ -169,10 +170,8 @@ module Canvas::Migration
 
     # still used by standard/quiz_converter
     def self.prepend_id_to_questions(questions, prepend_value, existing_ids = nil)
-      key_types = { migration_id: :assessment_questions,
-                    question_bank_id: :assessment_question_banks,
-                    question_bank_migration_id: :assessment_question_banks,
-                    assessment_question_migration_id: :assessment_questions }
+      key_types = { migration_id: :assessment_questions, question_bank_id: :assessment_question_banks,
+                    question_bank_migration_id: :assessment_question_banks, assessment_question_migration_id: :assessment_questions }
 
       questions.each do |q|
         key_types.each do |key, type|
@@ -249,7 +248,7 @@ module Canvas::Migration
       child_groups = []
       if outcome[:type] == "learning_outcome_group"
         if selectable_outcomes
-          log = { migration_id: outcome[:migration_id], title: outcome[:title], child_groups: }
+          log = { migration_id: outcome[:migration_id], title: outcome[:title], child_groups: child_groups }
           (parent_children || overview[:learning_outcome_groups]) << log
         end
       else
@@ -452,7 +451,7 @@ module Canvas::Migration
 
           profile = {
             migration_id: tool_profile["migration_id"],
-            title:
+            title: title
           }
           @overview[:tool_profiles] << profile
         end

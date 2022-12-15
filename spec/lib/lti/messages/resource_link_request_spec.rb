@@ -51,7 +51,7 @@ describe Lti::Messages::ResourceLinkRequest do
           url: "http://www.example.com/launch"
         )
       end
-      let(:opts) { super().merge(resource_link:) }
+      let(:opts) { super().merge(resource_link: resource_link) }
 
       it "uses resource link uuid for rlid claim" do
         expect(jws.dig("https://purl.imsglobal.org/spec/lti/claim/resource_link", "id")).to eq resource_link.resource_link_uuid
@@ -162,20 +162,13 @@ describe Lti::Messages::ResourceLinkRequest do
         ]
       end
 
-      let(:line_items_url_params) do
-        # When we remove the feature flag we'll need to add "host: any" to this
-        { course_id: course.id }
-      end
-
       before do
-        allow(controller).to receive(:lti_line_item_index_url).with(
-          line_items_url_params
-        ).and_return("lti_line_item_index_url")
-
+        allow(controller).to receive(:lti_line_item_index_url).and_return("lti_line_item_index_url")
         allow(controller).to receive(:lti_line_item_show_url).with(
-          line_items_url_params.merge(
+          {
+            course_id: course.id,
             id: expected_assignment_line_item.id
-          )
+          }
         ).and_return("lti_line_item_show_url")
       end
 
@@ -196,45 +189,8 @@ describe Lti::Messages::ResourceLinkRequest do
           expect_assignment_resource_link_id(jws)
           expect_course_resource_link_id(course_jws)
           expect_assignment_and_grade_scope(course_jws)
+          expect_assignment_and_grade_line_items_url(course_jws)
           expect_assignment_and_grade_line_item_url_absent(course_jws)
-        end
-
-        describe "line_items and line_item urls" do
-          before do
-            allow_any_instance_of(Account).to receive(:domain).and_return("canonical-account-domain")
-          end
-
-          context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is off" do
-            # NOTE: when we remove the feature flag we'll have to modify the let(:line_items_url_params) above
-
-            before do
-              course.account.disable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-            end
-
-            it "uses the current domain in the line_items URL" do
-              expect_assignment_and_grade_line_items_url(jws)
-            end
-
-            it "uses the current domain in the line_item URL" do
-              expect_assignment_and_grade_line_item_url(jws)
-            end
-          end
-
-          context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is on" do
-            let(:line_items_url_params) { { host: "canonical-account-domain", course_id: course.id } }
-
-            before do
-              course.account.enable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-            end
-
-            it "uses the Account#domain in the line_items URL" do
-              expect_assignment_and_grade_line_items_url(jws)
-            end
-
-            it "uses the Account#domain in the line_item URL" do
-              expect_assignment_and_grade_line_item_url(jws)
-            end
-          end
         end
       end
 
@@ -394,10 +350,10 @@ describe Lti::Messages::ResourceLinkRequest do
     Lti::Messages::ResourceLinkRequest.new(
       tool: tool_override || tool,
       context: course,
-      user:,
-      expander:,
-      return_url:,
-      opts:
+      user: user,
+      expander: expander,
+      return_url: return_url,
+      opts: opts
     )
   end
 

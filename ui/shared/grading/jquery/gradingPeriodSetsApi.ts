@@ -1,4 +1,3 @@
-// @ts-nocheck
 //
 // Copyright (C) 2016 - present Instructure, Inc.
 //
@@ -17,6 +16,7 @@
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import $ from 'jquery'
+import _ from 'underscore'
 import axios from '@canvas/axios'
 
 import '@canvas/jquery/jquery.instructure_misc_helpers'
@@ -25,12 +25,7 @@ import DateHelper from '@canvas/datetime/dateHelper'
 import NaiveRequestDispatch from '@canvas/network/NaiveRequestDispatch/index'
 import gradingPeriodsApi from './gradingPeriodsApi'
 import type {CamelizedGradingPeriodSet} from '@canvas/grading/grading.d'
-import type {GradingPeriodSet, GradingPeriodSetGroup} from 'api.d'
-import {EnvGradingStandardsCommon} from '@canvas/global/env/EnvGradingStandards'
-import {GlobalEnv} from '@canvas/global/env/GlobalEnv'
-
-// Allow unchecked access to ENV variables that should exist in this context
-declare const ENV: GlobalEnv & EnvGradingStandardsCommon
+import type {GradingPeriodSet} from 'api.d'
 
 const I18n = useI18nScope('gradingPeriodSetsApi')
 
@@ -58,7 +53,7 @@ const baseDeserializeSet = (set: GradingPeriodSet): CamelizedGradingPeriodSet =>
   weighted: !!set.weighted,
   displayTotalsForAllGradingPeriods: set.display_totals_for_all_grading_periods,
   gradingPeriods: gradingPeriodsApi.deserializePeriods(set.grading_periods),
-  permissions: set.permissions,
+  permissions: set.permissions, // TODO: investigate if this is needed
   createdAt: new Date(set.created_at),
   enrollmentTermIDs: undefined,
 })
@@ -74,12 +69,14 @@ const gradingPeriodSetTitle = set => {
 
 const deserializeSet = function (set: GradingPeriodSet): CamelizedGradingPeriodSet {
   const newSet = baseDeserializeSet(set)
-  newSet.enrollmentTermIDs = set.enrollment_term_ids
+  newSet.enrollmentTermIDs = set.enrollment_term_ids // TODO: investigate if this is needed
   return newSet
 }
 
-const deserializeSets = (setGroups: GradingPeriodSetGroup[]): CamelizedGradingPeriodSet[] =>
-  setGroups.flatMap(group => group.grading_period_sets.map(set => baseDeserializeSet(set)))
+const deserializeSets = setGroups =>
+  _.flatten(
+    _.map(setGroups, group => _.map(group.grading_period_sets, set => baseDeserializeSet(set)))
+  )
 
 export default {
   deserializeSet,

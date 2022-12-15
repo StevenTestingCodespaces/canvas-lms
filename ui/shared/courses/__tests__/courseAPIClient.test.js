@@ -30,7 +30,7 @@ describe('apiClient', () => {
 
   beforeEach(() => {
     delete window.location
-    window.location = {search: ''}
+    window.location = {reload: jest.fn()}
     moxios.install()
   })
 
@@ -47,27 +47,14 @@ describe('apiClient', () => {
   })
 
   describe('publishCourse', () => {
-    it('reloads the window after upload with the proper param', done => {
+    it('reloads the window after upload', done => {
       moxios.stubRequest('/api/v1/courses/1', {
         status: 200,
         response: {},
       })
       apiClient.publishCourse({courseId: 1})
       moxios.wait(() => {
-        expect(window.location.search).toBe('for_reload=1')
-        done()
-      })
-    })
-
-    it('calls onSuccess function on success if provided', done => {
-      moxios.stubRequest('/api/v1/courses/1', {
-        status: 200,
-        response: {},
-      })
-      const onSuccess = jest.fn()
-      apiClient.publishCourse({courseId: 1, onSuccess})
-      moxios.wait(() => {
-        expect(onSuccess).toHaveBeenCalled()
+        expect(window.location.reload).toHaveBeenCalled()
         done()
       })
     })
@@ -81,7 +68,7 @@ describe('apiClient', () => {
       })
       apiClient.publishCourse({courseId: 1})
       moxios.wait(() => {
-        expect(window.location.search).toBe('')
+        expect(window.location.reload).not.toHaveBeenCalled()
         expect($.flashWarning).toHaveBeenCalledWith(
           'Complete registration by clicking the “finish the registration process” link sent to your email.'
         )
@@ -95,7 +82,7 @@ describe('apiClient', () => {
       })
       apiClient.publishCourse({courseId: 1})
       moxios.wait(() => {
-        expect(window.location.search).toBe('')
+        expect(window.location.reload).not.toHaveBeenCalled()
         expect($.flashError).toHaveBeenCalledWith('An error ocurred while publishing course')
         done()
       })

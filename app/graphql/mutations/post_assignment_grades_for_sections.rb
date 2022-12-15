@@ -65,12 +65,11 @@ class Mutations::PostAssignmentGradesForSections < Mutations::BaseMutation
         assignment,
         :post_submissions,
         { preserve_method_args: true },
-        progress:,
+        progress: progress,
         submission_ids: submissions_scope.pluck(:id),
-        posting_params:,
-        skip_content_participation_refresh: false
+        posting_params: posting_params
       )
-      { assignment:, progress:, sections: }
+      { assignment: assignment, progress: progress, sections: sections }
     else
       raise GraphQL::ExecutionError, "Error posting assignment grades for sections"
     end

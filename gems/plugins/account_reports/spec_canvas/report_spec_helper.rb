@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "csv"
+
 module ReportSpecHelper
   def read_report(type = @type, options = {})
     account_report = run_report(type, options)
@@ -37,7 +39,7 @@ module ReportSpecHelper
     account = options[:account] || @account
     parameters = options[:params]
     account_report = AccountReport.new(user: @admin || user_factory,
-                                       account:,
+                                       account: account,
                                        report_type: type)
     parameters ||= {}
     account_report.parameters = parameters.merge({ "skip_message" => true })

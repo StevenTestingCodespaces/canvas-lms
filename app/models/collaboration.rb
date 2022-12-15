@@ -68,9 +68,7 @@ class Collaboration < ActiveRecord::Base
              .joins("INNER JOIN #{GroupMembership.quoted_table_name} ON collaborators.group_id = group_memberships.group_id")
              .where('collaborators.group_id IS NOT NULL AND
                             group_memberships.user_id = ? AND
-                            collaborators.collaboration_id = ?',
-                    user,
-                    self).exists?)
+                            collaborators.collaboration_id = ?', user, self).exists?)
     end
     can :read
 
@@ -93,7 +91,7 @@ class Collaboration < ActiveRecord::Base
 
     given do |user, session|
       user && context.root_account.feature_enabled?(:granular_permissions_manage_course_content) &&
-        context.grants_right?(user, session, :manage_course_content_delete)
+        context.grants_right?(user, session, :manage_coure_content_delete)
     end
     can :read and can :delete
 
@@ -146,7 +144,7 @@ class Collaboration < ActiveRecord::Base
   # Returns a class or nil.
   def self.collaboration_class(type)
     if (klass = "#{type}Collaboration".constantize)
-      (klass.ancestors.include?(Collaboration) && klass.config) ? klass : nil
+      klass.ancestors.include?(Collaboration) && klass.config ? klass : nil
     end
   rescue NameError
     nil
@@ -188,7 +186,7 @@ class Collaboration < ActiveRecord::Base
         name = plugin.name
       end
 
-      ActiveSupport::HashWithIndifferentAccess.new({ "name" => name, "type" => type })
+      HashWithIndifferentAccess.new({ "name" => name, "type" => type })
     end
   end
 
@@ -234,7 +232,7 @@ class Collaboration < ActiveRecord::Base
   def include_author_as_collaborator
     return unless user.present?
 
-    author = collaborators.where(user_id:).first
+    author = collaborators.where(user_id: user_id).first
 
     unless author
       collaborator = Collaborator.new(collaboration: self)
@@ -417,12 +415,11 @@ class Collaboration < ActiveRecord::Base
   end
   private :add_users_to_collaborators
 
-  class InvalidCollaborationType < StandardError; end
-  protected
-
   # Internal: Get the authorized_service_user_id for a user.
   # May be overridden by other collaboration types.
-  def authorized_service_user_id_for(user)
+  protected def authorized_service_user_id_for(user)
     user.gmail
   end
+
+  class InvalidCollaborationType < StandardError; end
 end

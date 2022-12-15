@@ -135,19 +135,10 @@ export const LOGGED_OUT_STUDENT_VIEW_QUERY = gql`
 `
 
 export const SUBMISSION_COMMENT_QUERY = gql`
-  query GetSubmissionComments(
-    $submissionId: ID!
-    $submissionAttempt: Int!
-    $cursor: String
-    $peerReview: Boolean = false
-  ) {
+  query GetSubmissionComments($submissionId: ID!, $submissionAttempt: Int!, $cursor: String) {
     submissionComments: node(id: $submissionId) {
       ... on Submission {
-        commentsConnection(
-          last: 20
-          before: $cursor
-          filter: {forAttempt: $submissionAttempt, peerReview: $peerReview}
-        ) {
+        commentsConnection(last: 20, before: $cursor, filter: {forAttempt: $submissionAttempt}) {
           pageInfo {
             startCursor
             hasPreviousPage

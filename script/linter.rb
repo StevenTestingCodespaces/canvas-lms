@@ -20,6 +20,7 @@
 
 $LOAD_PATH.push File.expand_path("../gems/dr_diff/lib", __dir__)
 require "dr_diff"
+require "json"
 
 class Linter
   DEFAULT_OPTIONS = {
@@ -100,7 +101,7 @@ class Linter
   end
 
   def dr_diff
-    @dr_diff ||= ::DrDiff::Manager.new(git_dir:, sha: env_sha, campsite: campsite_mode, heavy: heavy_mode, base_dir:, severe_anywhere:)
+    @dr_diff ||= ::DrDiff::Manager.new(git_dir: git_dir, sha: env_sha, campsite: campsite_mode, heavy: heavy_mode, base_dir: base_dir, severe_anywhere: severe_anywhere)
   end
 
   def wip?
@@ -124,15 +125,15 @@ class Linter
   end
 
   def comments
-    @comments ||= dr_diff.comments(format:,
+    @comments ||= dr_diff.comments(format: format,
                                    command: full_command,
-                                   include_git_dir_in_output:,
-                                   severe_levels:)
+                                   include_git_dir_in_output: include_git_dir_in_output,
+                                   severe_levels: severe_levels)
   end
 
   def generate_comments
     if custom_comment_generation
-      generate_comment_proc.call(changes:, auto_correct:)
+      generate_comment_proc.call(changes: changes, auto_correct: auto_correct)
     else
       comments
     end

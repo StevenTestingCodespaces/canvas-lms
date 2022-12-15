@@ -20,6 +20,10 @@
 class FixEmptyHostedDomainForGoogle < ActiveRecord::Migration[4.2]
   tag :postdeploy
 
+  class AuthenticationProvider < ActiveRecord::Base
+    self.table_name = "account_authorization_configs"
+  end
+
   def self.up
     AuthenticationProvider.where(auth_type: "google", auth_filter: "").update_all(auth_filter: nil)
   end

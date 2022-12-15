@@ -16,13 +16,12 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import INST from 'browser-sniffer'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import $ from 'jquery'
 import htmlEscape from 'html-escape'
 import '@canvas/jquery/jquery.ajaxJSON' // ajaxJSON, defaultAjaxError
 import '@canvas/rails-flash-notifications' // flashError
-
-if (!('INST' in window)) window.INST = {}
 
 const I18n = useI18nScope('ajax_errors')
 
@@ -165,7 +164,7 @@ $(document).ready(function () {
       )
     }
   })
-  $(document).on('click', '.last_error_details_link', event => {
+  $('.last_error_details_link').live('click', event => {
     event.preventDefault()
     event.stopPropagation()
     $('#instructure_ajax_error_box').show()

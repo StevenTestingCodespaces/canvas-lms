@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2018 - present Instructure, Inc.
  *
@@ -23,14 +22,7 @@ import clickCallback from './clickCallback'
 import tinymce from 'tinymce'
 import {TsMigrationAny} from '../../../types/ts-migration'
 
-/**
- * This is the legacy external tools plugin for the RCE. It relies on the 'tinymce-external-tools' plugin
- * in Canvas, and is not functional unless the RCE is running in Canvas.
- *
- * See 'instructure_rce_external_tools' for the new version of this plugin.
- *
- * @deprecated
- */
+// Register plugin
 tinymce.PluginManager.add('instructure_external_tools', function (ed, url) {
   document.addEventListener('tinyRCE/onExternalTools', (event: TsMigrationAny) => {
     clickCallback(ed, event.detail.ltiButtons)

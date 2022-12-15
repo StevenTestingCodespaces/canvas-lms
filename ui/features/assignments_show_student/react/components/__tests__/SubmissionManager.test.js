@@ -31,7 +31,7 @@ import {
 import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react'
 import ContextModuleApi from '../../apis/ContextModuleApi'
 import {mockAssignmentAndSubmission, mockQuery} from '@canvas/assignments/graphql/studentMocks'
-import {MockedProviderWithIntrospectionMatching as MockedProvider} from '@canvas/util/react/testing/MockedProviderWithIntrospectionMatching'
+import {MockedProvider} from '@apollo/react-testing'
 import React from 'react'
 import StudentViewContext, {StudentViewContextDefaults} from '../Context'
 import SubmissionManager from '../SubmissionManager'
@@ -39,7 +39,6 @@ import TextEntry from '../AttemptType/TextEntry'
 import {SubmissionMocks} from '@canvas/assignments/graphql/student/Submission'
 import doFetchApi from '@canvas/do-fetch-api-effect'
 import store from '../stores'
-import {availableReviewCount, COMPLETED_PEER_REVIEW_TEXT} from '../../helpers/PeerReviewHelpers'
 
 // Mock the RCE so we can test text entry submissions without loading the whole
 // editor
@@ -347,7 +346,7 @@ describe('SubmissionManager', () => {
     inDocument: false,
   })
 
-  describe('Peer Review modal after clicking the "Submit Assignment" button', () => {
+  describe('Submission completed modal after clicking the "Submit Assignment" button', () => {
     const {assign} = window.location
     let props, createSubmissionResult, submissionHistoriesResult, mocks, oldEnv
     const variables = {
@@ -410,7 +409,7 @@ describe('SubmissionManager', () => {
     })
 
     it('is present when there are assigned assessments', async () => {
-      const {getByText, getByRole, findByText} = render(
+      const {getByText, getByRole} = render(
         <AlertManagerContext.Provider value={{setOnFailure: jest.fn(), setOnSuccess: jest.fn()}}>
           <MockedProvider mocks={mocks}>
             <SubmissionManager {...props} />
@@ -427,16 +426,6 @@ describe('SubmissionManager', () => {
 
       const peerReviewButton = getByRole('button', {name: 'Peer Review'})
       expect(peerReviewButton).toBeInTheDocument()
-      expect(await findByText('Your work has been submitted.')).toBeTruthy()
-      expect(await findByText('Check back later to view feedback.')).toBeTruthy()
-      const assignedAssessmentsTotal = props.submission.assignedAssessments.filter(
-        a => a.workflowState === 'assigned'
-      ).length
-      const availableTotal = availableReviewCount(props.submission.assignedAssessments)
-      expect(
-        await findByText(`You have ${assignedAssessmentsTotal} Peer Review to complete.`)
-      ).toBeTruthy()
-      expect(await findByText(`Peer submissions ready for review: ${availableTotal}`)).toBeTruthy()
     })
 
     it('is not present when there are no assigned assessments', async () => {
@@ -480,7 +469,7 @@ describe('SubmissionManager', () => {
         ],
       }
 
-      const {getByText} = render(
+      const {getByText, queryByRole} = render(
         <AlertManagerContext.Provider value={{setOnFailure: jest.fn(), setOnSuccess: jest.fn()}}>
           <MockedProvider mocks={mocks}>
             <SubmissionManager {...props} />
@@ -938,33 +927,14 @@ describe('SubmissionManager', () => {
     it('accounts for any extra attempts awarded to the student', async () => {
       const props = await mockAssignmentAndSubmission({
         Assignment: {allowedAttempts: 1},
-        Submission: {...SubmissionMocks.submitted},
+        Submission: {...SubmissionMocks.submitted, extraAttempts: 2},
       })
-      const latestSubmission = {attempt: 1, extraAttempts: 2}
-
-      const {queryByTestId} = renderInContext(
-        {latestSubmission},
+      const {queryByTestId} = render(
         <MockedProvider>
           <SubmissionManager {...props} />
         </MockedProvider>
       )
       expect(queryByTestId('try-again-button')).toBeInTheDocument()
-    })
-
-    it('is not shown when looking at prevous attempts when all allowed attempts have been used', async () => {
-      const props = await mockAssignmentAndSubmission({
-        Assignment: {allowedAttempts: 1},
-        Submission: {...SubmissionMocks.submitted, attempt: 1, extraAttempts: 2},
-      })
-      const latestSubmission = {attempt: 4, extraAttempts: 3}
-
-      const {queryByTestId} = renderInContext(
-        {latestSubmission},
-        <MockedProvider>
-          <SubmissionManager {...props} />
-        </MockedProvider>
-      )
-      expect(queryByTestId('try-again-button')).not.toBeInTheDocument()
     })
   })
 
@@ -1263,9 +1233,7 @@ describe('SubmissionManager', () => {
     beforeAll(async () => {
       // This gets the lazy loaded components loaded before our specs.
       // otherwise, the first one (at least) will fail.
-      const {unmount} = render(
-        <TextEntry focusOnInit={false} submission={{id: '1', _id: '1', state: 'unsubmitted'}} />
-      )
+      const {unmount} = render(<TextEntry submission={{id: '1', _id: '1', state: 'unsubmitted'}} />)
       await waitFor(() => {
         expect(tinymce.editors[0]).toBeDefined()
       })
@@ -1595,7 +1563,7 @@ describe('SubmissionManager', () => {
     })
     describe('with rubrics', () => {
       const originalENV = window.ENV
-      let props, mocks
+      let props, fakeStore, mocks
 
       function generateAssessmentItem(
         criterionId,
@@ -1655,7 +1623,7 @@ describe('SubmissionManager', () => {
         ]
       }
 
-      beforeEach(() => {
+      beforeAll(() => {
         doFetchApi.mockResolvedValue({})
       })
 
@@ -1870,98 +1838,6 @@ describe('SubmissionManager', () => {
         await waitFor(() => {
           expect(setOnSuccess).toHaveBeenCalledWith('Rubric was successfully submitted')
         })
-      })
-
-      it('renders peer review modal for remaining rubric assessments', async () => {
-        setOtherUserAsAssessmentOwner()
-        store.setState({
-          displayedAssessment: {
-            score: 5,
-            data: [
-              generateAssessmentItem(props.assignment.rubric.criteria[0].id, {hasComments: true}),
-              generateAssessmentItem(props.assignment.rubric.criteria[1].id, {hasComments: true}),
-            ],
-          },
-        })
-        const assetId = props.submission._id
-        const reviewerSubmission = {
-          id: 'test-id',
-          _id: 'test-id',
-          assignedAssessments: [
-            {
-              assetId,
-              workflowState: 'assigned',
-              assetSubmissionType: 'online-text',
-            },
-            {
-              assetId: 'some other user id',
-              workflowState: 'assigned',
-              assetSubmissionType: 'online-text',
-            },
-          ],
-        }
-        props.reviewerSubmission = reviewerSubmission
-        props.assignment.env.peerReviewModeEnabled = true
-        props.assignment.env.peerReviewAvailable = true
-
-        const {getByText, findByText} = render(
-          <AlertManagerContext.Provider value={{setOnFailure: jest.fn(), setOnSuccess: jest.fn()}}>
-            <MockedProvider mocks={mocks}>
-              <SubmissionManager {...props} />
-            </MockedProvider>
-          </AlertManagerContext.Provider>
-        )
-        await new Promise(resolve => setTimeout(resolve, 1))
-        const submitButton = getByText('Submit')
-        fireEvent.click(submitButton)
-
-        expect(await findByText('You have 1 more Peer Review to complete.')).toBeTruthy()
-      })
-
-      it('renders peer review modal for completing all rubric assessments', async () => {
-        setOtherUserAsAssessmentOwner()
-        store.setState({
-          displayedAssessment: {
-            score: 5,
-            data: [
-              generateAssessmentItem(props.assignment.rubric.criteria[0].id, {hasComments: true}),
-              generateAssessmentItem(props.assignment.rubric.criteria[1].id, {hasComments: true}),
-            ],
-          },
-        })
-        const assetId = props.submission._id
-        const reviewerSubmission = {
-          id: 'test-id',
-          _id: 'test-id',
-          assignedAssessments: [
-            {
-              assetId,
-              workflowState: 'assigned',
-              assetSubmissionType: 'online-text',
-            },
-            {
-              assetId: 'some other user id',
-              workflowState: 'completed',
-              assetSubmissionType: 'online-text',
-            },
-          ],
-        }
-        props.reviewerSubmission = reviewerSubmission
-        props.assignment.env.peerReviewModeEnabled = true
-        props.assignment.env.peerReviewAvailable = true
-
-        const {getByText, findByText} = render(
-          <AlertManagerContext.Provider value={{setOnFailure: jest.fn(), setOnSuccess: jest.fn()}}>
-            <MockedProvider mocks={mocks}>
-              <SubmissionManager {...props} />
-            </MockedProvider>
-          </AlertManagerContext.Provider>
-        )
-        await new Promise(resolve => setTimeout(resolve, 1))
-        const submitButton = getByText('Submit')
-        fireEvent.click(submitButton)
-
-        expect(await findByText(COMPLETED_PEER_REVIEW_TEXT)).toBeTruthy()
       })
 
       it('creates an error alert when the http request fails', async () => {

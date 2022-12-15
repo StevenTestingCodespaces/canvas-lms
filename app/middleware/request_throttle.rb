@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+require "set"
 
 class RequestThrottle
   # this @@last_sample data isn't thread-safe, and if canvas ever becomes
@@ -150,28 +151,12 @@ class RequestThrottle
   # object won't be caught.
   def client_identifiers(request)
     request.env["canvas.request_throttle.user_id"] ||= [
-      tag_identifier("lti_advantage", lti_advantage_client_id_and_cluster(request)),
-      tag_identifier("service_user_key", site_admin_service_user_key(request)),
       (token_string = AuthenticationMethods.access_token(request, :GET).presence) && "token:#{AccessToken.hashed_token(token_string)}",
       tag_identifier("user", AuthenticationMethods.user_id(request).presence),
       tag_identifier("session", session_id(request).presence),
       tag_identifier("tool", tool_id(request)),
       tag_identifier("ip", request.ip)
     ].compact
-  end
-
-  # Bucket based on LTI Advantage client_id. Routes are identified by a combination of path
-  # and whether the controller uses the LtiServices concern -- see lti_advantage_route? method.
-  def lti_advantage_client_id_and_cluster(request)
-    return unless Lti::IMS::AdvantageAccessTokenRequestHelper.lti_advantage_route?(request)
-
-    client_id = Lti::IMS::AdvantageAccessTokenRequestHelper.token(request)&.client_id
-    return unless client_id
-
-    cluster_id = request.env["canvas.domain_root_account"]&.shard&.database_server_id
-    "#{client_id}-#{cluster_id}"
-  rescue Lti::IMS::AdvantageErrors::AdvantageClientError
-    nil
   end
 
   def tool_id(request)
@@ -192,20 +177,6 @@ class RequestThrottle
     request.env["rack.session.options"].try(:[], :id)
   end
 
-  def site_admin_service_user_key(request)
-    # We only want to allow this approvelist method for User-Agent strings that match the following format:
-    # Example (short): `inst-service-name/2d0c1jk2`
-    # Example (full): `inst-service-name/2d0c1jk2 (region: us-east-1; host: 1de983c20j1ak2; env: production)`
-    regexp = %r{^inst-[a-z0-9_-]+/[a-z0-9]+.*$}i
-    return unless regexp.match?(request.user_agent)
-
-    return unless (token_string = AuthenticationMethods.access_token(request))
-
-    return unless AccessToken.site_admin?(token_string)
-
-    AccessToken.authenticate(token_string).global_developer_key_id
-  end
-
   def self.blocklist
     @blocklist ||= list_from_setting("request_throttle.blocklist")
   end
@@ -224,7 +195,7 @@ class RequestThrottle
   end
 
   def self.list_from_setting(key)
-    Set.new(Setting.get(key, "").split(",").map { |i| i.gsub(/^\s+|\s*(?:;.+)?\s*$/, "") }.compact_blank)
+    Set.new(Setting.get(key, "").split(",").map { |i| i.gsub(/^\s+|\s*(?:;.+)?\s*$/, "") }.reject(&:blank?))
   end
 
   def self.dynamic_settings
@@ -245,12 +216,10 @@ class RequestThrottle
     RequestContext::Generator.add_meta_header("d", "%.2f" % [db_runtime])
 
     if account&.shard&.database_server
-      InstStatsd::Statsd.timing("requests_system_cpu.cluster_#{account.shard.database_server.id}",
-                                system_cpu,
+      InstStatsd::Statsd.timing("requests_system_cpu.cluster_#{account.shard.database_server.id}", system_cpu,
                                 short_stat: "requests_system_cpu",
                                 tags: { cluster: account.shard.database_server.id })
-      InstStatsd::Statsd.timing("requests_user_cpu.cluster_#{account.shard.database_server.id}",
-                                user_cpu,
+      InstStatsd::Statsd.timing("requests_user_cpu.cluster_#{account.shard.database_server.id}", user_cpu,
                                 short_stat: "requests_user_cpu",
                                 tags: { cluster: account.shard.database_server.id })
     end

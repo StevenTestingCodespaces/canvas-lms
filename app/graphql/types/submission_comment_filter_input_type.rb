@@ -29,12 +29,7 @@ module Types
 
     argument :for_attempt, Integer, <<~MD, required: false, default_value: nil
       What submission attempt the comments should be returned for. If not specified,
-      it will return the comments for the current submission or submission history.
-    MD
-
-    argument :peer_review, Boolean, <<~MD, required: false, default_value: false
-      Whether the current user is completing a peer review and should only see
-      comments authored by themselves.
+      it will return the comments for the current submisssion or submission history.
     MD
   end
 end

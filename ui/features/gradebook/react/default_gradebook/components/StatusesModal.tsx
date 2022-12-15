@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -35,11 +34,7 @@ const {Body: ModalBody, Footer: ModalFooter} = Modal as any
 type Props = {
   onClose: () => void
   colors: StatusColors
-  afterUpdateStatusColors: (
-    colors: StatusColors,
-    successFn: () => void,
-    errorFn: any
-  ) => Promise<any>
+  afterUpdateStatusColors: (colors: StatusColors, successFn: any, errorFn: any) => Promise<any>
 }
 
 type State = {
@@ -60,7 +55,7 @@ class StatusesModal extends React.Component<Props, State> {
 
   modalContentRef: HTMLDivElement | null = null
 
-  constructor(props: Props) {
+  constructor(props) {
     super(props)
 
     this.colorPickerButtons = {}
@@ -68,25 +63,24 @@ class StatusesModal extends React.Component<Props, State> {
     this.state = {colors: props.colors, openPopover: null}
   }
 
-  updateStatusColorsFn =
-    (status: string) => (color: string, successFn: () => void, failureFn: () => void) => {
-      this.setState(
-        prevState => update(prevState, {colors: {$merge: {[status]: color}}}),
-        () => {
-          const successFnAndClosePopover = () => {
-            successFn()
-            this.setState({openPopover: null})
-          }
-          this.props.afterUpdateStatusColors(this.state.colors, successFnAndClosePopover, failureFn)
+  updateStatusColorsFn = status => (color, successFn, failureFn) => {
+    this.setState(
+      prevState => update(prevState, {colors: {$merge: {[status]: color}}}),
+      () => {
+        const successFnAndClosePopover = () => {
+          successFn()
+          this.setState({openPopover: null})
         }
-      )
-    }
+        this.props.afterUpdateStatusColors(this.state.colors, successFnAndClosePopover, failureFn)
+      }
+    )
+  }
 
-  isPopoverShown(status: string) {
+  isPopoverShown(status) {
     return this.state.openPopover === status
   }
 
-  handleOnToggle = (status: string) => (toggle: boolean) => {
+  handleOnToggle = status => toggle => {
     if (toggle) {
       this.setState({openPopover: status})
     } else {
@@ -94,21 +88,18 @@ class StatusesModal extends React.Component<Props, State> {
     }
   }
 
-  handleColorPickerAfterClose = (status: string) => () => {
+  handleColorPickerAfterClose = status => () => {
     this.setState({openPopover: null}, () => {
       // eslint-disable-next-line react/no-find-dom-node
-      const element = ReactDOM.findDOMNode(this.colorPickerButtons[status])
-      if (element instanceof HTMLButtonElement) {
-        element.focus()
-      }
+      ReactDOM.findDOMNode(this.colorPickerButtons[status])?.focus()
     })
   }
 
-  bindColorPickerButton = (status: string) => button => {
+  bindColorPickerButton = status => button => {
     this.colorPickerButtons[status] = button
   }
 
-  bindColorPickerContent = (status: string) => content => {
+  bindColorPickerContent = status => content => {
     this.colorPickerContents[status] = content
   }
 

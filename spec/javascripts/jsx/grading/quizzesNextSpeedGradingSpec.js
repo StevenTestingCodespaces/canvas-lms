@@ -33,8 +33,6 @@ const registerCbStub = sinon.stub()
 const refreshGradesCbStub = sinon.stub()
 const addEventListenerStub = sinon.stub()
 
-const nextStub = sinon.stub()
-const prevStub = sinon.stub()
 const refreshSubmissionsToViewStub = sinon.stub()
 const showGradeStub = sinon.stub()
 const showDiscussionStub = sinon.stub()
@@ -45,8 +43,6 @@ const setGradeReadOnlStub = sinon.stub()
 const showSubmissionDetailsStub = sinon.stub()
 
 const fakeEG = {
-  next: nextStub,
-  prev: prevStub,
   refreshSubmissionsToView: refreshSubmissionsToViewStub,
   showGrade: showGradeStub,
   showDiscussion: showDiscussionStub,
@@ -58,8 +54,6 @@ const fakeEG = {
 }
 
 const resetStubs = function () {
-  nextStub.reset()
-  prevStub.reset()
   registerCbStub.reset()
   refreshGradesCbStub.reset()
   addEventListenerStub.reset()
@@ -134,30 +128,6 @@ QUnit.module('QuizzesNextSpeedGrading', suiteHooks => {
       )
       fns.onMessage({data: {subject: 'quizzesNext.submissionUpdate'}})
       ok(refreshGradesCbStub.calledWith(fns.quizzesNextChange))
-    })
-
-    test('calls EG.prev with a quizzesNext.previousStudent message', () => {
-      const fns = QuizzesNextSpeedGrading.setup(
-        fakeEG,
-        fakeIframeHolder,
-        registerCbStub,
-        refreshGradesCbStub,
-        speedGraderWindow
-      )
-      fns.onMessage({data: {subject: 'quizzesNext.previousStudent'}})
-      ok(fakeEG.prev.calledOnce)
-    })
-
-    test('calls EG.next with a quizzesNext.nextStudent message', () => {
-      const fns = QuizzesNextSpeedGrading.setup(
-        fakeEG,
-        fakeIframeHolder,
-        registerCbStub,
-        refreshGradesCbStub,
-        speedGraderWindow
-      )
-      fns.onMessage({data: {subject: 'quizzesNext.nextStudent'}})
-      ok(fakeEG.next.calledOnce)
     })
 
     test('calls the correct functions on EG', () => {
@@ -297,25 +267,6 @@ QUnit.module('QuizzesNextSpeedGrading', suiteHooks => {
         postMessageStub.calledOnceWith({
           subject: 'canvas.speedGraderGradeByQuestionChange',
           enabled: false,
-        })
-      )
-    })
-  })
-
-  QUnit.module('postChangeSubmissionVersionMessage', () => {
-    test('posts a message with the external_tool_url set to show quiz attempt', () => {
-      const submission = {
-        url: 'http://quiz-lti.docker/lti/launch?participant_session_id=1&quiz_session_id=1',
-      }
-      QuizzesNextSpeedGrading.postChangeSubmissionVersionMessage(fakeIframeHolder, submission)
-      ok(
-        postMessageStub.calledOnceWith({
-          subject: 'canvas.speedGraderSubmissionChange',
-          submission: {
-            ...submission,
-            external_tool_url:
-              'http://quiz-lti.docker/lti/launch?participant_session_id=1&quiz_session_id=1',
-          },
         })
       )
     })

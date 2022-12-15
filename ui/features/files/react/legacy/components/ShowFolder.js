@@ -113,7 +113,7 @@ export default {
     }
   },
 
-  UNSAFE_componentWillReceiveProps(newProps) {
+  componentWillReceiveProps(newProps) {
     this.unregisterListeners()
     if (!newProps.currentFolder) return
     if (this.props.pathname !== newProps.pathname) {

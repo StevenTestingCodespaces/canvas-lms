@@ -45,9 +45,7 @@ const {borders, colors, typography} = variables
  */
 const baseFont = {
   typography: {
-    fontFamily: ENV.USE_CLASSIC_FONT
-      ? typography.fontFamily
-      : `"Balsamiq Sans", ${typography.fontFamily}`,
+    fontFamily: `"Balsamiq Sans", ${typography.fontFamily}`,
   },
 }
 const base = {

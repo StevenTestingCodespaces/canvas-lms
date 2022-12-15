@@ -12,5 +12,4 @@ RUN set -eux; \
     /home/docker/.bundle \
   # TODO: --without development \
   && { bundle install --jobs $(nproc) || bundle install; } \
-  && bundle config --global frozen true \
   && rm -rf $GEM_HOME/cache

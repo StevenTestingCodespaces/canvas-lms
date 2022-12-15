@@ -12,7 +12,7 @@ namespace :db do
       when "sqlite", "sqlite3"
         dbfile = abcs[db]["database"] || abcs[db]["dbfile"]
         begin
-          FileUtils.rm_f(dbfile)
+          File.delete(dbfile) if File.exist?(dbfile)
         rescue
           f = File.open(dbfile, "w")
           f.write("")

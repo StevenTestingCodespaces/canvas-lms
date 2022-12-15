@@ -19,10 +19,7 @@
 import PropTypes from 'prop-types'
 import React, {useMemo, useState, useEffect} from 'react'
 import {AddressBook, USER_TYPE, CONTEXT_TYPE} from '../../components/AddressBook/AddressBook'
-import {
-  ADDRESS_BOOK_RECIPIENTS,
-  ADDRESS_BOOK_RECIPIENTS_WITH_COMMON_COURSES,
-} from '../../../graphql/Queries'
+import {ADDRESS_BOOK_RECIPIENTS} from '../../../graphql/Queries'
 import {useQuery} from 'react-apollo'
 
 export const AddressBookContainer = props => {
@@ -36,12 +33,11 @@ export const AddressBookContainer = props => {
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoadingMoreData, setIsLoadingMoreData] = useState(false)
   const [canSendAllMessage, setCanSendAllMessage] = useState(false)
-  const [isMenuOpen, setIsMenuOpen] = useState(props.open)
 
   const isOnObserverSubmenu = () => {
     return (
       props.courseContextCode !== '' &&
-      filterHistory.find(item => item?.context?.contextID?.match(/course_.+_observers/i)) !==
+      filterHistory.find(item => item?.context?.contextID.match(/course_.+_observers/i)) !==
         undefined
     )
   }
@@ -56,42 +52,15 @@ export const AddressBookContainer = props => {
     return () => clearInterval(interval)
   }, [inputValue, searchTerm, setSearchTerm])
 
-  const skipAddressBookRecipientsQuery = () => {
-    // if menu is closed, or if both your search term is empty
-    // or your search has nosubmenu or context to use
-    const latestFilterHistoryItem = filterHistory[filterHistory.length - 1]
-    if (
-      !isMenuOpen ||
-      (!searchTerm &&
-        !(
-          latestFilterHistoryItem?.subMenuSelection ||
-          latestFilterHistoryItem?.context?.contextID ||
-          props.courseContextCode
-        ))
-    ) {
-      return true
-    }
-    return false
-  }
-
-  const addressBookRecipientsQuery = useQuery(
-    props.includeCommonCourses
-      ? ADDRESS_BOOK_RECIPIENTS_WITH_COMMON_COURSES
-      : ADDRESS_BOOK_RECIPIENTS,
-    {
-      skip: skipAddressBookRecipientsQuery(),
-      variables: {
-        context:
-          filterHistory[filterHistory.length - 1]?.context?.contextID ||
-          props.courseContextCode ||
-          null,
-        search: searchTerm,
-        userID,
-        courseContextCode: props.courseContextCode,
-      },
-      notifyOnNetworkStatusChange: true,
-    }
-  )
+  const addressBookRecipientsQuery = useQuery(ADDRESS_BOOK_RECIPIENTS, {
+    variables: {
+      context: filterHistory[filterHistory.length - 1]?.context?.contextID,
+      search: searchTerm,
+      userID,
+      courseContextCode: props.courseContextCode,
+    },
+    notifyOnNetworkStatusChange: true,
+  })
   const {loading, data} = addressBookRecipientsQuery
 
   useEffect(() => {
@@ -213,9 +182,7 @@ export const AddressBookContainer = props => {
         _id: u._id,
         id: u.id,
         name: u.name,
-        commonCoursesInfo: props.includeCommonCourses
-          ? getCommonCoursesInformation(u.commonCoursesConnection)
-          : [],
+        commonCoursesInfo: getCommonCoursesInformation(u.commonCoursesConnection),
         observerEnrollments: u?.observerEnrollmentsConnection?.nodes || [],
         itemType: USER_TYPE,
       }
@@ -250,7 +217,7 @@ export const AddressBookContainer = props => {
     }
 
     return {contextData, userData}
-  }, [loading, data, filterHistory, searchTerm, props.includeCommonCourses])
+  }, [loading, data, filterHistory, searchTerm])
 
   const handleSelect = (item, isContext, isBackButton, isSubmenu) => {
     if (isContext) {
@@ -290,14 +257,12 @@ export const AddressBookContainer = props => {
       selectedRecipients={props.selectedRecipients}
       limitTagCount={props.limitTagCount}
       width={props.width}
-      isMenuOpen={isMenuOpen}
-      setIsMenuOpen={setIsMenuOpen}
+      open={props.open}
       hasSelectAllFilterOption={props.hasSelectAllFilterOption && canSendAllMessage}
       currentFilter={filterHistory[filterHistory.length - 1]}
       activeCourseFilter={props.activeCourseFilter}
       addressBookMessages={props.addressBookMessages}
       isOnObserverSubmenu={isOnObserverSubmenu()}
-      placeholder={props.placeholder}
     />
   )
 }
@@ -336,13 +301,8 @@ AddressBookContainer.propTypes = {
    * bool which determines if "select all" in a context menu appears
    */
   hasSelectAllFilterOption: PropTypes.bool,
-  includeCommonCourses: PropTypes.bool,
   addressBookMessages: PropTypes.array,
   courseContextCode: PropTypes.string,
-  /**
-   * placeholder text for AddressBook search text input
-   */
-  placeholder: PropTypes.string,
 }
 
 AddressBookContainer.defaultProps = {
@@ -350,8 +310,6 @@ AddressBookContainer.defaultProps = {
   onInputValueChange: () => {},
   hasSelectAllFilterOption: false,
   courseContextCode: '',
-  includeCommonCourses: false,
-  open: false,
 }
 
 export default AddressBookContainer

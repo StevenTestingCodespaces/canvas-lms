@@ -26,7 +26,7 @@
 
 require_relative "../common"
 
-RE_SHORT_MD5 = /\A[a-f0-9]{10}\z/ # 10 chars of an MD5
+RE_SHORT_MD5 = /\A[a-f0-9]{10}\z/.freeze # 10 chars of an MD5
 
 describe "Stuff related to how we load stuff from CDN and use brandable_css" do
   include_context "in-process server selenium tests"
@@ -37,7 +37,7 @@ describe "Stuff related to how we load stuff from CDN and use brandable_css" do
         sample_bundles = {
           "bundles/common" => false,
           "../../gems/plugins/analytics/app/stylesheets/analytics" => false, # to test that it works with plugins
-          "jst/FindFlickrImageView" => false, # to test that it works with handlebars-loaded css
+          "jst/tinymce/EquationEditorView" => false, # to test that it works with handlebars-loaded css
           "jst/messageStudentsDialog" => true
         }
         sample_bundles.each do |bundle_name, includes_no_variables|

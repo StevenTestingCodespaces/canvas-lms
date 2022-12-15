@@ -18,11 +18,13 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require_dependency "enrollment/recent_activity"
+
 class Enrollment
   describe RecentActivity do
     describe "initialization" do
       let(:context) { double("enrollment context") }
-      let(:enrollment) { double(context:) }
+      let(:enrollment) { double(context: context) }
 
       it "defaults to the enrollments context" do
         expect(RecentActivity.new(enrollment).context).to eq(context)

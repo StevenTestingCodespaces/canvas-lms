@@ -16,11 +16,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import EquationEditorView from '@canvas/rce/backbone/views/EquationEditorView'
 import loadEventListeners from '@canvas/rce/loadEventListeners'
 import 'jquery'
 import 'jqueryui/tabs'
-
-if (!('INST' in window)) window.INST = {}
+import 'browser-sniffer'
 
 describe('loadEventListeners', () => {
   let fakeEditor, dispatchEvent
@@ -75,8 +75,20 @@ describe('loadEventListeners', () => {
     jest.restoreAllMocks()
   })
 
+  it('initializes equation editor plugin', done => {
+    window.getComputedStyle = jest.fn()
+
+    loadEventListeners({
+      equationCB: view => {
+        expect(view instanceof EquationEditorView).toBeTruthy()
+        expect(view.$editor.selector).toEqual('#someId')
+        done()
+      },
+    })
+    dispatchEvent('initEquation')
+  })
+
   it('initializes equella plugin', done => {
-    expect.assertions(1)
     window.alert = jest.fn()
 
     loadEventListeners({
@@ -87,13 +99,25 @@ describe('loadEventListeners', () => {
         done()
       },
     })
-    dispatchEvent('initEquella')
+    const event = document.createEvent('CustomEvent')
+    const eventData = {
+      ed: fakeEditor,
+      selectNode: '<div></div>',
+    }
+    event.initCustomEvent('tinyRCE/initEquella', true, true, eventData)
+    document.dispatchEvent(event)
   })
 
   it('initializes external tools plugin', () => {
     fakeEditor.addCommand = jest.fn()
     loadEventListeners()
-    dispatchEvent('initExternalTools')
+    const event = document.createEvent('CustomEvent')
+    const eventData = {
+      ed: fakeEditor,
+      url: 'someurl.com',
+    }
+    event.initCustomEvent('tinyRCE/initExternalTools', true, true, eventData)
+    document.dispatchEvent(event)
     expect(fakeEditor.addCommand).toHaveBeenCalledWith(
       'instructureExternalButton__BUTTON_ID__',
       expect.any(Function)

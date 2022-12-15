@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -23,11 +22,11 @@ import CustomColumnHeaderRenderer from './CustomColumnHeaderRenderer'
 import StudentColumnHeader from './StudentColumnHeader'
 import StudentColumnHeaderRenderer from './StudentColumnHeaderRenderer'
 import StudentLastNameColumnHeader from './StudentLastNameColumnHeader'
+import StudentFirstNameColumnHeaderRenderer from './StudentFirstNameColumnHeaderRenderer'
 import TotalGradeColumnHeaderRenderer from './TotalGradeColumnHeaderRenderer'
 import TotalGradeOverrideColumnHeaderRenderer from './TotalGradeOverrideColumnHeaderRenderer'
 import type Gradebook from '../../Gradebook'
 import type GridSupport from '../GridSupport'
-import StudentFirstNameColumnHeader from './StudentFirstNameColumnHeader'
 
 export default class ColumnHeaderRenderer {
   gradebook: Gradebook
@@ -38,7 +37,7 @@ export default class ColumnHeaderRenderer {
     custom_column: CustomColumnHeaderRenderer
     student: StudentColumnHeaderRenderer
     student_lastname: StudentColumnHeaderRenderer
-    student_firstname: StudentColumnHeaderRenderer
+    student_firstname: StudentFirstNameColumnHeaderRenderer
     total_grade: TotalGradeColumnHeaderRenderer
     total_grade_override: TotalGradeOverrideColumnHeaderRenderer
   }
@@ -55,11 +54,7 @@ export default class ColumnHeaderRenderer {
         StudentLastNameColumnHeader,
         'student_lastname'
       ),
-      student_firstname: new StudentColumnHeaderRenderer(
-        gradebook,
-        StudentFirstNameColumnHeader,
-        'student_firstname'
-      ),
+      student_firstname: new StudentFirstNameColumnHeaderRenderer(gradebook),
       total_grade: new TotalGradeColumnHeaderRenderer(gradebook),
       total_grade_override: new TotalGradeOverrideColumnHeaderRenderer(gradebook),
     }

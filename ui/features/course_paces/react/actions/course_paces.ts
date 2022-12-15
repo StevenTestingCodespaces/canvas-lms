@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -96,13 +95,6 @@ const thunkActions = {
           dispatch(coursePaceActions.saveCoursePace(updatedPace))
           dispatch(coursePaceActions.setProgress(progress))
           dispatch(coursePaceActions.pollForPublishStatus())
-          dispatch(
-            paceContextsActions.addPublishingPace({
-              progress_context_id: progress.context_id,
-              pace_context: getState().paceContexts.selectedContext!,
-              polling: true,
-            })
-          )
           dispatch(uiActions.syncingCompleted())
         })
         .catch(error => {
@@ -145,7 +137,7 @@ const thunkActions = {
     // Give the thunk function a name so that we can assert on it in tests
     return function pollingThunk(dispatch, getState) {
       const progress = getState().coursePace.publishingProgress
-
+      const paceName = getPaceName(getState())
       const isUnpublishedNewPace = getIsUnpublishedNewPace(getState())
       if (!progress || TERMINAL_PROGRESS_STATUSES.includes(progress.workflow_state)) return
 
@@ -153,10 +145,6 @@ const thunkActions = {
         Api.getPublishProgress(progress.id)
           .then(updatedProgress => {
             if (!updatedProgress) throw new Error(I18n.t('Response body was empty'))
-            const paceContext = getState().paceContexts.contextsPublishing.find(
-              ({progress_context_id}) => updatedProgress.context_id === progress_context_id
-            )?.pace_context
-            const paceName = paceContext?.name || ''
             dispatch(
               coursePaceActions.setProgress(
                 updatedProgress.workflow_state !== 'completed' ? updatedProgress : undefined
@@ -172,7 +160,6 @@ const thunkActions = {
                 type: 'success',
               })
               dispatch(coursePaceActions.coursePaceSaved(getState().coursePace))
-              dispatch(paceContextsActions.refreshPublishedContext(updatedProgress.context_id))
             } else if (updatedProgress.workflow_state === 'failed') {
               showFlashAlert({
                 message: I18n.t('Error updating %{paceName}', {paceName}),
@@ -180,7 +167,6 @@ const thunkActions = {
                 type: 'error',
               })
               dispatch(uiActions.setCategoryError('publish'))
-              dispatch(paceContextsActions.refreshPublishedContext(updatedProgress.context_id))
               console.log(`Error publishing pace: ${updatedProgress.message}`) // eslint-disable-line no-console
             } else {
               setTimeout(pollingLoop, PUBLISH_STATUS_POLLING_MS)
@@ -219,29 +205,22 @@ const thunkActions = {
   loadLatestPaceByContext: (
     contextType: PaceContextTypes,
     contextId: string,
-    afterAction: LoadingAfterAction = coursePaceActions.saveCoursePace,
-    openModal: boolean = true
+    afterAction: LoadingAfterAction = coursePaceActions.saveCoursePace
   ): ThunkAction<void, StoreState, void, Action> => {
     return async (dispatch, getState) => {
-      if (openModal) {
-        dispatch(uiActions.showLoadingOverlay(I18n.t('Loading...')))
-        dispatch(uiActions.clearCategoryError('loading'))
-      }
+      dispatch(uiActions.showLoadingOverlay(I18n.t('Loading...')))
+      dispatch(uiActions.clearCategoryError('loading'))
 
       await Api.waitForActionCompletion(() => getState().ui.autoSaving)
 
       return Api.getNewCoursePaceFor(getState().course.id, contextType, contextId)
         .then(({course_pace: coursePace, progress}) => {
           if (!coursePace) throw new Error(I18n.t('Response body was empty'))
-          if (afterAction) {
-            dispatch(afterAction(coursePace))
-          }
+          dispatch(afterAction(coursePace))
           dispatch(coursePaceActions.setProgress(progress))
           dispatch(coursePaceActions.pollForPublishStatus())
-          if (openModal) {
-            dispatch(uiActions.hideLoadingOverlay())
-            dispatch(uiActions.showPaceModal(coursePace))
-          }
+          dispatch(uiActions.hideLoadingOverlay())
+          dispatch(uiActions.showPaceModal(coursePace))
         })
         .catch(error => {
           dispatch(uiActions.hideLoadingOverlay())
@@ -309,18 +288,8 @@ const thunkActions = {
       const selectedContextType = CONTEXT_TYPE_MAP[getState().ui.selectedContextType]
       return Api.removePace(getState().coursePace)
         .then(() => {
-          const {page, searchTerm, sortBy, order} = getState().paceContexts
           dispatch(uiActions.hidePaceModal())
-
-          dispatch(
-            paceContextsActions.fetchPaceContexts({
-              contextType: selectedContextType,
-              page,
-              searchTerm,
-              sortBy,
-              orderType: order,
-            })
-          )
+          dispatch(paceContextsActions.fetchPaceContexts(selectedContextType))
           showFlashSuccess(I18n.t('%{paceName} Pace removed', {paceName}))()
         })
         .catch(error => {

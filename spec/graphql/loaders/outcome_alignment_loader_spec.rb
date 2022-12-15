@@ -18,8 +18,6 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require_relative "../../outcome_alignments_spec_helper"
-
 describe Loaders::OutcomeAlignmentLoader do
   before :once do
     course_model
@@ -49,7 +47,7 @@ describe Loaders::OutcomeAlignmentLoader do
     @rubric.associate_with(@discussion_assignment, @course, purpose: "grading")
     @rubric.associate_with(@quiz1_assignment, @course, purpose: "grading")
 
-    @course.account.enable_feature!(:improved_outcomes_management)
+    @course.account.enable_feature!(:outcome_alignment_summary)
   end
 
   def base_url
@@ -78,8 +76,8 @@ describe Loaders::OutcomeAlignmentLoader do
     end
   end
 
-  it "resolves to nil if improved outcomes management FF is disabled" do
-    @course.account.disable_feature!(:improved_outcomes_management)
+  it "resolves to nil if outcome alignment summary FF is disabled" do
+    @course.account.disable_feature!(:outcome_alignment_summary)
 
     GraphQL::Batch.batch do
       Loaders::OutcomeAlignmentLoader.for(
@@ -116,7 +114,6 @@ describe Loaders::OutcomeAlignmentLoader do
             module_workflow_state = "active"
             title = @assignment.title
             assignment_content_type = "assignment"
-            assignment_workflow_state = "published"
             if alignment[:title] == @discussion_item.title
               content_id = @discussion_assignment.id
               title = @discussion_item.title
@@ -145,7 +142,7 @@ describe Loaders::OutcomeAlignmentLoader do
             title = @bank.title
           end
 
-          expect(alignment[:_id]).not_to be_nil
+          expect(alignment[:id]).not_to be_nil
           expect(alignment[:content_id]).to eq content_id
           expect(alignment[:content_type]).to eq content_type
           expect(alignment[:context_id]).to eq @course.id
@@ -158,145 +155,8 @@ describe Loaders::OutcomeAlignmentLoader do
           expect(alignment[:module_url]).to eq module_url
           expect(alignment[:module_workflow_state]).to eq module_workflow_state
           expect(alignment[:assignment_content_type]).to eq assignment_content_type
-          expect(alignment[:assignment_workflow_state]).to eq assignment_workflow_state
-          expect(alignment[:quiz_items]).to be_nil
-          expect(alignment[:alignments_count]).to eq 1
         end
       end
-    end
-  end
-
-  context "when Outcome Alignment Summary with New Quizzes FF is enabled" do
-    before do
-      @course.enable_feature!(:outcome_alignment_summary_with_new_quizzes)
-      @new_quiz = @course.assignments.create!(title: "new quiz - aligned in OS", submission_types: "external_tool")
-      @module1.add_item type: "assignment", id: @new_quiz.id
-      allow_any_instance_of(OutcomesServiceAlignmentsHelper)
-        .to receive(:get_os_aligned_outcomes)
-        .and_return(OutcomeAlignmentsSpecHelper.mock_os_aligned_outcomes([@outcome], @new_quiz.id))
-    end
-
-    it "resolves outcome alignments to new quiz in Outcomes-Service" do
-      count = 0
-      GraphQL::Batch.batch do
-        Loaders::OutcomeAlignmentLoader.for(
-          @course
-        ).load(@outcome).then do |alignments|
-          alignments.each do |alignment|
-            next unless alignment[:assignment_content_type] == "new_quiz"
-
-            count += 1
-            module_url = [base_url, "modules", alignment[:module_id]].join("/") if alignment[:module_id]
-
-            expect(alignment[:_id]).not_to be_nil
-            expect(alignment[:content_id]).to eq @new_quiz.id
-            expect(alignment[:content_type]).to eq "Assignment"
-            expect(alignment[:context_id]).to eq @course.id
-            expect(alignment[:context_type]).to eq "Course"
-            expect(alignment[:title]).to eq @new_quiz.title
-            expect(alignment[:url]).to eq url(alignment)
-            expect(alignment[:learning_outcome_id]).to eq @outcome.id
-            expect(alignment[:module_id]).to eq @module1.id
-            expect(alignment[:module_name]).to eq @module1.name
-            expect(alignment[:module_url]).to eq module_url
-            expect(alignment[:module_workflow_state]).to eq "active"
-            expect(alignment[:assignment_content_type]).to eq "new_quiz"
-            expect(alignment[:assignment_workflow_state]).to eq "published"
-            expect(alignment[:quiz_items]).to eq []
-            expect(alignment[:alignments_count]).to eq 1
-          end
-        end
-      end
-      expect(count).to eq 1
-    end
-
-    it "resolves outcome alignments to new quiz in both Canvas (via rubric) and Outcomes-Service" do
-      @rubric.associate_with(@new_quiz, @course, purpose: "grading")
-      count = 0
-      GraphQL::Batch.batch do
-        Loaders::OutcomeAlignmentLoader.for(
-          @course
-        ).load(@outcome).then do |alignments|
-          alignments.each do |alignment|
-            count += 1 if alignment[:assignment_content_type] == "new_quiz"
-          end
-        end
-      end
-      expect(count).to eq 2
-    end
-
-    it "resolves outcome alignments to both new quiz and to quiz questions in Outcomes-Service" do
-      allow_any_instance_of(OutcomesServiceAlignmentsHelper)
-        .to receive(:get_os_aligned_outcomes)
-        .and_return(OutcomeAlignmentsSpecHelper.mock_os_aligned_outcomes([@outcome], @new_quiz.id, with_items: true))
-      count = 0
-      GraphQL::Batch.batch do
-        Loaders::OutcomeAlignmentLoader.for(
-          @course
-        ).load(@outcome).then do |alignments|
-          alignments.each do |alignment|
-            next unless alignment[:assignment_content_type] == "new_quiz"
-
-            count += 1
-            module_url = [base_url, "modules", alignment[:module_id]].join("/") if alignment[:module_id]
-
-            expect(alignment[:_id]).not_to be_nil
-            expect(alignment[:content_id]).to eq @new_quiz.id
-            expect(alignment[:content_type]).to eq "Assignment"
-            expect(alignment[:context_id]).to eq @course.id
-            expect(alignment[:context_type]).to eq "Course"
-            expect(alignment[:title]).to eq @new_quiz.title
-            expect(alignment[:url]).to eq url(alignment)
-            expect(alignment[:learning_outcome_id]).to eq @outcome.id
-            expect(alignment[:module_id]).to eq @module1.id
-            expect(alignment[:module_name]).to eq @module1.name
-            expect(alignment[:module_url]).to eq module_url
-            expect(alignment[:module_workflow_state]).to eq "active"
-            expect(alignment[:assignment_content_type]).to eq "new_quiz"
-            expect(alignment[:assignment_workflow_state]).to eq "published"
-            expect(alignment[:quiz_items]).to match_array([{ _id: "101", title: "Question Number 101" }, { _id: "102", title: "Question Number 102" }])
-            expect(alignment[:alignments_count]).to eq 3
-          end
-        end
-      end
-      expect(count).to eq 1
-    end
-
-    it "resolves outcome alignments to quiz questions in Outcomes-Service" do
-      allow_any_instance_of(OutcomesServiceAlignmentsHelper)
-        .to receive(:get_os_aligned_outcomes)
-        .and_return(OutcomeAlignmentsSpecHelper.mock_os_aligned_outcomes([@outcome], @new_quiz.id, with_quiz: false, with_items: true))
-      count = 0
-      GraphQL::Batch.batch do
-        Loaders::OutcomeAlignmentLoader.for(
-          @course
-        ).load(@outcome).then do |alignments|
-          alignments.each do |alignment|
-            next unless alignment[:assignment_content_type] == "new_quiz"
-
-            count += 1
-            module_url = [base_url, "modules", alignment[:module_id]].join("/") if alignment[:module_id]
-
-            expect(alignment[:_id]).not_to be_nil
-            expect(alignment[:content_id]).to eq @new_quiz.id
-            expect(alignment[:content_type]).to eq "Assignment"
-            expect(alignment[:context_id]).to eq @course.id
-            expect(alignment[:context_type]).to eq "Course"
-            expect(alignment[:title]).to eq @new_quiz.title
-            expect(alignment[:url]).to eq url(alignment)
-            expect(alignment[:learning_outcome_id]).to eq @outcome.id
-            expect(alignment[:module_id]).to eq @module1.id
-            expect(alignment[:module_name]).to eq @module1.name
-            expect(alignment[:module_url]).to eq module_url
-            expect(alignment[:module_workflow_state]).to eq "active"
-            expect(alignment[:assignment_content_type]).to eq "new_quiz"
-            expect(alignment[:assignment_workflow_state]).to eq "published"
-            expect(alignment[:quiz_items]).to match_array([{ _id: "101", title: "Question Number 101" }, { _id: "102", title: "Question Number 102" }])
-            expect(alignment[:alignments_count]).to eq 2
-          end
-        end
-      end
-      expect(count).to eq 1
     end
   end
 
@@ -313,7 +173,7 @@ describe Loaders::OutcomeAlignmentLoader do
           alignments.each do |alignment|
             next unless alignment[:content_type] == "Assignment" && alignment[:title] == @assignment.title
 
-            expect(alignment[:_id]).not_to be_nil
+            expect(alignment[:id]).not_to be_nil
             expect(alignment[:content_id]).to eq @assignment.id
             expect(alignment[:content_type]).to eq "Assignment"
             expect(alignment[:context_id]).to eq @course.id
@@ -384,29 +244,15 @@ describe Loaders::OutcomeAlignmentLoader do
         end
       end
     end
-
-    it "resolves assignment workflow state to 'unpublished'" do
-      GraphQL::Batch.batch do
-        Loaders::OutcomeAlignmentLoader.for(
-          @course
-        ).load(@outcome).then do |alignments|
-          alignments.each do |alignment|
-            next unless alignment[:content_type] == "Assignment"
-
-            expect(alignment[:assignment_workflow_state]).to eq "unpublished"
-          end
-        end
-      end
-    end
   end
 
-  context "when outcome is aligned to a question bank and the question bank title is updated" do
+  context "when outcome is aligned to a question bank and the bank name is updated" do
     before do
-      @bank.title = "Updated question bank title"
+      @bank.title = "Updated bank name"
       @bank.save!
     end
 
-    it "resolves the question bank alignment title to the updated question bank title" do
+    it "resolves the title of the question bank alignment to the updated bank name" do
       GraphQL::Batch.batch do
         Loaders::OutcomeAlignmentLoader.for(
           @course
@@ -414,70 +260,8 @@ describe Loaders::OutcomeAlignmentLoader do
           alignments.each do |alignment|
             next unless alignment[:content_type] == "AssessmentQuestionBank"
 
-            expect(alignment[:title]).to eq "Updated question bank title"
+            expect(alignment[:title]).to eq "Updated bank name"
           end
-        end
-      end
-    end
-  end
-
-  context "when outcome is aligned to a rubric and the rubric title is updated" do
-    before do
-      @rubric.title = "Updated rubric title"
-      @rubric.save!
-    end
-
-    it "resolves the rubric alignment title to the updated rubric title" do
-      GraphQL::Batch.batch do
-        Loaders::OutcomeAlignmentLoader.for(
-          @course
-        ).load(@outcome).then do |alignments|
-          alignments.each do |alignment|
-            next unless alignment[:content_type] == "Rubric"
-
-            expect(alignment[:title]).to eq "Updated rubric title"
-          end
-        end
-      end
-    end
-  end
-
-  context "when outcome is aligned to a question bank and a question from the bank has a workflow state of" do
-    it "active, the outcome alignments includes the alignment to the quiz" do
-      @bank = AssessmentQuestionBank.find(@bank.id)
-      GraphQL::Batch.batch do
-        Loaders::OutcomeAlignmentLoader.for(
-          @course
-        ).load(@outcome).then do |alignments|
-          expect(alignments.pluck(:title).include?(@quiz2.title)).to be true
-        end
-      end
-    end
-
-    it "independently_edited, the outcome alignments includes the alignment to the quiz" do
-      @bank.assessment_questions.each do |q|
-        q.workflow_state = "independently_edited"
-        q.save!
-      end
-      GraphQL::Batch.batch do
-        Loaders::OutcomeAlignmentLoader.for(
-          @course
-        ).load(@outcome).then do |alignments|
-          expect(alignments.pluck(:title).include?(@quiz2.title)).to be true
-        end
-      end
-    end
-
-    it "deleted, the outcome alignments does not include the alignment to the quiz" do
-      @bank.assessment_questions.each do |q|
-        q.workflow_state = "deleted"
-        q.save!
-      end
-      GraphQL::Batch.batch do
-        Loaders::OutcomeAlignmentLoader.for(
-          @course
-        ).load(@outcome).then do |alignments|
-          expect(alignments.pluck(:title).include?(@quiz2.title)).to be false
         end
       end
     end

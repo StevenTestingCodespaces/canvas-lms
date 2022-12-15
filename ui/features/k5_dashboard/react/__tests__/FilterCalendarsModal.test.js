@@ -22,13 +22,13 @@ import {act, render, waitFor} from '@testing-library/react'
 
 import FilterCalendarsModal from '../FilterCalendarsModal'
 import {destroyContainer} from '@canvas/alerts/react/FlashAlert'
-import {IMPORTANT_DATES_CONTEXTS} from '@canvas/k5/react/__tests__/fixtures'
+import {MOCK_CARDS} from '@canvas/k5/react/__tests__/fixtures'
 
 const SAVED_SELECTED_CONTEXTS_URL = /\/api\/v1\/calendar_events\/save_selected_contexts.*/
 
 const defaultProps = {
   closeModal: jest.fn(),
-  contexts: IMPORTANT_DATES_CONTEXTS,
+  contexts: MOCK_CARDS,
   isOpen: true,
   selectedContextCodes: ['course_2'],
   selectedContextsLimit: 2,

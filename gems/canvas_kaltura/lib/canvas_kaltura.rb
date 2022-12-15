@@ -50,10 +50,10 @@ module CanvasKaltura
     @cache
   end
 
-  def self.with_timeout_protector(options = {}, &)
+  def self.with_timeout_protector(options = {}, &block)
     return yield unless @timeout_protector_proc
 
-    @timeout_protector_proc.call(options, &)
+    @timeout_protector_proc.call(options, &block)
   end
 
   def self.timeout_protector_proc=(callable)

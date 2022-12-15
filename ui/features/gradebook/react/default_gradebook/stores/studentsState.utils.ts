@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -41,13 +40,10 @@ export function flashSubmissionLoadError(): void {
   })
 }
 
-export function reportCatch(error) {
-  // eslint-disable-next-line no-console
-  console.warn(error)
-}
+export function ignoreFailure() {}
 
 export const submissionsParams = {
-  exclude_response_fields: ['preview_url', 'external_tool_url', 'url'],
+  exclude_response_fields: ['preview_url'],
   grouped: 1,
   response_fields: [
     'assignment_id',
@@ -66,12 +62,12 @@ export const submissionsParams = {
     'missing',
     'points_deducted',
     'posted_at',
-    'proxy_submitter',
     'redo_request',
     'score',
     'seconds_late',
     'submission_type',
     'submitted_at',
+    'url',
     'user_id',
     'workflow_state',
   ],
@@ -149,9 +145,9 @@ export function getContentForStudentIdChunk(
       .then(() => {
         // if the student request fails, this callback will not be called
         // the failure will be caught and otherwise ignored
-        return gotSubmissionsChunk(submissions)
+        gotSubmissionsChunk(submissions)
       })
-      .catch(reportCatch)
+      .catch(ignoreFailure)
 
     submissionRequests.push(submissionRequest)
   })

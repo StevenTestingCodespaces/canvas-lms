@@ -52,7 +52,6 @@ export default class KalturaSessionLoader {
   }
 
   kalturaProtocol() {
-    const settingsProtocol = INST?.kalturaSettings?.protocol
-    return settingsProtocol ? settingsProtocol + ':' : window.location.protocol
+    return INST.kalturaSettings.protocol || window.location.protocol
   }
 }

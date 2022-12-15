@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2014 - present Instructure, Inc.
  *
@@ -40,7 +39,7 @@ class PostGradesDialog extends React.Component<Props> {
   }
 
   componentWillUnmount() {
-    this.props.store.removeChangeListener(this.boundForceUpdate as () => void)
+    this.props.store.removeChangeListener(this.boundForceUpdate)
   }
 
   // Page advance callbacks
@@ -190,13 +189,8 @@ class PostGradesDialog extends React.Component<Props> {
         )
       case 'summary': {
         const assignments = store.getState().assignments
-        // TODO: fix this as Array<AssignmentWithOverride> cast
-        const postCount = assignmentUtils.notIgnored(
-          assignments as Array<AssignmentWithOverride>
-        ).length
-        const needsGradingCount = assignmentUtils.needsGrading(
-          assignments as Array<AssignmentWithOverride>
-        ).length
+        const postCount = assignmentUtils.notIgnored(assignments).length
+        const needsGradingCount = assignmentUtils.needsGrading(assignments).length
         return (
           <PostGradesDialogSummaryPage
             postCount={postCount}
@@ -208,11 +202,7 @@ class PostGradesDialog extends React.Component<Props> {
       }
       case 'needsGrading': {
         const assignments = store.getState().assignments
-
-        // TODO: fix this as Array<AssignmentWithOverride> cast
-        const needsGrading = assignmentUtils.needsGrading(
-          assignments as Array<AssignmentWithOverride>
-        )
+        const needsGrading = assignmentUtils.needsGrading(assignments)
         return (
           <PostGradesDialogNeedsGradingPage
             needsGrading={needsGrading}

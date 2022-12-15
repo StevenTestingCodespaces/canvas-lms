@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -50,13 +49,13 @@ const defaultStatusColors = {
   resubmitted: defaultColors.green,
 }
 
-export function statusColors(userColors = {}): StatusColors {
+export function statusColors(userColors = {}) {
   return {
     ...defaultStatusColors,
     ...userColors,
   }
 }
 
-export function darken(color: string, percent: number) {
+export function darken(color, percent) {
   return Color(color).darken(percent)
 }

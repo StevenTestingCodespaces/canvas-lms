@@ -5,7 +5,8 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
-      - TRANSIFEX_TOKEN
+      - TRANSIFEX_USERNAME
+      - TRANSIFEX_PASSWORD
       - SSH_USERNAME
     build:
       dockerfile: ./Dockerfile.package-translations

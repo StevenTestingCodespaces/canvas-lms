@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "importers"
+
 module Importers
   class LearningOutcomeImporter < Importer
     self.item_class = LearningOutcome
@@ -102,7 +104,6 @@ module Importers
             item ||= LearningOutcome.where(context_id: context, context_type: context.class.to_s)
                                     .where(migration_id: hash[:migration_id]).first
           end
-          item ||= LearningOutcome.where(context_id: context, context_type: context.class.to_s, vendor_guid: hash[:vendor_guid]).first if hash[:vendor_guid]
           item ||= context.created_learning_outcomes.temp_record
           item.context = context
           item.mark_as_importing!(migration)

@@ -20,6 +20,8 @@
 
 require_relative "../spec_helper"
 
+require "csv"
+
 describe GradebookImporter do
   let(:gradebook_user) do
     teacher = User.create!
@@ -36,7 +38,7 @@ describe GradebookImporter do
       upload = GradebookUpload.new
       expect { GradebookImporter.new(upload) }
         .to raise_error(ArgumentError, "Must provide a valid context for this gradebook.")
-      upload = GradebookUpload.create!(course: gradebook_course, user: gradebook_user, progress:)
+      upload = GradebookUpload.create!(course: gradebook_course, user: gradebook_user, progress: progress)
       expect { GradebookImporter.new(upload, valid_gradebook_contents, user, progress) }
         .not_to raise_error
     end
@@ -48,7 +50,7 @@ describe GradebookImporter do
 
     it "requires the contents of an upload" do
       progress = Progress.create!(tag: "test", context: @user)
-      upload = GradebookUpload.create!(course: gradebook_course, user: gradebook_user, progress:)
+      upload = GradebookUpload.create!(course: gradebook_course, user: gradebook_user, progress: progress)
       expect { GradebookImporter.new(upload) }
         .to raise_error(ArgumentError, "Must provide attachment.")
     end
@@ -93,7 +95,7 @@ describe GradebookImporter do
       user = user_model
       progress = Progress.create!(tag: "test", context: @user)
       upload = GradebookUpload.new
-      upload = GradebookUpload.create!(course: gradebook_course, user: gradebook_user, progress:)
+      upload = GradebookUpload.create!(course: gradebook_course, user: gradebook_user, progress: progress)
       expect do
         GradebookImporter.create_from(progress, upload, user, invalid_gradebook_contents)
       end.to raise_error(Delayed::RetriableError)
@@ -263,7 +265,7 @@ describe GradebookImporter do
       let(:progress) { Progress.create!(tag: "test", context: gradebook_user) }
 
       let(:upload) do
-        GradebookUpload.create!(course: gradebook_course, user: gradebook_user, progress:)
+        GradebookUpload.create!(course: gradebook_course, user: gradebook_user, progress: progress)
       end
 
       let(:importer) { new_gradebook_importer(attachment, upload, gradebook_user, progress) }
@@ -507,7 +509,7 @@ describe GradebookImporter do
     course = course_model
     user = user_model
     progress = Progress.create!(tag: "test", context: @user)
-    upload = GradebookUpload.create!(course:, user: @user, progress:)
+    upload = GradebookUpload.create!(course: course, user: @user, progress: progress)
     importer = GradebookImporter.new(
       upload, valid_gradebook_contents_with_sis_login_id, user, progress
     )
@@ -519,7 +521,7 @@ describe GradebookImporter do
     course = course_model
     user = user_model
     progress = Progress.create!(tag: "test", context: @user)
-    upload = GradebookUpload.create!(course:, user: @user, progress:)
+    upload = GradebookUpload.create!(course: course, user: @user, progress: progress)
     new_gradebook_importer(
       attachment_with_rows(
         "Student;ID;Section;An Assignment",
@@ -537,7 +539,7 @@ describe GradebookImporter do
     course = course_model
     user = user_model
     progress = Progress.create!(tag: "test", context: @user)
-    upload = GradebookUpload.create!(course:, user: @user, progress:)
+    upload = GradebookUpload.create!(course: course, user: @user, progress: progress)
     new_gradebook_importer(
       attachment_with_rows(
         "Student,ID,Section,An Assignment",
@@ -642,10 +644,11 @@ describe GradebookImporter do
   it "does not create assignments for unposted columns" do
     course_model
     @assignment1 = @course.assignments.create!(name: "Assignment 1", points_possible: 10)
-    importer_with_rows(<<~CSV)
-      Student,ID,Section,Assignment 1,Current Points,Final Points,Unposted Current Score,Unposted Final Score,Unposted Final Grade
-      Points Possible,,,20,,,,,
-    CSV
+    importer_with_rows(
+      "Student,ID,Section,Assignment 1,Current Points,Final Points,Unposted Current Score," \
+      "Unposted Final Score,Unposted Final Grade",
+      "Points Possible,,,20,,,,,"
+    )
     expect(@gi.assignments).to eq [@assignment1]
     expect(@gi.missing_assignments).to be_empty
   end
@@ -784,7 +787,7 @@ describe GradebookImporter do
         ",#{@student.id},,test 1,test 2,test 3,10"
       )
       col = @gi.upload.gradebook.fetch("custom_columns").find { |custom_column| custom_column.fetch("title") == "CustomColumn3" }
-      expect(col).to be_nil
+      expect(col).to eq nil
     end
 
     it "excludes hidden custom columns" do
@@ -794,7 +797,7 @@ describe GradebookImporter do
         ",#{@student.id},,test 1,test 2,test 3,10"
       )
       col = @gi.upload.gradebook.fetch("custom_columns").find { |custom_column| custom_column.fetch("title") == "CustomColumn3" }
-      expect(col).to be_nil
+      expect(col).to eq nil
     end
 
     GradebookImporter::GRADEBOOK_IMPORTER_RESERVED_NAMES.each do |reserved_column|
@@ -809,7 +812,7 @@ describe GradebookImporter do
           ",#{@student.id},,test 1,test 2,test 3,10"
         )
         col = @gi.upload.gradebook.fetch("custom_columns").find { |custom_column| custom_column.fetch("title") == reserved_column }
-        expect(col).to be_nil
+        expect(col).to eq nil
       end
     end
 
@@ -910,13 +913,8 @@ describe GradebookImporter do
     describe "simplified json output" do
       let(:top_level_keys) do
         %i[
-          assignments
-          custom_columns
-          missing_objects
-          original_submissions
-          students
-          unchanged_assignments
-          warning_messages
+          assignments custom_columns missing_objects original_submissions
+          students unchanged_assignments warning_messages
         ]
       end
 
@@ -952,10 +950,7 @@ describe GradebookImporter do
       end
 
       it "an assignment only has specified keys" do
-        keys = %i[grading_type
-                  id
-                  points_possible
-                  previous_id
+        keys = %i[grading_type id points_possible previous_id
                   title]
         expect(assignment.keys.sort).to eql(keys)
       end
@@ -982,7 +977,7 @@ describe GradebookImporter do
 
     it "allows importing grades of assignments when user is final grader" do
       @existing_moderated_assignment.update!(final_grader: user)
-      upload = GradebookUpload.create!(course:, user:, progress:)
+      upload = GradebookUpload.create!(course: course, user: user, progress: progress)
       new_gradebook_importer(
         attachment_with_rows(
           "Student;ID;Section;An Assignment",
@@ -997,7 +992,7 @@ describe GradebookImporter do
     end
 
     it "does not allow importing grades of assignments when user is not final grader" do
-      upload = GradebookUpload.create!(course:, user:, progress:)
+      upload = GradebookUpload.create!(course: course, user: user, progress: progress)
       new_gradebook_importer(
         attachment_with_rows(
           "Student;ID;Section;An Assignment",
@@ -1152,7 +1147,7 @@ describe GradebookImporter do
               "Student,ID,Section,Assignment in closed period,Assignment in open period",
               ",#{@student.id},,5,5"
             )
-            assignment_ids = student_submissions.pluck("assignment_id")
+            assignment_ids = student_submissions.map { |s| s["assignment_id"] }
             expect(assignment_ids).to_not include @closed_assignment.id
           end
 
@@ -1161,7 +1156,7 @@ describe GradebookImporter do
               "Student,ID,Section,Assignment in closed period,Assignment in open period",
               ",#{@student.id},,5,5"
             )
-            assignment_ids = student_submissions.pluck("assignment_id")
+            assignment_ids = student_submissions.map { |s| s["assignment_id"] }
             expect(assignment_ids).to include @open_assignment.id
           end
         end
@@ -1172,7 +1167,7 @@ describe GradebookImporter do
               "Student,ID,Section,Assignment in closed period,Assignment in open period",
               ",#{@student.id},,5,5"
             )
-            expect(student_submissions.pluck("assignment_id")).to_not include @closed_assignment.id
+            expect(student_submissions.map { |s| s["assignment_id"] }).to_not include @closed_assignment.id
           end
 
           it "includes submissions that will not fall in closed grading periods" do
@@ -1180,7 +1175,7 @@ describe GradebookImporter do
               "Student,ID,Section,Assignment in closed period,Assignment in open period",
               ",#{@student.id},,5,5"
             )
-            expect(student_submissions.pluck("assignment_id")).to include @open_assignment.id
+            expect(student_submissions.map { |s| s["assignment_id"] }).to include @open_assignment.id
           end
 
           it "does not grade submissions that had no grade and were marked with '-' in the import" do
@@ -1255,7 +1250,7 @@ describe GradebookImporter do
               "Student,ID,Section,Assignment in closed period,Assignment in open period",
               ",#{@student.id},,5,5"
             )
-            assignment_ids = student_submissions.pluck("assignment_id")
+            assignment_ids = student_submissions.map { |s| s["assignment_id"] }
             expect(assignment_ids).not_to include @open_assignment.id
           end
 
@@ -1264,7 +1259,7 @@ describe GradebookImporter do
               "Student,ID,Section,Assignment in closed period,Assignment in open period",
               ",#{@student.id},,5,5"
             )
-            assignment_ids = student_submissions.pluck("assignment_id")
+            assignment_ids = student_submissions.map { |s| s["assignment_id"] }
             expect(assignment_ids).to include @closed_assignment.id
           end
         end
@@ -1275,7 +1270,7 @@ describe GradebookImporter do
               "Student,ID,Section,Assignment in closed period,Assignment in open period",
               ",#{@student.id},,5,5"
             )
-            assignment_ids = student_submissions.pluck("assignment_id")
+            assignment_ids = student_submissions.map { |s| s["assignment_id"] }
             expect(assignment_ids).to_not include @open_assignment.id
           end
 
@@ -1284,7 +1279,7 @@ describe GradebookImporter do
               "Student,ID,Section,Assignment in closed period,Assignment in open period",
               ",#{@student.id},,5,5"
             )
-            assignment_ids = student_submissions.pluck("assignment_id")
+            assignment_ids = student_submissions.map { |s| s["assignment_id"] }
             expect(assignment_ids).to include @closed_assignment.id
           end
         end
@@ -1318,7 +1313,7 @@ describe GradebookImporter do
 
   describe "#translate_pass_fail" do
     let(:account) { Account.default }
-    let(:course) { Course.create! account: }
+    let(:course) { Course.create! account: account }
     let(:student) do
       student = User.create
       student
@@ -1331,7 +1326,7 @@ describe GradebookImporter do
     let(:assignments) { [assignment] }
     let(:students) { [student] }
     let(:progress) { Progress.create tag: "test", context: student }
-    let(:gradebook_upload) { GradebookUpload.create!(course:, user: student, progress:) }
+    let(:gradebook_upload) { GradebookUpload.create!(course: course, user: student, progress: progress) }
     let(:importer) { GradebookImporter.new(gradebook_upload, "", student, progress) }
 
     it "translates positive score in gradebook_importer_assignments grade to complete" do
@@ -1385,7 +1380,7 @@ describe GradebookImporter do
 
   describe "importing submissions as excused from CSV" do
     let(:account) { Account.default }
-    let(:course) { Course.create! account: }
+    let(:course) { Course.create! account: account }
     let(:student) { User.create! }
     let(:teacher) do
       teacher = User.create!
@@ -1402,7 +1397,7 @@ describe GradebookImporter do
     let(:assignments) { [assignment] }
     let(:students) { [student] }
     let(:progress) { Progress.create! tag: "test", context: student }
-    let(:gradebook_upload) { GradebookUpload.create!(course:, user: student, progress:) }
+    let(:gradebook_upload) { GradebookUpload.create!(course: course, user: student, progress: progress) }
     let(:importer) { GradebookImporter.new(gradebook_upload, "", student, progress) }
 
     it "changes incomplete submission to excused when marked as 'EX' in CSV" do
@@ -1480,7 +1475,7 @@ describe GradebookImporter do
         points_possible: 10
       )
       course.enroll_student(student, enrollment_state: "active")
-      upload = GradebookUpload.create!(course:, user: teacher, progress:)
+      upload = GradebookUpload.create!(course: course, user: teacher, progress: progress)
       importer = new_gradebook_importer(
         attachment_with_rows(
           "Student;ID;Section;Assignment 3",
@@ -1500,7 +1495,7 @@ describe GradebookImporter do
       course = course_model
       user = user_model
       progress = Progress.create!(tag: "test", context: @user)
-      upload = GradebookUpload.create!(course:, user: @user, progress:)
+      upload = GradebookUpload.create!(course: course, user: @user, progress: progress)
       importer = GradebookImporter.new(
         upload, valid_gradebook_contents_with_last_and_first_names, user, progress
       )
@@ -1611,7 +1606,7 @@ describe GradebookImporter do
         expect(output[:students].length).to eq 1
         expect(output[:students].first.dig(:override_scores, 0, :current_score)).to eq "50.54"
         expect(output[:students].first.dig(:override_scores, 0, :new_score)).to eq "60"
-        expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to be_nil
+        expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to eq nil
       end
     end
 
@@ -1625,9 +1620,9 @@ describe GradebookImporter do
 
       aggregate_failures do
         expect(output[:students].length).to eq 1
-        expect(output[:students].first.dig(:override_scores, 0, :current_score)).to be_nil
+        expect(output[:students].first.dig(:override_scores, 0, :current_score)).to eq nil
         expect(output[:students].first.dig(:override_scores, 0, :new_score)).to eq "70"
-        expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to be_nil
+        expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to eq nil
       end
     end
 
@@ -1642,8 +1637,8 @@ describe GradebookImporter do
       aggregate_failures do
         expect(output[:students].length).to eq 1
         expect(output[:students].first.dig(:override_scores, 0, :current_score)).to eq "50.54"
-        expect(output[:students].first.dig(:override_scores, 0, :new_score)).to be_nil
-        expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to be_nil
+        expect(output[:students].first.dig(:override_scores, 0, :new_score)).to eq nil
+        expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to eq nil
       end
     end
 
@@ -1687,11 +1682,11 @@ describe GradebookImporter do
 
         expect(output[:students].first.dig(:override_scores, 0, :current_score)).to eq "50.54"
         expect(output[:students].first.dig(:override_scores, 0, :new_score)).to eq "50.54"
-        expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to be_nil
+        expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to eq nil
 
-        expect(output[:students].second.dig(:override_scores, 0, :current_score)).to be_nil
+        expect(output[:students].second.dig(:override_scores, 0, :current_score)).to eq nil
         expect(output[:students].second.dig(:override_scores, 0, :new_score)).to eq "60"
-        expect(output[:students].second.dig(:override_scores, 0, :grading_period_id)).to be_nil
+        expect(output[:students].second.dig(:override_scores, 0, :grading_period_id)).to eq nil
       end
     end
 
@@ -1740,7 +1735,7 @@ describe GradebookImporter do
     context "for a course with grading periods" do
       before do
         enrollment_term = @course.root_account.enrollment_terms.create!
-        @course.update!(enrollment_term:)
+        @course.update!(enrollment_term: enrollment_term)
 
         grading_period_group = @course.root_account.grading_period_groups.create!
         grading_period_group.enrollment_terms << enrollment_term
@@ -1802,7 +1797,7 @@ describe GradebookImporter do
           expect(first_period_change[:new_score]).to eq "70"
 
           second_period_change = overrides.detect { |override| override[:grading_period_id] == second_grading_period.id }
-          expect(second_period_change[:current_score]).to be_nil
+          expect(second_period_change[:current_score]).to eq nil
           expect(second_period_change[:new_score]).to eq "60"
         end
       end
@@ -1837,11 +1832,11 @@ describe GradebookImporter do
           expect(student2_overrides.length).to eq 2
 
           student2_course_change = student2_overrides.detect { |override| override[:grading_period_id].nil? }
-          expect(student2_course_change[:current_score]).to be_nil
-          expect(student2_course_change[:new_score]).to be_nil
+          expect(student2_course_change[:current_score]).to eq nil
+          expect(student2_course_change[:new_score]).to eq nil
 
           student2_gp_change = student2_overrides.detect { |override| override[:grading_period_id] == first_grading_period.id }
-          expect(student2_gp_change[:current_score]).to be_nil
+          expect(student2_gp_change[:current_score]).to eq nil
           expect(student2_gp_change[:new_score]).to eq "70"
         end
       end
@@ -1877,7 +1872,7 @@ describe GradebookImporter do
           expect(output[:students].length).to eq 1
           expect(output[:students].first.dig(:override_scores, 0, :current_score)).to eq "50.54"
           expect(output[:students].first.dig(:override_scores, 0, :new_score)).to eq "50"
-          expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to be_nil
+          expect(output[:students].first.dig(:override_scores, 0, :grading_period_id)).to eq nil
         end
       end
     end
@@ -1904,7 +1899,7 @@ describe GradebookImporter do
         expect(student_without_override_data[:submissions].length).to eq 1
         expect(student_without_override_data.dig(:submissions, 0, "grade")).to eq "40"
         expect(student_without_override_data[:override_scores].length).to eq 1
-        expect(student_without_override_data.dig(:override_scores, 0, :new_score)).to be_nil
+        expect(student_without_override_data.dig(:override_scores, 0, :new_score)).to eq nil
       end
     end
 
@@ -1932,7 +1927,7 @@ describe GradebookImporter do
       let(:grading_period_2) { grading_period_group.grading_periods.second }
 
       before do
-        @course.enrollment_term.update!(grading_period_group:)
+        @course.enrollment_term.update!(grading_period_group: grading_period_group)
       end
 
       describe "top-level override score content" do
@@ -1944,7 +1939,7 @@ describe GradebookImporter do
           )
 
           output = importer.as_json
-          expect(output[:override_scores][:includes_course_scores]).to be true
+          expect(output[:override_scores][:includes_course_scores]).to eq true
         end
 
         it "sets 'includes_course_scores' to false if no course-level override scores have changed" do
@@ -1955,7 +1950,7 @@ describe GradebookImporter do
           )
 
           output = importer.as_json
-          expect(output[:override_scores][:includes_course_scores]).to be false
+          expect(output[:override_scores][:includes_course_scores]).to eq false
         end
 
         it "includes JSON for all grading periods with changes" do
@@ -1999,14 +1994,14 @@ describe GradebookImporter do
 
           aggregate_failures do
             expect(changed_record[:override_scores].length).to eq 1
-            expect(changed_record[:override_scores].first[:current_score]).to be_nil
+            expect(changed_record[:override_scores].first[:current_score]).to eq nil
             expect(changed_record[:override_scores].first[:new_score]).to eq "80.23"
-            expect(changed_record[:override_scores].first[:grading_period_id]).to be_nil
+            expect(changed_record[:override_scores].first[:grading_period_id]).to eq nil
 
             expect(unchanged_record[:override_scores].length).to eq 1
             expect(unchanged_record[:override_scores].first[:current_score]).to eq "50.54"
             expect(unchanged_record[:override_scores].first[:new_score]).to eq "50.54"
-            expect(unchanged_record[:override_scores].first[:grading_period_id]).to be_nil
+            expect(unchanged_record[:override_scores].first[:grading_period_id]).to eq nil
           end
         end
 
@@ -2035,13 +2030,13 @@ describe GradebookImporter do
 
           aggregate_failures do
             expect(changed_record[:override_scores].length).to eq 1
-            expect(changed_record[:override_scores].first[:current_score]).to be_nil
+            expect(changed_record[:override_scores].first[:current_score]).to eq nil
             expect(changed_record[:override_scores].first[:new_score]).to eq "90"
             expect(changed_record[:override_scores].first[:grading_period_id]).to eq grading_period_2.id
 
             expect(unchanged_record[:override_scores].length).to eq 1
-            expect(unchanged_record[:override_scores].first[:current_score]).to be_nil
-            expect(unchanged_record[:override_scores].first[:new_score]).to be_nil
+            expect(unchanged_record[:override_scores].first[:current_score]).to eq nil
+            expect(unchanged_record[:override_scores].first[:new_score]).to eq nil
             expect(unchanged_record[:override_scores].first[:grading_period_id]).to eq grading_period_2.id
           end
         end

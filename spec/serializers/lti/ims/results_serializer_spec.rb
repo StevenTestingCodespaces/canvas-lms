@@ -37,9 +37,9 @@ describe Lti::IMS::ResultsSerializer do
 
     context "with comment" do
       let(:comment) { "This is a comment" }
-      let(:result) { lti_result_model comment: }
+      let(:result) { lti_result_model comment: comment }
 
-      it { is_expected.to eq expected.merge(comment:) }
+      it { is_expected.to eq expected.merge(comment: comment) }
     end
   end
 end

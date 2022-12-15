@@ -1,6 +1,12 @@
 [
   {
     "name": "AccessViolationError",
+    "source": "packages/backbone-identity-map/index.js",
+    "target": "ui/shared/backbone/index.js",
+    "request": "@canvas/backbone"
+  },
+  {
+    "name": "AccessViolationError",
     "source": "packages/jqueryui/tooltip.js",
     "target": "ui/shared/i18n/rtlHelper.js",
     "request": "@canvas/i18n/rtlHelper"
@@ -10,6 +16,12 @@
     "source": "packages/slickgrid/slick.grid.js",
     "target": "ui/shared/i18n/rtlHelper.js",
     "request": "@canvas/i18n/rtlHelper"
+  },
+  {
+    "name": "SpecifierMismatchError",
+    "source": "ui/features/assignment_show/index.js",
+    "target": "ui/shared/immersive-reader/ImmersiveReader.js",
+    "request": "../../shared/immersive-reader/ImmersiveReader"
   },
   {
     "name": "AccessViolationError",
@@ -26,12 +38,6 @@
   {
     "name": "SpecifierMismatchError",
     "source": "ui/features/discussion_topics_post/graphql/Mutations.js",
-    "target": "ui/shared/graphql/Error.js",
-    "request": "../../../shared/graphql/Error"
-  },
-  {
-    "name": "SpecifierMismatchError",
-    "source": "ui/features/grade_summary/graphql/Mutations.js",
     "target": "ui/shared/graphql/Error.js",
     "request": "../../../shared/graphql/Error"
   },
@@ -97,12 +103,6 @@
   },
   {
     "name": "AccessViolationError",
-    "source": "ui/features/assignment_edit/backbone/views/EditView.js",
-    "target": "ui/boot/initializers/activateTooltips.js",
-    "request": "../../../../boot/initializers/activateTooltips"
-  },
-  {
-    "name": "AccessViolationError",
     "source": "ui/features/gradebook/react/default_gradebook/Gradebook.js",
     "target": "ui/boot/initializers/activateTooltips.js",
     "request": "../../../../boot/initializers/activateTooltips"
@@ -127,6 +127,12 @@
   },
   {
     "name": "SpecifierMismatchError",
+    "source": "ui/shared/lti/jquery/messages.js",
+    "target": "ui/shared/rce/plugins/canvas_mentions/constants.js",
+    "request": "../../rce/plugins/canvas_mentions/constants"
+  },
+  {
+    "name": "SpecifierMismatchError",
     "source": "ui/shared/outcomes/react/hooks/useGroupCreate.js",
     "target": "ui/shared/outcomes/graphql/Management.js",
     "request": "@canvas/outcomes/graphql/Management"
@@ -148,6 +154,12 @@
     "source": "ui/shared/outcomes/react/hooks/useOutcomesImport.js",
     "target": "ui/shared/outcomes/react/hooks/useCanvasContext.js",
     "request": "@canvas/outcomes/react/hooks/useCanvasContext"
+  },
+  {
+    "name": "SpecifierMismatchError",
+    "source": "ui/features/assignments_show_student/react/components/StudentContent.js",
+    "target": "ui/shared/immersive-reader/ImmersiveReader.js",
+    "request": "../../../../shared/immersive-reader/ImmersiveReader"
   },
   {
     "name": "SpecifierMismatchError",

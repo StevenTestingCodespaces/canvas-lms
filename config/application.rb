@@ -31,6 +31,8 @@ module CanvasRails
   class Application < Rails::Application
     config.autoloader = :zeitwerk
 
+    config.hosts << "#{ENV["CODESPACE_NAME"]}-3000.preview.app.github.dev"
+
     config.add_autoload_paths_to_load_path = false
 
     config.encoding = "utf-8"
@@ -79,7 +81,7 @@ module CanvasRails
       (log_config["facilities"] || []).each do |facility|
         facilities |= Syslog.const_get "LOG_#{facility.to_s.upcase}"
       end
-      ident = (ENV["RUNNING_AS_DAEMON"] == "true") ? log_config["daemon_ident"] : log_config["app_ident"]
+      ident = ENV["RUNNING_AS_DAEMON"] == "true" ? log_config["daemon_ident"] : log_config["app_ident"]
       opts[:include_pid] = true if log_config["include_pid"] == true
       config.logger = SyslogWrapper.new(ident, facilities, opts)
       config.logger.level = log_level
@@ -130,6 +132,7 @@ module CanvasRails
     config.i18n.load_path << Rails.root.join("config/locales/community.csv")
 
     config.to_prepare do
+      require_dependency "canvas/plugins/default_plugins"
       Canvas::Plugins::DefaultPlugins.apply_all
       ActiveSupport::JSON::Encoding.escape_html_entities_in_json = true
     end
@@ -145,7 +148,9 @@ module CanvasRails
             return super(conn_params)
             # we _shouldn't_ be catching a NoDatabaseError, but that's what Rails raises
             # for an error where the database name is in the message (i.e. a hostname lookup failure)
-          rescue ::ActiveRecord::NoDatabaseError, ::ActiveRecord::ConnectionNotEstablished
+            # CANVAS_RAILS="6.0" rails 6.1 switches from PG::Error to ActiveRecord::ConnectionNotEstablished
+            # for any other error
+          rescue ::PG::Error, ::ActiveRecord::NoDatabaseError, ::ActiveRecord::ConnectionNotEstablished
             raise if index == hosts.length - 1
             # else try next host
           end
@@ -209,7 +214,7 @@ module CanvasRails
           super
         else
           # Any is eager, so we must map first or we won't run on all keys
-          SUPPORTED_RAILS_VERSIONS.map do |version|
+          SUPPORTED_VERSIONS.map do |version|
             super(key, (options || {}).merge(explicit_version: version.delete(".")))
           end.any?
         end

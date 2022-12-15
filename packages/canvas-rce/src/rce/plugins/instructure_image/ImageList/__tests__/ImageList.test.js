@@ -34,7 +34,6 @@ describe('RCE "Images" Plugin > ImageList', () => {
         buildImage(2, 'example_3.png', 102, 202),
       ],
       onImageClick: jest.fn(),
-      canvasOrigin: 'https://canvas.instructor.com',
     }
   })
 

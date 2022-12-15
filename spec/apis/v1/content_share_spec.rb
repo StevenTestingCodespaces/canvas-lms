@@ -18,6 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 require_relative "../../spec_helper"
+require_dependency "api/v1/content_share"
 
 describe ContentShare do
   include Api::V1::ContentShare
@@ -36,10 +37,8 @@ describe ContentShare do
       "page" => { "wiki_pages" => { "blah" => "1" } },
       "quiz" => { "quizzes" => { "blah" => "1" } },
       "module_item" => { "wiki_pages" => { "bap" => "1" }, "content_tags" => { "blah" => "1" } },
-      "module" => { "content_tags" => { "bar" => "1", "baz" => "1" },
-                    "context_modules" => { "foo" => "1" },
-                    "assignments" => { "bip" => "1" },
-                    "wiki_pages" => { "bap" => "1" } }
+      "module" => { "content_tags" => { "bar" => "1", "baz" => "1" }, "context_modules" => { "foo" => "1" },
+                    "assignments" => { "bip" => "1" }, "wiki_pages" => { "bap" => "1" } }
     }
   end
 

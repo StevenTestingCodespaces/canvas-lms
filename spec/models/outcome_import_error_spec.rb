@@ -18,7 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-describe OutcomeImportError do
+describe OutcomeImportError, type: :model do
   describe "associations" do
     it { is_expected.to belong_to(:outcome_import) }
   end

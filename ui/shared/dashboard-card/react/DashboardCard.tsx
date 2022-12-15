@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2015 - present Instructure, Inc.
  *
@@ -99,7 +98,6 @@ export type DashboardCardProps = {
   defaultView?: string
   pagesUrl?: string
   frontPageTitle?: string
-  onPublishedCourse?: (id: string) => void
 }
 
 export const DashboardCard = ({
@@ -130,7 +128,6 @@ export const DashboardCard = ({
   defaultView,
   pagesUrl,
   frontPageTitle,
-  onPublishedCourse = () => {},
 }: DashboardCardProps) => {
   const handleNicknameChange = nickname => setNicknameInfo(getNicknameInfo(nickname))
 
@@ -230,10 +227,6 @@ export const DashboardCard = ({
       )
   }
 
-  const updatePublishedCourse = () => {
-    if (onPublishedCourse) onPublishedCourse(id)
-  }
-
   // ===============
   //    RENDERING
   // ===============
@@ -245,7 +238,7 @@ export const DashboardCard = ({
       const screenReaderLabel = `${link.label} - ${nicknameInfo.nickname}`
       return (
         <DashboardCardAction
-          unreadCount={unreadCount(link.icon, course?.stream)}
+          unreadCount={unreadCount(link.icon, course.stream)}
           iconClass={link.icon}
           linkClass={link.css_class}
           path={link.path}
@@ -343,7 +336,6 @@ export const DashboardCard = ({
             pagesUrl={pagesUrl}
             frontPageTitle={frontPageTitle}
             courseId={id}
-            onSuccess={updatePublishedCourse}
           />
         )}
         {renderHeaderButton()}

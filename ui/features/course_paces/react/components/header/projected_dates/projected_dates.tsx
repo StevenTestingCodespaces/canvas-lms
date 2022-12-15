@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -73,7 +72,7 @@ type StoreProps = {
   readonly compression: number
 }
 
-export const ProjectedDates = ({
+export const ProjectedDates: React.FC<StoreProps> = ({
   coursePace,
   assignments,
   paceDuration,
@@ -81,7 +80,7 @@ export const ProjectedDates = ({
   compressDates,
   uncompressDates,
   compression,
-}: StoreProps) => {
+}) => {
   const [dateFormatter] = useState(coursePaceDateFormatter)
 
   const enrollmentType = coursePace.context_type === 'Enrollment'

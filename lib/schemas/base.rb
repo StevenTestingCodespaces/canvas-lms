@@ -22,20 +22,11 @@ module Schemas
   class Base
     delegate :validate, :valid?, to: :schema_checker
 
-    def self.simple_validation_errors(json_hash, error_format: :string)
+    def self.simple_validation_errors(json_hash)
       error = new.validate(json_hash).to_a.first
       return nil if error.blank?
-
       if error["data_pointer"].present?
-        if error_format == :hash
-          return {
-            error: error["data"],
-            field: error["data_pointer"],
-            schema: error["schema"]
-          }
-        else
-          return "#{error["data"]} #{error["data_pointer"]}. Schema: #{error["schema"]}"
-        end
+        return "#{error["data"]} #{error["data_pointer"]}. Schema: #{error["schema"]}"
       end
 
       "The following fields are required: #{error.dig("schema", "required").join(", ")}"

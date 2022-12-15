@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2020 - present Instructure, Inc.
  *
@@ -133,17 +132,14 @@ export default class GradebookKeyboardNav {
     return false
   }
 
-  haveLocation(usePrevActiveLocation: boolean = false) {
+  haveLocation(usePrevActiveLocation: boolean) {
     if (this.gridSupport.state.getActiveLocation().cell != null) {
       return true
     }
     return usePrevActiveLocation && this.prevActiveLocation != null
   }
 
-  preprocessKeydown(
-    handler: (e: KeyboardEvent) => void,
-    usePrevActiveLocation: boolean = false
-  ): (e: KeyboardEvent) => void {
+  preprocessKeydown(handler, usePrevActiveLocation: boolean) {
     return e => {
       if (!this.shouldHandleEvent(e) || !this.haveLocation(usePrevActiveLocation)) {
         return
@@ -213,7 +209,7 @@ export default class GradebookKeyboardNav {
     return header
   }
 
-  sortOnHeader(_event: Event) {
+  sortOnHeader() {
     this.options.toggleDefaultSort(this.currentColumnId())
     const activeLocation = this.gridSupport.state.getActiveLocation()
     if (this.currentColumnType() === 'student' && activeLocation.region === 'body') {
@@ -232,7 +228,7 @@ export default class GradebookKeyboardNav {
     this.getHeaderFromActiveCell().querySelector('.Gradebook__ColumnHeaderAction button')?.click()
   }
 
-  gotoAssignment(_event: Event) {
+  gotoAssignment() {
     if (this.currentColumnType() !== 'assignment') {
       return
     }
@@ -240,7 +236,7 @@ export default class GradebookKeyboardNav {
     window.location = url
   }
 
-  showSubmissionTray(_event: Event) {
+  showSubmissionTray() {
     if (!(this.currentRegion() === 'body' && this.currentColumnType() === 'assignment')) {
       return
     }

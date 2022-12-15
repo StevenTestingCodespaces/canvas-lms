@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -172,7 +171,6 @@ export interface PaceContextsState {
   readonly searchTerm: string
   readonly sortBy: SortableColumn
   readonly order: OrderType
-  readonly contextsPublishing: PaceContextProgress[]
 }
 
 export interface StoreState {
@@ -200,12 +198,6 @@ export interface PaceContext {
   associated_section_count: number
   associated_student_count: number
   applied_pace: Pace | null
-}
-
-export interface PaceContextProgress {
-  progress_context_id: string
-  pace_context: PaceContext
-  polling: boolean
 }
 
 export interface PaceContextsApiResponse {

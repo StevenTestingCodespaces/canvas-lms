@@ -17,8 +17,8 @@
  */
 
 import $ from 'jquery'
-import _ from 'lodash'
-import Outcome from '@canvas/grade-summary/backbone/models/Outcome'
+import _ from 'underscore'
+import Outcome from '@canvas/grade-summary/backbone/models/Outcome.coffee'
 import OutcomeDialogView from 'ui/features/grade_summary/backbone/views/OutcomeDialogView'
 import OutcomeLineGraphView from 'ui/features/grade_summary/backbone/views/OutcomeLineGraphView'
 

@@ -765,11 +765,7 @@ $outcome-border: 1px solid #BCC2CA;
     display: table-row !important;
   }
 
-  [data-id="submissions-comments-tray"] {
+  [data-cid="Tray"] {
     display: none
   }
-}
-
-.selected-assignment {
-  background-color: $ic-bg-light-primary
 }

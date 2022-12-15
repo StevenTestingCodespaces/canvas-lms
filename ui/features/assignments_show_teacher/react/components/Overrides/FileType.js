@@ -84,9 +84,9 @@ export default class FileType extends React.Component {
   renderOptions() {
     return this.props.options.map(option => {
       return (
-        <Select.Option id={option.key} key={option.key} value={option.key}>
+        <option key={option.key} value={option.key}>
           {option.display}
-        </Select.Option>
+        </option>
       )
     })
   }
@@ -116,7 +116,7 @@ export default class FileType extends React.Component {
                 <Select
                   multiple={true}
                   closeOnSelect={false}
-                  renderLabel={<ScreenReaderContent>{I18n.t('Options')}</ScreenReaderContent>}
+                  label={<ScreenReaderContent>{I18n.t('Options')}</ScreenReaderContent>}
                   selectedOption={this.state.selectedOptions}
                   onChange={this.handleInputChange}
                 >

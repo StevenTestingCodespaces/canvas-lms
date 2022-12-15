@@ -17,6 +17,12 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require "cgi"
+require "net/http"
+require "net/https"
+require "json"
+
+require_dependency "canvadocs/session"
 module Canvadocs
   extend CanvadocsHelper
   RENDER_O365     = "office_365"
@@ -97,9 +103,8 @@ module Canvadocs
     #
     # Returns a hash containing the session id
     def session(document_id, opts = {})
-      raw_body = api_call(:post,
-                          "sessions",
-                          opts.merge(document_id:))
+      raw_body = api_call(:post, "sessions",
+                          opts.merge(document_id: document_id))
       JSON.parse(raw_body)
     end
 
@@ -226,7 +231,7 @@ module Canvadocs
       return {} if attachment.nil?
 
       submission = Submission.find_by(
-        id: AttachmentAssociation.where(context_type: "Submission", attachment:).select(:context_id)
+        id: AttachmentAssociation.where(context_type: "Submission", attachment: attachment).select(:context_id)
       )
       return {} if submission.nil?
     end
@@ -373,7 +378,7 @@ module Canvadocs
         name = canvadocs_user_name(filter_user)
       end
 
-      { id:, type:, role:, name: }
+      { id: id, type: type, role: role, name: name }
     end
   end
 end

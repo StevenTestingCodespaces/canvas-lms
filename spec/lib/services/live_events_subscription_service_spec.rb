@@ -18,6 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 require_relative "../../spec_helper"
+require_dependency "services/live_events_subscription_service"
 
 module Services
   describe LiveEventsSubscriptionService do
@@ -35,7 +36,7 @@ module Services
 
       describe ".available?" do
         it "returns false if the service is not configured" do
-          expect(LiveEventsSubscriptionService.available?).to be false
+          expect(LiveEventsSubscriptionService.available?).to eq false
         end
       end
     end
@@ -47,10 +48,12 @@ module Services
           .and_return({
                         "app-host" => "http://example.com",
                       })
-
-        allow(Rails.application.credentials).to receive(:dig).and_call_original
-        allow(Rails.application.credentials).to receive(:dig).with(:canvas_security, :signing_secret).and_return("astringthatisactually32byteslong")
-        allow(Rails.application.credentials).to receive(:dig).with(:canvas_security, :encryption_secret).and_return("astringthatisactually32byteslong")
+        allow(DynamicSettings).to receive(:find)
+          .with("canvas")
+          .and_return({
+                        "signing-secret" => "astringthatisactually32byteslong",
+                        "encryption-secret" => "astringthatisactually32byteslong"
+                      })
       end
 
       let(:developer_key) do
@@ -94,7 +97,7 @@ module Services
 
       describe ".available?" do
         it "returns true if the service is configured" do
-          expect(LiveEventsSubscriptionService.available?).to be true
+          expect(LiveEventsSubscriptionService.available?).to eq true
         end
       end
 

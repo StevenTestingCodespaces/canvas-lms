@@ -22,24 +22,15 @@ import formatMessage from '../../../../../../format-message'
 import {actions} from '../../../reducers/imageSection'
 import {actions as svgActions} from '../../../reducers/svgSettings'
 import {UploadFile} from '../../../../shared/Upload/UploadFile'
-import {
-  canCompressImage,
-  compressImage,
-  shouldCompressImage,
-} from '../../../../shared/compressionUtils'
+import {canCompressImage, compressImage, shouldCompressImage} from './compressionUtils'
 import {isAnUnsupportedGifPngImage, MAX_GIF_PNG_SIZE_BYTES} from './utils'
-import {PREVIEW_HEIGHT, PREVIEW_WIDTH} from '../../../../shared/ImageCropper/constants'
 
 function dispatchCompressedImage(theFile, dispatch, onChange) {
   dispatch({...actions.SET_IMAGE, payload: ''})
   onChange({type: svgActions.SET_EMBED_IMAGE, payload: ''})
   dispatch({...actions.SET_CROPPER_OPEN, payload: true})
   dispatch({...actions.SET_IMAGE_COLLECTION_OPEN, payload: false})
-  return compressImage({
-    encodedImage: theFile.preview,
-    previewWidth: PREVIEW_WIDTH,
-    previewHeight: PREVIEW_HEIGHT,
-  })
+  return compressImage(theFile.preview)
     .then(blob => {
       dispatch({...actions.SET_COMPRESSION_STATUS, payload: true})
       dispatch({...actions.SET_IMAGE, payload: blob})
@@ -80,7 +71,7 @@ export const onSubmit = (dispatch, onChange) => (_editor, _accept, _selectedPane
   dispatch({...actions.SET_CROPPER_OPEN, payload: true})
 }
 
-const Upload = ({editor, dispatch, mountNode, onChange, canvasOrigin}) => {
+const Upload = ({editor, dispatch, mountNode, onChange}) => {
   return (
     <UploadFile
       accept="image/*"
@@ -93,7 +84,6 @@ const Upload = ({editor, dispatch, mountNode, onChange, canvasOrigin}) => {
       }}
       requireA11yAttributes={false}
       onSubmit={onSubmit(dispatch, onChange)}
-      canvasOrigin={canvasOrigin}
     />
   )
 }
@@ -103,7 +93,6 @@ Upload.propTypes = {
   dispatch: PropTypes.func,
   onChange: PropTypes.func,
   mountNode: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
-  canvasOrigin: PropTypes.string.isRequired,
 }
 
 Upload.defaultProps = {

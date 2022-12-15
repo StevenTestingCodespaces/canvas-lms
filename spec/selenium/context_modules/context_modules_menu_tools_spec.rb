@@ -35,6 +35,8 @@ describe "context modules" do
       @tool.save!
       @module1 = @course.context_modules.create!(name: "module1")
       @module2 = @course.context_modules.create!(name: "module2")
+
+      Account.default.enable_feature!(:commons_favorites)
     end
 
     it "is able to launch the index menu tool via the tray", custom_timeout: 30 do
@@ -57,13 +59,6 @@ describe "context modules" do
       expect(query_params["com_instructure_course_available_canvas_resources"].values).to eq [{
         "course_id" => @course.id.to_s, "type" => "module"
       }] # will replace with the modules on the variable expansion
-    end
-
-    it "is able to work with granular permisions properly" do
-      @teacher.account.enable_feature!(:granular_permissions_manage_course_content)
-      visit_modules_index_page(@course.id)
-      modules_index_settings_button.click
-      expect(module_index_settings_menu).to include_text("Import Stuff")
     end
 
     it "is able to launch the individual module menu tool via the tray", custom_timeout: 60 do

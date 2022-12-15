@@ -21,8 +21,7 @@ import $ from 'jquery'
 import _ from 'underscore'
 import HeaderFilterView from './backbone/views/HeaderFilterView'
 import OutcomeFilterView from './react/OutcomeFilterView'
-import OutcomeColumnView from './backbone/views/OutcomeColumnView'
-import listFormatterPolyfill from '@canvas/util/listFormatter'
+import OutcomeColumnView from './backbone/views/OutcomeColumnView.coffee'
 import cellTemplate from './jst/outcome_gradebook_cell.handlebars'
 import studentCellTemplate from './jst/outcome_gradebook_student_cell.handlebars'
 
@@ -30,10 +29,6 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 
 const I18n = useI18nScope('gradebookOutcomeGradebookGrid')
-
-const listFormatter = Intl.ListFormat
-  ? new Intl.ListFormat(ENV.LOCALE || navigator.language)
-  : listFormatterPolyfill
 
 /*
 xsslint safeString.method cellHtml
@@ -187,31 +182,18 @@ const Grid = {
       const section_list = _.map(rollup, function (rollup2) {
         return rollup2.links.section
       })
-      const section_enrollment_status = () => {
-        const enrollment_status = rollup.map(r => r.links.status)
-        return enrollment_status.every(e => e === 'completed')
-          ? I18n.t('concluded')
-          : enrollment_status.every(e => e === 'inactive')
-          ? I18n.t('inactive')
-          : ''
-      }
       if (_.isEmpty(section_list)) {
         return null
       }
       const student = Grid.Util.lookupStudent(user)
       const sections = Grid.Util.lookupSection(section_list)
-      const section_name = listFormatter.format(
-        _.pluck(sections, 'name')
-          .filter(x => x)
-          .sort()
-      )
+      const section_name = $.toSentence(_.pluck(sections, 'name').sort())
       const courseID = ENV.context_asset_string.split('_')[1]
       const row = {
         student: _.extend(
           {
             grades_html_url: `/courses/${courseID}/grades/${user}#tab-outcomes`,
             section_name: _.keys(Grid.sections).length > 1 ? section_name : null,
-            enrollment_status: section_enrollment_status(),
           },
           student
         ),

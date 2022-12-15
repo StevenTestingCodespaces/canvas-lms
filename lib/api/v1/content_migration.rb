@@ -51,10 +51,8 @@ module Api::V1::ContentMigration
       json[:attachment] = attachment_json(migration.attachment, current_user, {}, { can_view_hidden_files: true })
     end
 
-    source = migration.source_course
-    source ||= Course.find(migration.migration_settings[:source_course_id]) if migration.migration_settings[:source_course_id]
-
-    if source && source.root_account_id == migration.root_account_id
+    if migration.for_course_copy? && (source = migration.source_course ||
+         (migration.migration_settings[:source_course_id] && Course.find(migration.migration_settings[:source_course_id])))
       json[:settings] = {}
       json[:settings][:source_course_id] = source.id
       json[:settings][:source_course_name] = source.name

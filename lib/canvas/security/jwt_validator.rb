@@ -56,7 +56,7 @@ module Canvas::Security
 
     def aud
       return if errors?
-      return if Array(@jwt.aud).intersect?(Array(@expected_aud))
+      return if (Array(@jwt.aud) & Array(@expected_aud)).present?
 
       errors.add(:base, "the 'aud' is invalid")
     end

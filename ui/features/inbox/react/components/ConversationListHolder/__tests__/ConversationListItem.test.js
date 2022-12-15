@@ -138,7 +138,7 @@ describe('ConversationListItem', () => {
       // star unstarred by default
       expect(queryByTestId('visible-not-starred')).toBeInTheDocument()
       fireEvent.click(queryByTestId('visible-not-starred'))
-      expect(onStarMock).toHaveBeenLastCalledWith(true, [props.conversation])
+      expect(onStarMock).toHaveBeenLastCalledWith(true, props.conversation._id)
     })
 
     it('renders the unread badge when the conversation is unread', () => {
@@ -188,16 +188,7 @@ describe('ConversationListItem', () => {
       const unreadBadge = container.queryByTestId('read-badge')
       fireEvent.click(unreadBadge)
 
-      expect(onMarkAsUnread).toHaveBeenCalledWith(props.conversation)
-    })
-
-    it('renders (No subject) when subject is empty', () => {
-      const props = createProps()
-      props.conversation.subject = ''
-
-      const {getByText} = render(<ConversationListItem {...props} />)
-
-      expect(getByText('(No subject)')).toBeTruthy()
+      expect(onMarkAsUnread).toHaveBeenCalledWith('1')
     })
   })
 
@@ -258,7 +249,7 @@ describe('ConversationListItem', () => {
       const {getByTestId} = render(<ConversationListItem {...props} />)
       const unreadBadge = getByTestId('unread-badge')
       fireEvent.click(unreadBadge)
-      expect(onMarkAsRead).toHaveBeenCalledWith(submissionsCommentsMock())
+      expect(onMarkAsRead).toHaveBeenCalledWith(submissionsCommentsMock()._id)
     })
   })
 })

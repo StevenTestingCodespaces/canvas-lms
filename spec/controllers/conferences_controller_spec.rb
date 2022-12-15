@@ -208,8 +208,8 @@ describe ConferencesController do
       long_str = "OriZgOYyEdGdEmC9jiUkwbw3W6VpNLhOMVHblHpR5nehnsl1m6LFb8dwfHnX1IypOxN1ZTeVnggudhEv37dOUbLyzmEMHCRpohlDP2kcazgzu1D4NLlJ2Bfhd7V1nhlqN6llXH6T0om4BG1TLwwPh1LUIuAETiA8Bp6ni2xpBYLb5dKgypvTqT3fMnolBnK0fxtyEpa97OPBfFsc2yJ4wvH33cdiVsl0EDQW8kzdVADYE1zzbR3gRwHBTVnh1tyN"
       user_session(@teacher)
       post "create", params: { course_id: @course.id, web_conference: { title: long_str, conference_type: "Wimba" } }, format: "json"
-      expect(response).to have_http_status :bad_request
-      res_body = response.parsed_body
+      expect(response.status).to eq 400
+      res_body = JSON.parse(response.body)
       expect(res_body["errors"]["title"][0]["message"]).to eq "too_long"
     end
 
@@ -242,7 +242,7 @@ describe ConferencesController do
 
           enrollment = student_in_course(active_all: true, user: user_with_pseudonym(active_all: true))
           group_category = @course.group_categories.create(name: "category 1")
-          group = @course.groups.create(name: "some group", group_category:)
+          group = @course.groups.create(name: "some group", group_category: group_category)
           group.add_user enrollment.user, "accepted"
           group.add_user concluded_enrollment.user, "accepted"
 
@@ -334,8 +334,8 @@ describe ConferencesController do
           title: "Something else"
         },
       }
-      post :update, params:, format: :json
-      body = response.parsed_body
+      post :update, params: params, format: :json
+      body = JSON.parse(response.body)
       expect(body["user_ids"]).to include(@teacher.id)
       expect(body["user_ids"]).to include(@student.id)
     end
@@ -354,8 +354,8 @@ describe ConferencesController do
         },
       }
       user_session(@teacher)
-      post :update, params:, format: :json
-      body = response.parsed_body
+      post :update, params: params, format: :json
+      body = JSON.parse(response.body)
       expect(body["user_ids"]).to include(@teacher.id)
       expect(body["user_ids"]).to include(@student.id)
       expect(body["user_ids"]).to include(@student2.id)
@@ -382,7 +382,7 @@ describe ConferencesController do
         },
       }
 
-      post :update, params:, format: "json"
+      post :update, params: params, format: "json"
 
       created_conference = WebConference.find(@conference.id)
       created_calendar_event = created_conference.calendar_event
@@ -412,7 +412,7 @@ describe ConferencesController do
         },
       }
 
-      post :update, params:, format: "json"
+      post :update, params: params, format: "json"
 
       created_conference = WebConference.find(@conference.id)
       created_calendar_event = created_conference.calendar_event
@@ -443,7 +443,7 @@ describe ConferencesController do
         },
       }
 
-      post :update, params:, format: "json"
+      post :update, params: params, format: "json"
       created_conference = WebConference.find(@conference.id)
       created_calendar_event = created_conference.calendar_event
 
@@ -538,24 +538,7 @@ describe ConferencesController do
       @conference.save!
       delete "destroy", params: { course_id: @course.id, id: @conference.id }
       expect(response).to be_redirect
-      expect(WebConference.exists?(@conference.id)).to be(false)
-      expect(@event.reload.web_conference_id).to be_nil
-    end
-
-    it "removes participants and potentially multiple calendar events association" do
-      user_session(@teacher)
-      @conference = @course.web_conferences.create!(conference_type: "Wimba", duration: 60, user: @teacher)
-      @conference.users << @student
-      @conference.save!
-      ce1 = calendar_event_model
-      ce2 = calendar_event_model
-      ce1.web_conference_id = @conference.id
-      ce2.web_conference_id = @conference.id
-      ce1.save!
-      ce2.save!
-      delete "destroy", params: { course_id: @course.id, id: @conference.id }
-      expect(response).to be_redirect
-      expect(WebConference.exists?(@conference.id)).to be(false)
+      expect(WebConference.exists?(@conference.id)).to eq(false)
       expect(@event.reload.web_conference_id).to be_nil
     end
 
@@ -568,12 +551,12 @@ describe ConferencesController do
 
       conference_event_id = @conference.calendar_event.id
       @conference.calendar_event.destroy!
-      expect(CalendarEvent.find(conference_event_id).web_conference).to be_nil
+      expect(CalendarEvent.find(conference_event_id).web_conference).to eq(nil)
 
       delete "destroy", params: { course_id: @course.id, id: @conference.id }
 
       expect(response).to be_redirect
-      expect(WebConference.exists?(@conference.id)).to be(false)
+      expect(WebConference.exists?(@conference.id)).to eq(false)
       expect(@event.reload.web_conference_id).to be_nil
     end
   end
@@ -614,16 +597,14 @@ describe ConferencesController do
     context "#create" do
       it "can create LTI conferences" do
         user_session(@teacher)
-        post "create",
-             params: {
-               course_id: @course.id,
-               web_conference: {
-                 title: "My Conference",
-                 conference_type: "LtiConference",
-                 lti_settings: { tool_id: tool.id }
-               }
-             },
-             format: "json"
+        post "create", params: {
+          course_id: @course.id,
+          web_conference: {
+            title: "My Conference",
+            conference_type: "LtiConference",
+            lti_settings: { tool_id: tool.id }
+          }
+        }, format: "json"
         expect(response).to be_successful
       end
     end

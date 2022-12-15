@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "canvas/plugins/ticketing_system/custom_error"
+
 module Canvas::Plugins::TicketingSystem
   describe CustomError do
     let(:report) { ErrorReport.new }
@@ -24,20 +26,11 @@ module Canvas::Plugins::TicketingSystem
 
     describe "#to_document" do
       it "translates an error_report to a json-able hash" do
-        expect(delegate.to_document).to eq({ subject: nil,
-                                             description: nil,
-                                             report_type: "ERROR",
-                                             error_message: nil,
-                                             perceived_severity: "",
-                                             account_id: nil,
-                                             account_domain: nil,
-                                             report_origin_url: nil,
-                                             reporter: { canvas_id: "",
-                                                         email: "unknown-unknowndomain-example-com@instructure.example.com",
-                                                         name: "Unknown User",
-                                                         role: nil,
-                                                         become_user_uri: nil,
-                                                         environment: nil },
+        expect(delegate.to_document).to eq({ subject: nil, description: nil,
+                                             report_type: "ERROR", error_message: nil, perceived_severity: "",
+                                             account_id: nil, account_domain: nil, report_origin_url: nil,
+                                             reporter: { canvas_id: "", email: "unknown-unknowndomain-example-com@instructure.example.com",
+                                                         name: "Unknown User", role: nil, become_user_uri: nil, environment: nil },
                                              canvas_details: { request_context_id: nil, error_report_id: nil, sub_account: nil } })
       end
     end
@@ -104,7 +97,7 @@ module Canvas::Plugins::TicketingSystem
 
       it "defaults to a blank string" do
         report.data = nil
-        expect(delegate.user_roles).to be_nil
+        expect(delegate.user_roles).to be(nil)
       end
     end
 
@@ -116,7 +109,7 @@ module Canvas::Plugins::TicketingSystem
 
       it "is nil if no account" do
         report.account = nil
-        expect(delegate.account_domain_value).to be_nil
+        expect(delegate.account_domain_value).to be(nil)
       end
     end
 
@@ -134,7 +127,7 @@ module Canvas::Plugins::TicketingSystem
 
     describe "#become_user_id_uri" do
       it "is nil if there's no url or user" do
-        expect(delegate.become_user_id_uri).to be_nil
+        expect(delegate.become_user_id_uri).to be(nil)
       end
 
       it "transforms the url into one that targets the user for reproduction" do
@@ -154,7 +147,7 @@ module Canvas::Plugins::TicketingSystem
 
     describe "#pretty_http_env" do
       it "is nil if theres no http_env" do
-        expect(delegate.pretty_http_env).to be_nil
+        expect(delegate.pretty_http_env).to eq(nil)
       end
 
       it "maps an env hash to a json string" do

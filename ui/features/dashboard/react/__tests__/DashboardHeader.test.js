@@ -25,9 +25,6 @@ import {
   SHOW_K5_DASHBOARD_ROUTE,
   showK5DashboardResponse,
 } from '@canvas/observer-picker/react/__tests__/fixtures'
-import injectGlobalAlertContainers from '@canvas/util/react/testing/injectGlobalAlertContainers'
-
-injectGlobalAlertContainers()
 
 jest.useFakeTimers()
 
@@ -68,7 +65,7 @@ describe('DashboardHeader', () => {
     })
 
     beforeEach(() => {
-      fetchMock.get(SHOW_K5_DASHBOARD_ROUTE, JSON.stringify(showK5DashboardResponse(false, false)))
+      fetchMock.get(SHOW_K5_DASHBOARD_ROUTE, JSON.stringify(showK5DashboardResponse(false)))
     })
 
     afterEach(async () => {

@@ -61,20 +61,10 @@ const MessageListActionContainer = props => {
     variables: {userID},
   })
 
-  const uniqueCourses = reduceDuplicateCourses(
+  const moreCourses = reduceDuplicateCourses(
     data?.legacyNode?.enrollments,
     data?.legacyNode?.favoriteCoursesConnection?.nodes
   )
-
-  const moreCourses = []
-  const concludedCourses = uniqueCourses.filter(course => {
-    if (course.concluded !== true) {
-      moreCourses.push(course)
-      return false
-    } else {
-      return true
-    }
-  })
 
   const courseSelectorOptions = {
     allCourses: [
@@ -86,14 +76,14 @@ const MessageListActionContainer = props => {
     ],
     favoriteCourses: data?.legacyNode?.favoriteCoursesConnection?.nodes,
     moreCourses,
-    concludedCourses,
+    concludedCourses: [],
     groups: data?.legacyNode?.favoriteGroupsConnection?.nodes,
   }
 
   const doesCourseFilterOptionExist = (id, courseOptions) => {
     return !!Object.values(courseOptions)
       .flat()
-      .find(o => o?.assetString === id)
+      .find(({assetString}) => id === assetString)
   }
 
   useEffect(() => {

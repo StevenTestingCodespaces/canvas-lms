@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2020 - present Instructure, Inc.
  *
@@ -18,27 +17,12 @@
  */
 
 import $ from 'jquery'
-import type JQuery from 'jquery'
-// @ts-expect-error
 import postGradesFrameDialog from '../jst/PostGradesFrameDialog.handlebars'
 import iframeAllowances from '@canvas/external-apps/iframeAllowances'
 import 'jqueryui/dialog'
 
-type PostGradesFrameDialogOptions = {
-  returnFocusTo?: HTMLElement | null
-  baseUrl?: string
-}
-
 export default class PostGradesFrameDialog {
-  returnFocusTo?: HTMLElement
-
-  baseUrl?: string
-
-  $dialog: JQuery
-
-  $iframe
-
-  constructor(options: PostGradesFrameDialogOptions) {
+  constructor(options) {
     this.open = this.open.bind(this)
     this.close = this.close.bind(this)
     this.onDialogOpen = this.onDialogOpen.bind(this)
@@ -79,7 +63,7 @@ export default class PostGradesFrameDialog {
         this.$iframe.addClass('info_alert_outline')
         this.$iframe.data('height-with-alert', iframeHeight)
         $(e.target).children('div').first().removeClass('screenreader-only')
-        const alertHeight = $(e.target).outerHeight(true) || 0
+        const alertHeight = $(e.target).outerHeight(true)
         this.$iframe
           .css('height', iframeHeight - alertHeight - 4 + 'px')
           .css('width', iframeWidth - 4 + 'px')

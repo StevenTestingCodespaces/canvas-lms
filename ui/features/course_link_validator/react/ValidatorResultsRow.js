@@ -35,7 +35,7 @@ import {
   IconImageSolid,
   IconLinkSolid,
 } from '@instructure/ui-icons'
-import sanitizeUrl from '@canvas/util/sanitizeUrl'
+import sanitizeUrl from 'sanitize-url'
 
 import {useScope as useI18nScope} from '@canvas/i18n'
 

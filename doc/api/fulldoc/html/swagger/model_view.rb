@@ -19,6 +19,7 @@
 #
 
 require "hash_view"
+require "json"
 
 class ModelView < HashView
   attr_reader :name, :properties, :description, :required

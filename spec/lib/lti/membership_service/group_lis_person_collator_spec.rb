@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require_dependency "lti/membership_service/group_lis_person_collator"
+
 module Lti::MembershipService
   describe GroupLisPersonCollator do
     context "group with many students" do
@@ -112,14 +114,14 @@ module Lti::MembershipService
           it "returns true when there is an additional page of results" do
             allow(Api).to receive(:per_page).and_return(1)
             collator = GroupLisPersonCollator.new(@group, @student1, per_page: 1, page: 1)
-            expect(collator.next_page?).to be(true)
+            expect(collator.next_page?).to eq(true)
           end
 
           it "returns false when there are no more pages" do
             allow(Api).to receive(:per_page).and_return(1)
             collator = GroupLisPersonCollator.new(@group, @student1, per_page: 1, page: 3)
             collator.memberships
-            expect(collator.next_page?).to be(false)
+            expect(collator.next_page?).to eq(false)
           end
         end
       end

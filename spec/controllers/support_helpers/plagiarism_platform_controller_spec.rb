@@ -26,7 +26,7 @@ describe SupportHelpers::PlagiarismPlatformController do
 
   describe "#resubmit_for_assignment" do
     let_once(:assignment) { assignment_model }
-    let_once(:submission) { submission_model(assignment:) }
+    let_once(:submission) { submission_model(assignment: assignment) }
 
     let(:params) { { assignment_id: assignment.id } }
 
@@ -36,7 +36,7 @@ describe SupportHelpers::PlagiarismPlatformController do
 
     it "triggers a plagiarism_resubmit event for all submissions" do
       expect(Canvas::LiveEvents).to receive(:plagiarism_resubmit).with(submission)
-      get :resubmit_for_assignment, params:
+      get :resubmit_for_assignment, params: params
     end
 
     context "when user is not site admin" do
@@ -45,7 +45,7 @@ describe SupportHelpers::PlagiarismPlatformController do
       let(:user) { user_model }
 
       it "redirects to login page" do
-        get(:resubmit_for_assignment, params:)
+        get :resubmit_for_assignment, params: params
         expect(subject).to be_redirect
       end
     end
@@ -78,7 +78,7 @@ describe SupportHelpers::PlagiarismPlatformController do
 
     before do
       user_session(user)
-      get :add_service, params:
+      get :add_service, params: params
     end
 
     it "is a succesful response" do
@@ -102,7 +102,9 @@ describe SupportHelpers::PlagiarismPlatformController do
       shared_examples_for "bad requests" do
         it "does not modify the tool proxies" do
           expect(
-            updated_tool_services.first.pluck("service")
+            updated_tool_services.first.map do |s|
+              s["service"]
+            end
           ).not_to include service_name
         end
       end

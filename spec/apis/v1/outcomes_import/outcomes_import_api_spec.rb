@@ -34,8 +34,7 @@ describe "Outcomes Import API", type: :request do
   end
 
   def available_json(expected_status: 200)
-    api_call(:get,
-             "/api/v1/global/outcomes_import/available",
+    api_call(:get, "/api/v1/global/outcomes_import/available",
              {
                controller: "outcomes_academic_benchmark_import_api",
                action: "available",
@@ -45,13 +44,12 @@ describe "Outcomes Import API", type: :request do
              {},
              {},
              {
-               expected_status:
+               expected_status: expected_status
              })
   end
 
   def create_json(guid:, expected_status: 200)
-    api_call(:post,
-             "/api/v1/global/outcomes_import",
+    api_call(:post, "/api/v1/global/outcomes_import",
              {
                controller: "outcomes_academic_benchmark_import_api",
                action: "create",
@@ -59,17 +57,16 @@ describe "Outcomes Import API", type: :request do
                format: "json",
              },
              {
-               guid:
+               guid: guid
              },
              {},
              {
-               expected_status:
+               expected_status: expected_status
              })
   end
 
   def create_full_json(json:, expected_status: 200)
-    api_call(:post,
-             "/api/v1/global/outcomes_import",
+    api_call(:post, "/api/v1/global/outcomes_import",
              {
                controller: "outcomes_academic_benchmark_import_api",
                action: "create",
@@ -79,24 +76,23 @@ describe "Outcomes Import API", type: :request do
              json,
              {},
              {
-               expected_status:
+               expected_status: expected_status
              })
   end
 
   def status_json(migration_id:, expected_status: 200)
-    api_call(:get,
-             "/api/v1/global/outcomes_import/migration_status/#{migration_id}",
+    api_call(:get, "/api/v1/global/outcomes_import/migration_status/#{migration_id}",
              {
                controller: "outcomes_academic_benchmark_import_api",
                action: "migration_status",
                account_id: @account.id.to_s,
                format: "json",
-               migration_id:
+               migration_id: migration_id
              },
              {},
              {},
              {
-               expected_status:
+               expected_status: expected_status
              })
   end
 
@@ -124,8 +120,8 @@ describe "Outcomes Import API", type: :request do
       let(:request) do
         lambda do |type:, guid: nil, expected_status: 200|
           case type
-          when "available" then return available_json(expected_status:)
-          when "create" then return create_json(guid:, expected_status:)
+          when "available" then return available_json(expected_status: expected_status)
+          when "create" then return create_json(guid: guid, expected_status: expected_status)
           else raise "unknown request type"
           end
         end
@@ -209,12 +205,12 @@ describe "Outcomes Import API", type: :request do
 
       context "create" do
         it "works" do
-          expect(create_json(guid:)).to have_key("migration_id")
+          expect(create_json(guid: guid)).to have_key("migration_id")
         end
 
         it "requires the user to have manage_global_outcomes permissions" do
           revoke_permission(@account_user, :manage_global_outcomes)
-          create_json(guid:, expected_status: 401)
+          create_json(guid: guid, expected_status: 401)
         end
 
         it "returns error if no guid is passed" do
@@ -224,15 +220,12 @@ describe "Outcomes Import API", type: :request do
         it "rejects malformed guids" do
           %w[
             test
-            not
-            a
-            real
-            guid
+            not a real guid
             A833C528<901A-11DF-A622-0C319DFF4B22
             A833C528-901A-11DF>A622-0C319DFF4B22
             A833C528;901A-11DF-A622-0C319DFF4B22
           ].each do |guid|
-            expect(create_json(guid:)).to have_key("error")
+            expect(create_json(guid: guid)).to have_key("error")
           end
         end
 
@@ -242,7 +235,7 @@ describe "Outcomes Import API", type: :request do
             9426dcae-734c-40d5-abf6-fb748cd8be65
             9426DCAE-734C-40d5-abf6-fb748cd8be65
           ].each do |guid|
-            expect(create_json(guid:)).not_to have_key("error")
+            expect(create_json(guid: guid)).not_to have_key("error")
           end
         end
 
@@ -253,7 +246,7 @@ describe "Outcomes Import API", type: :request do
             100
           ].each do |mastery_points|
             expect(create_full_json(json: create_request({
-                                                           mastery_points:
+                                                           mastery_points: mastery_points
                                                          }))).not_to have_key("error")
           end
         end
@@ -265,7 +258,7 @@ describe "Outcomes Import API", type: :request do
             1a
           ].each do |mastery_points|
             expect(create_full_json(json: create_request({
-                                                           mastery_points:
+                                                           mastery_points: mastery_points
                                                          }))).to have_key("error")
           end
         end
@@ -277,7 +270,7 @@ describe "Outcomes Import API", type: :request do
             100
           ].each do |points_possible|
             expect(create_full_json(json: create_request({
-                                                           points_possible:
+                                                           points_possible: points_possible
                                                          }))).not_to have_key("error")
           end
         end
@@ -289,7 +282,7 @@ describe "Outcomes Import API", type: :request do
             1a
           ].each do |points_possible|
             expect(create_full_json(json: create_request({
-                                                           points_possible:
+                                                           points_possible: points_possible
                                                          }))).to have_key("error")
           end
         end
@@ -407,9 +400,7 @@ describe "Outcomes Import API", type: :request do
                              attachment: nil,
                              for_course_copy?: false,
                              job_progress: nil,
-                             migration_type: nil,
-                             source_course: nil,
-                             migration_settings: {}
+                             migration_type: nil
                            })
           allow(cm_mock).to receive(:migration_issues).and_return([])
           allow(ContentMigration).to receive(:find).with("2").and_return(cm_mock)

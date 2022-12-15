@@ -32,10 +32,8 @@ module Utils
       range_time = get_range_time(options[:display_as_range])
       if is_range?(range_time)
         other = TimePresenter.new(range_time, zone)
-        I18n.t("time.ranges.times",
-               "%{start_time} to %{end_time}",
-               start_time: formatted_result,
-               end_time: other.as_string)
+        I18n.t("time.ranges.times", "%{start_time} to %{end_time}",
+               start_time: formatted_result, end_time: other.as_string)
       else
         formatted_result
       end
@@ -44,7 +42,7 @@ module Utils
     private
 
     def formatted_result
-      I18n.l(time, format:)&.strip
+      I18n.l(time, format: format)&.strip
     end
 
     def get_range_time(raw)
@@ -56,7 +54,7 @@ module Utils
     end
 
     def format
-      (time.min == 0) ? :tiny_on_the_hour : :tiny
+      time.min == 0 ? :tiny_on_the_hour : :tiny
     end
   end
 end

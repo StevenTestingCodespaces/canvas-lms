@@ -87,19 +87,6 @@ describe "safe_yaml" do
     expect(result.class).to eq Regexp
   end
 
-  it "supports a unique case of key / value pairs" do
-    skip("newer ruby versions only") unless RUBY_VERSION >= "3.0.0"
-
-    os = OpenStruct.new
-    os.table = { a: "b" }
-    os.modifiable = true
-
-    res = os.dup
-    res["legacy_support!"] = true
-
-    expect(YAML.load(YAML.dump(os))).to eq res
-  end
-
   it "doesn't allow deserialization of arbitrary classes" do
     expect { YAML.load(YAML.dump(/regex/)) }.to raise_error(Psych::DisallowedClass)
   end
@@ -118,7 +105,7 @@ describe "safe_yaml" do
       obj
     end
 
-    hwia = verify(result, "hwia", ActiveSupport::HashWithIndifferentAccess)
+    hwia = verify(result, "hwia", HashWithIndifferentAccess)
     expect(hwia.values_at(:a, :b)).to eq [1, 2]
 
     float = verify(result, "float", Float)
@@ -221,7 +208,7 @@ describe "safe_yaml" do
   end
 
   it "restores default value on sets on load" do
-    expect(YAML.unsafe_load(YAML.dump(Set.new)).include?("test")).to be false
+    expect(YAML.unsafe_load(YAML.dump(Set.new)).include?("test")).to eq false
   end
 end
 # rubocop:enable Security/YAMLLoad

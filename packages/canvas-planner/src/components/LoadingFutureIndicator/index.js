@@ -88,7 +88,7 @@ export default class LoadingFutureIndicator extends Component {
     if (this.props.allFutureItemsLoaded) {
       return (
         <Text color="secondary" size="small">
-          {formatMessage('No more items to show')}
+          {formatMessage('All items loaded')}
         </Text>
       )
     }

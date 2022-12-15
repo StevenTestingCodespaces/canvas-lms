@@ -17,13 +17,15 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "canvas/plugins/ticketing_system/email_plugin"
+
 module Canvas::Plugins::TicketingSystem
   describe EmailPlugin do
     describe "#export_error" do
       let(:ticketing) { double }
       let(:plugin) { EmailPlugin.new(ticketing) }
       let(:email_address) { "to-address@example.com" }
-      let(:config) { { email_address: } }
+      let(:config) { { email_address: email_address } }
       let(:report) do
         double(
           email: "from-address@example.com",

@@ -16,19 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {APIPaceContextTypes, PaceContext, PaceContextTypes} from '../types'
+import {PaceContext} from '../types'
 
 export const generateModalLauncherId = (paceContext: PaceContext) =>
   `pace-modal-launcher-${paceContext.type}-${paceContext.item_id}`
-
-export const API_CONTEXT_TYPE_MAP: {[k in APIPaceContextTypes]: PaceContextTypes} = {
-  course: 'Course',
-  section: 'Section',
-  student_enrollment: 'Enrollment',
-}
-
-export const CONTEXT_TYPE_MAP: {[k: string]: PaceContextTypes} = {
-  Course: 'Course',
-  CourseSection: 'Section',
-  StudentEnrollment: 'Enrollment',
-}

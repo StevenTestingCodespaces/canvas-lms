@@ -19,7 +19,7 @@
 import React from 'react'
 import {mount} from 'enzyme'
 import CourseItemRow from '@canvas/announcements/react/components/CourseItemRow'
-import AnnouncementModel from '@canvas/discussions/backbone/models/Announcement'
+import AnnouncementModel from '@canvas/discussions/backbone/models/Announcement.coffee'
 import {IconAssignmentLine} from '@instructure/ui-icons'
 
 QUnit.module('CourseItemRow component')

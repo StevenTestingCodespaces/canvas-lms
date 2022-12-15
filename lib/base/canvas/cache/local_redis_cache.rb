@@ -33,7 +33,7 @@ module Canvas
           db: local_cache_conf[:redis_db]
         )
         @debounced_clear = ::Redis::Scripting::Script.new(File.expand_path("debounced_clear.lua", __dir__))
-        super(redis:)
+        super(redis: redis)
       end
 
       # canvas redis is patched to disallow "flush" operations,

@@ -38,6 +38,9 @@
 # to the given url with a query param of `url=` and the website to snapshot, and a header
 # X-API-Key with the given key.
 
+require "resolv"
+require "ipaddr"
+
 class CutyCapt
   CUTYCAPT_DEFAULTS = {
     delay: 3000,
@@ -161,13 +164,13 @@ class CutyCapt
     if success
       logger.info("Capture took #{Time.now.to_i - start.to_i} seconds")
     else
-      FileUtils.rm_f(img_file)
+      File.unlink(img_file) if File.exist?(img_file)
       return nil
     end
 
     if block_given?
       yield img_file
-      FileUtils.rm_f(img_file)
+      File.unlink(img_file) if File.exist?(img_file)
       return nil
     end
 

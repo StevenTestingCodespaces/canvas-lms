@@ -21,8 +21,8 @@
 module MicrosoftSync
   class GraphService
     class UsersEndpoints < EndpointsBase
-      def list(options = {}, &)
-        get_paginated_list("users", quota: [2, 0], **options, &)
+      def list(options = {}, &blk)
+        get_paginated_list("users", quota: [2, 0], **options, &blk)
       end
     end
   end

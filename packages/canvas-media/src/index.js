@@ -22,10 +22,7 @@ import RocketSVG from './RocketSVG'
 import useComputerPanelFocus from './useComputerPanelFocus'
 import {isAudio, isVideo, isPreviewable, sizeMediaPlayer} from './shared/utils'
 import LoadingIndicator from './shared/LoadingIndicator'
-import saveMediaRecording, {
-  saveClosedCaptions,
-  saveClosedCaptionsForAttachment,
-} from './saveMediaRecording'
+import saveMediaRecording, {saveClosedCaptions} from './saveMediaRecording'
 import closedCaptionLanguages, {sortedClosedCaptionLanguageList} from './closedCaptionLanguages'
 import getTranslations from './getTranslations'
 import * as CONSTANTS from './shared/constants'
@@ -42,7 +39,6 @@ export {
   LoadingIndicator,
   saveMediaRecording,
   saveClosedCaptions,
-  saveClosedCaptionsForAttachment,
   closedCaptionLanguages,
   sortedClosedCaptionLanguageList,
   getTranslations,

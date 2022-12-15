@@ -20,8 +20,12 @@
 
 describe Mention do
   before do
-    @user = User.create!(name: "Jim Bob")
-    @topic = DiscussionTopic.create!(message: "Welcome friends", title: "Hello", context: course_model)
+    @user = User.create(name: "Jim Bob")
+    @user.save!
+    @course = Course.create(name: "Dragon Riding")
+    @course.save!
+    @topic = DiscussionTopic.create(message: "Welcome friends", title: "Hello", context: @course)
+    @topic.save!
     @entry = @topic.discussion_entries.create!(message: "entry 1", user: @user)
   end
 
@@ -31,7 +35,7 @@ describe Mention do
     end
 
     it "increment discussion_mention.created" do
-      Mention.create!(user_id: @user.id, discussion_entry_id: @entry.id, root_account_id: @topic.root_account_id)
+      Mention.create(user_id: @user.id, discussion_entry_id: @entry.id, root_account_id: @topic.root_account_id)
       expect(InstStatsd::Statsd).to have_received(:increment).with("discussion_mention.created")
     end
   end

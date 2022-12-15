@@ -86,10 +86,6 @@ describe "outcome gradebook" do
       end
     end
 
-    def student_names
-      ff(".outcome-student-cell-content .student-grades-list").map { |cell| cell.text.split("\n")[0] }
-    end
-
     it "is not visible by default" do
       Gradebook.visit(@course)
       f(".assignment-gradebook-container .gradebook-menus button").click
@@ -190,7 +186,7 @@ describe "outcome gradebook" do
       end
 
       def result(user, alignment, score, opts = {})
-        LearningOutcomeResult.create!(user:, alignment:, score:, context: @course, **opts)
+        LearningOutcomeResult.create!(user: user, alignment: alignment, score: score, context: @course, **opts)
       end
 
       context "with results" do
@@ -316,30 +312,16 @@ describe "outcome gradebook" do
             wait_for_ajax_requests
 
             active_students = [@student_2.name, @student_3.name]
+            student_names = ff(".outcome-student-cell-content").map { |cell| cell.text.split("\n")[0] }
             expect(student_names.sort).to eq(active_students)
 
             f('button[data-component="lmgb-student-filter-trigger"]').click
             f('span[data-component="lmgb-student-filter-inactive-enrollments"]').click
             wait_for_ajax_requests
 
-            active_and_inactive_students = active_students.unshift(@student_1.name)
-            expect(student_names.sort).to eq(active_and_inactive_students)
-          end
-
-          it "displays inactive tag for inactive enrollments" do
-            StudentEnrollment.find_by(user_id: @student_1.id).deactivate
-
-            get "/courses/#{@course.id}/gradebook"
-            select_learning_mastery
-            wait_for_ajax_requests
-
-            f('button[data-component="lmgb-student-filter-trigger"]').click
-            f('span[data-component="lmgb-student-filter-inactive-enrollments"]').click
-            wait_for_ajax_requests
-
-            tags = ff(".outcome-student-cell-content .label")
-            expect(tags.size).to eq(1)
-            expect(tags.first.text).to eq("inactive")
+            active_students = [@student_1.name, @student_2.name, @student_3.name]
+            student_names = ff(".outcome-student-cell-content").map { |cell| cell.text.split("\n")[0] }
+            expect(student_names.sort).to eq(active_students)
           end
 
           it "correctly displays concluded enrollments when the filter option is selected" do
@@ -350,30 +332,16 @@ describe "outcome gradebook" do
             wait_for_ajax_requests
 
             active_students = [@student_2.name, @student_3.name]
+            student_names = ff(".outcome-student-cell-content").map { |cell| cell.text.split("\n")[0] }
             expect(student_names.sort).to eq(active_students)
 
             f('button[data-component="lmgb-student-filter-trigger"]').click
             f('span[data-component="lmgb-student-filter-concluded-enrollments"]').click
             wait_for_ajax_requests
 
-            active_and_concluded_students = active_students.unshift(@student_1.name)
-            expect(student_names.sort).to eq(active_and_concluded_students)
-          end
-
-          it "displays concluded tag for concluded enrollments" do
-            StudentEnrollment.find_by(user_id: @student_1.id).conclude
-
-            get "/courses/#{@course.id}/gradebook"
-            select_learning_mastery
-            wait_for_ajax_requests
-
-            f('button[data-component="lmgb-student-filter-trigger"]').click
-            f('span[data-component="lmgb-student-filter-concluded-enrollments"]').click
-            wait_for_ajax_requests
-
-            tags = ff(".outcome-student-cell-content .label")
-            expect(tags.size).to eq(1)
-            expect(tags.first.text).to eq("concluded")
+            active_students = [@student_1.name, @student_2.name, @student_3.name]
+            student_names = ff(".outcome-student-cell-content").map { |cell| cell.text.split("\n")[0] }
+            expect(student_names.sort).to eq(active_students)
           end
 
           it "correctly displays unassessed students when the filter option is selected" do
@@ -602,7 +570,8 @@ describe "outcome gradebook" do
 
       it "allows showing only a certain section" do
         Gradebook.visit(@course)
-        select_learning_mastery
+        f(".assignment-gradebook-container .gradebook-menus button").click
+        f('span[data-menu-item-id="learning-mastery"]').click
 
         toggle_no_results_students
         expect(ff(".outcome-student-cell-content")).to have_size 3
@@ -616,7 +585,7 @@ describe "outcome gradebook" do
         expect(ff(".outcome-student-cell-content")).to have_size 1
 
         # verify that it remembers the section to show across page loads
-        refresh_page
+        Gradebook.visit(@course)
         expect(section_filter).to have_value(@other_section.name)
         expect(ff(".outcome-student-cell-content")).to have_size 1
 

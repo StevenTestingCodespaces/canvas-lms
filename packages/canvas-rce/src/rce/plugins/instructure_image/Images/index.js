@@ -31,16 +31,6 @@ import {
 import ImageList from '../ImageList'
 import formatMessage from '../../../../format-message'
 
-export const RCSImageCollectionType = objectOf(
-  shape({
-    files: arrayOf(shape(fileShape)).isRequired,
-    bookmark: string,
-    hasMore: bool.isRequired,
-    isLoading: bool.isRequired,
-    error: string,
-  })
-)
-
 function hasFiles(images) {
   return images.files.length > 0
 }
@@ -122,7 +112,15 @@ Images.propTypes = {
   fetchInitialImages: func.isRequired,
   fetchNextImages: func.isRequired,
   contextType: string.isRequired,
-  images: RCSImageCollectionType.isRequired,
+  images: objectOf(
+    shape({
+      files: arrayOf(shape(fileShape)).isRequired,
+      bookmark: string,
+      hasMore: bool.isRequired,
+      isLoading: bool.isRequired,
+      error: string,
+    })
+  ).isRequired,
   sortBy: shape({
     sort: oneOf(['date_added', 'alphabetical']).isRequired,
     order: oneOf(['asc', 'desc']).isRequired,

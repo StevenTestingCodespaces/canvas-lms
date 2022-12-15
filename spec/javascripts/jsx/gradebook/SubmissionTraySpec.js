@@ -17,7 +17,6 @@
  */
 
 import moxios from 'moxios'
-import fakeENV from 'helpers/fakeENV'
 import ReactDOM from 'react-dom'
 import $ from 'jquery'
 import {
@@ -31,10 +30,6 @@ const $fixtures = document.getElementById('fixtures')
 
 QUnit.module('Gradebook#renderSubmissionTray', {
   setup() {
-    fakeENV.setup()
-    ENV.GRADEBOOK_OPTIONS = {
-      proxy_submissions_allowed: false,
-    }
     moxios.install()
     const url = '/api/v1/courses/1/assignments/2/submissions/3'
     moxios.stubRequest(url, {status: 200, response: {submission_comments: []}})

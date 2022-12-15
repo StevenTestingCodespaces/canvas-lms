@@ -24,10 +24,8 @@ describe ContentMigration do
     include_context "course copy"
 
     it "copies wiki page attributes" do
-      page = @copy_from.wiki_pages.create!(title: "title",
-                                           body: "<address><ul></ul></address>",
-                                           editing_roles: "teachers",
-                                           todo_date: Time.zone.now,
+      page = @copy_from.wiki_pages.create!(title: "title", body: "<address><ul></ul></address>",
+                                           editing_roles: "teachers", todo_date: Time.zone.now,
                                            publish_at: 1.week.from_now.beginning_of_day)
 
       run_course_copy
@@ -91,7 +89,7 @@ describe ContentMigration do
       @copy_to.save!
       vanilla_page_from = @copy_from.wiki_pages.create!(title: "Everyone Sees This Page")
       title = "conditional page"
-      wiki_page_assignment_model(course: @copy_from, title:)
+      wiki_page_assignment_model(course: @copy_from, title: title)
 
       run_course_copy
 
@@ -195,7 +193,7 @@ describe ContentMigration do
 
         run_course_copy
 
-        expect(@copy_to.wiki.has_no_front_page).to be true
+        expect(@copy_to.wiki.has_no_front_page).to eq true
       end
 
       it "sets default view to modules if wiki front page is missing" do
@@ -206,7 +204,7 @@ describe ContentMigration do
         run_course_copy
 
         expect(@copy_to.default_view).to eq "modules"
-        expect(@copy_to.wiki.has_front_page?).to be false
+        expect(@copy_to.wiki.has_front_page?).to eq false
       end
     end
   end

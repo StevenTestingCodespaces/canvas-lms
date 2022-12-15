@@ -43,25 +43,13 @@ describe GradebooksController do
       before do
         user_session(@student)
         @assignment = @course.assignments.create!(title: "Example Assignment")
-        @media_object = factory_with_protected_attributes(MediaObject, media_id: "m-someid", media_type: "video", title: "Example Media Object", context: @course)
-        @mock_kaltura = double("CanvasKaltura::ClientV3")
-        allow(CanvasKaltura::ClientV3).to receive(:new).and_return(@mock_kaltura)
-        allow(@mock_kaltura).to receive(:startSession).and_return(nil)
-        @media_sources = [{
-          height: "240",
-          width: "336",
-          content_type: "video/mp4",
-          url: "https://kaltura.example.com/some/url",
-        }]
-        @media_track = @media_object.media_tracks.create!(kind: "subtitles", locale: "en", content: "English").as_json["media_track"]
-        allow(@mock_kaltura).to receive(:media_sources).and_return(@media_sources)
       end
 
       it "includes muted assignments" do
         @assignment.ensure_post_policy(post_manually: true)
         get "grade_summary", params: { course_id: @course.id, id: @student.id }
         expect(assigns[:js_env][:assignment_groups].first[:assignments].size).to eq 1
-        expect(assigns[:js_env][:assignment_groups].first[:assignments].first[:muted]).to be true
+        expect(assigns[:js_env][:assignment_groups].first[:assignments].first[:muted]).to eq true
       end
 
       it "does not include score, excused, or workflow_state of unposted submissions" do
@@ -89,101 +77,39 @@ describe GradebooksController do
 
       it "includes submission_comments of posted submissions when visibility_feedback_student_grades_page flag on" do
         Account.site_admin.enable_feature!(:visibility_feedback_student_grades_page)
-        @assignment.anonymous_peer_reviews = true
-        @assignment.save!
-        attachment = attachment_model(context: @assignment)
-        attachment2 = attachment_model(context: @assignment)
-        other_student = @course.enroll_user(User.create!(name: "some other user")).user
         submission_to_comment = @assignment.grade_student(@student, grade: 10, grader: @teacher).first
-        comment_1 = submission_to_comment.add_comment(comment: "a student comment", author: @teacher, attachments: [attachment])
-        comment_2 = submission_to_comment.add_comment(comment: "another student comment", author: @teacher, attachments: [attachment, attachment2])
-        comment_3 = submission_to_comment.add_comment(comment: "an anonymous comment", author: other_student)
-        comment_4 = submission_to_comment.add_comment(media_comment_id: "m-someid", media_comment_type: "video", author: @student)
+        comment_1 = submission_to_comment.add_comment(comment: "a student comment", author: @teacher)
+        comment_2 = submission_to_comment.add_comment(comment: "another student comment", author: @teacher)
         comment_1.mark_read!(@student)
 
         get "grade_summary", params: { course_id: @course.id, id: @student.id }
         submission = assigns[:js_env][:submissions].find { |s| s[:assignment_id] == @assignment.id }
         aggregate_failures do
           expect(submission[:score]).to be 10.0
-          expect(submission[:submission_comments].length).to be 4
+          expect(submission[:submission_comments].length).to eql 2
 
           submission_comment_1 = submission[:submission_comments].first
           expect(submission_comment_1).to include({
                                                     "comment" => comment_1["comment"],
                                                     "attempt" => comment_1["attempt"],
-                                                    "author_name" => comment_1["author_name"],
+                                                    "author" => {
+                                                      "id" => comment_1["author_id"],
+                                                      "display_name" => comment_1["author_name"]
+                                                    },
                                                     "display_updated_at" => datetime_string(comment_1["updated_at"]),
-                                                    "is_read" => true,
-                                                    "attachments" => [
-                                                      {
-                                                        "id" => attachment.id,
-                                                        "display_name" => attachment.display_name,
-                                                        "mime_class" => attachment.mime_class,
-                                                        "url" => file_download_url(attachment)
-                                                      }
-                                                    ]
+                                                    "is_read" => true
                                                   })
 
           submission_comment_2 = submission[:submission_comments].second
           expect(submission_comment_2).to include({
                                                     "comment" => comment_2["comment"],
                                                     "attempt" => comment_2["attempt"],
-                                                    "author_name" => comment_2["author_name"],
+                                                    "author" => {
+                                                      "id" => comment_2["author_id"],
+                                                      "display_name" => comment_2["author_name"]
+                                                    },
                                                     "display_updated_at" => datetime_string(comment_2["updated_at"]),
-                                                    "is_read" => false,
-                                                    "attachments" => [
-                                                      {
-                                                        "id" => attachment.id,
-                                                        "display_name" => attachment.display_name,
-                                                        "mime_class" => attachment.mime_class,
-                                                        "url" => file_download_url(attachment)
-                                                      },
-                                                      {
-                                                        "id" => attachment2.id,
-                                                        "display_name" => attachment2.display_name,
-                                                        "mime_class" => attachment2.mime_class,
-                                                        "url" => file_download_url(attachment2)
-                                                      }
-                                                    ]
-                                                  })
-          submission_comment_3 = submission[:submission_comments].third
-          expect(submission_comment_3).to include({
-                                                    "comment" => comment_3["comment"],
-                                                    "attempt" => comment_3["attempt"],
-                                                    "author_name" => "Anonymous User",
-                                                    "display_updated_at" => datetime_string(comment_3["updated_at"]),
-                                                    "is_read" => false,
-                                                    "attachments" => []
-                                                  })
-          submission_comment_4 = submission[:submission_comments].fourth
-          expect(submission_comment_4).to include({
-                                                    "comment" => comment_4["comment"],
-                                                    "attempt" => comment_4["attempt"],
-                                                    "author_name" => comment_4["author_name"],
-                                                    "display_updated_at" => datetime_string(comment_4["updated_at"]),
-                                                    "is_read" => false,
-                                                    "attachments" => [],
-                                                    "media_object" => {
-                                                      "id" => @media_object.media_id,
-                                                      "title" => @media_object.title,
-                                                      "media_sources" => [
-                                                        {
-                                                          "height" => @media_sources.first[:height],
-                                                          "width" => @media_sources.first[:width],
-                                                          "content_type" => @media_sources.first[:content_type],
-                                                          "url" => @media_sources.first[:url]
-                                                        }
-                                                      ],
-                                                      "media_tracks" => [
-                                                        {
-                                                          "id" => @media_track["id"],
-                                                          "locale" => @media_track["locale"],
-                                                          "content" => @media_track["content"],
-                                                          "kind" => @media_track["kind"],
-                                                        }
-                                                      ]
-
-                                                    }
+                                                    "is_read" => false
                                                   })
         end
       end
@@ -197,7 +123,7 @@ describe GradebooksController do
         submission = assigns[:js_env][:submissions].find { |s| s[:assignment_id] == @assignment.id }
         aggregate_failures do
           expect(submission[:score]).to be 10.0
-          expect(submission[:submission_comments]).to be_nil
+          expect(submission[:submission_comments]).to eql nil
         end
       end
     end
@@ -212,7 +138,7 @@ describe GradebooksController do
         @assignment.ensure_post_policy(post_manually: true)
         get "grade_summary", params: { course_id: @course.id, id: @student.id }
         expect(assigns[:js_env][:assignment_groups].first[:assignments].size).to eq 1
-        expect(assigns[:js_env][:assignment_groups].first[:assignments].first[:muted]).to be true
+        expect(assigns[:js_env][:assignment_groups].first[:assignments].first[:muted]).to eq true
       end
 
       it "does not include score, excused, or workflow_state of unposted submissions" do
@@ -483,7 +409,7 @@ describe GradebooksController do
             start_date: 1.day.ago,
             end_date: 1.day.from_now
           )
-          @student_enrollment.scores.find_by(grading_period:).update!(override_score: 84)
+          @student_enrollment.scores.find_by(grading_period: grading_period).update!(override_score: 84)
           user_session(@teacher)
           get :grade_summary, params: { course_id: @course.id, id: @student.id }
           expect(assigns[:js_env][:effective_final_score]).to eq 84
@@ -511,7 +437,7 @@ describe GradebooksController do
       let!(:assignment3) do
         assignment_group = @course.assignment_groups.create!(position: 2)
         @course.assignments.create!(
-          assignment_group:, title: "Carrot", due_at: 2.days.from_now, position: 1
+          assignment_group: assignment_group, title: "Carrot", due_at: 2.days.from_now, position: 1
         )
       end
       let(:assignment_ids) { assigns[:presenter].assignments.select { |a| a.instance_of?(Assignment) }.map(&:id) }
@@ -606,7 +532,7 @@ describe GradebooksController do
         user_session(@student)
         all_grading_periods_id = 0
         get "grade_summary", params: { course_id: @course.id, id: @student.id, grading_period_id: all_grading_periods_id }
-        expect(assigns[:exclude_total]).to be true
+        expect(assigns[:exclude_total]).to eq true
       end
 
       it "assigns grading period values for grade calculator to ENV" do
@@ -620,7 +546,7 @@ describe GradebooksController do
       it "displays totals if any grading period other than 'All Grading Periods' is selected" do
         user_session(@student)
         get "grade_summary", params: { course_id: @course.id, id: @student.id, grading_period_id: @grading_periods.first.id }
-        expect(assigns[:exclude_total]).to be false
+        expect(assigns[:exclude_total]).to eq false
       end
 
       it "includes the grading period group (as 'set') in the ENV" do
@@ -779,14 +705,14 @@ describe GradebooksController do
           @course.enable_feature!(:outcome_service_results_to_canvas)
           get "grade_summary", params: { course_id: @course.id, id: @student.id }
           js_env = assigns[:js_env]
-          expect(js_env[:outcome_service_results_to_canvas]).to be true
+          expect(js_env[:outcome_service_results_to_canvas]).to eq true
         end
 
         it "is set to false if outcome_service_results_to_canvas feature flag is disabled" do
           @course.disable_feature!(:outcome_service_results_to_canvas)
           get "grade_summary", params: { course_id: @course.id, id: @student.id }
           js_env = assigns[:js_env]
-          expect(js_env[:outcome_service_results_to_canvas]).to be false
+          expect(js_env[:outcome_service_results_to_canvas]).to eq false
         end
       end
     end
@@ -806,14 +732,14 @@ describe GradebooksController do
           @course.enable_feature!(:enhanced_gradebook_filters)
           user_session(@teacher)
           get :show, params: { course_id: @course.id }
-          expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:enhanced_gradebook_filters]).to be(true)
+          expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:enhanced_gradebook_filters]).to eq(true)
         end
 
         it "sets enhanced_gradebook_filters in js_env as false if disabled" do
           @course.disable_feature!(:enhanced_gradebook_filters)
           user_session(@teacher)
           get :show, params: { course_id: @course.id }
-          expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:enhanced_gradebook_filters]).to be(false)
+          expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:enhanced_gradebook_filters]).to eq(false)
         end
       end
 
@@ -857,13 +783,13 @@ describe GradebooksController do
 
       describe "score to ungraded" do
         before do
-          options = Gradebook::ApplyScoreToUngradedSubmissions::Options.new(
+          options = ::Gradebook::ApplyScoreToUngradedSubmissions::Options.new(
             percent: 50,
             excused: false,
             mark_as_missing: false,
             only_apply_to_past_due: false
           )
-          @progress = Gradebook::ApplyScoreToUngradedSubmissions.queue_apply_score(course: @course, grader: @teacher, options:)
+          @progress = Gradebook::ApplyScoreToUngradedSubmissions.queue_apply_score(course: @course, grader: @teacher, options: options)
         end
 
         describe "FF disabled" do
@@ -874,7 +800,7 @@ describe GradebooksController do
           it "sets gradebook_score_to_ungraded_progress in js_env as null" do
             user_session(@teacher)
             get :show, params: { course_id: @course.id }
-            expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:gradebook_score_to_ungraded_progress]).to be_nil
+            expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:gradebook_score_to_ungraded_progress]).to eq(nil)
           end
         end
 
@@ -888,7 +814,7 @@ describe GradebooksController do
 
             user_session(@teacher)
             get :show, params: { course_id: @course.id }
-            expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:gradebook_score_to_ungraded_progress]).to be_nil
+            expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:gradebook_score_to_ungraded_progress]).to eq(nil)
           end
 
           it "sets gradebook_score_to_ungraded_progress object in js_env if the last progress has workflow state queued" do
@@ -1020,19 +946,19 @@ describe GradebooksController do
 
           it "sets allow_final_grade_override to true when final grade override is allowed" do
             get :show, params: { course_id: @course.id }
-            expect(allow_final_grade_override).to be true
+            expect(allow_final_grade_override).to eq true
           end
 
           it "sets allow_final_grade_override to false when final grade override is not allowed" do
             @course.update!(allow_final_grade_override: false)
             get :show, params: { course_id: @course.id }
-            expect(allow_final_grade_override).to be false
+            expect(allow_final_grade_override).to eq false
           end
 
           it "sets allow_final_grade_override to false when 'Final Grade Override' is not enabled" do
             @course.disable_feature!(:final_grades_override)
             get :show, params: { course_id: @course.id }
-            expect(allow_final_grade_override).to be false
+            expect(allow_final_grade_override).to eq false
           end
         end
       end
@@ -1265,19 +1191,18 @@ describe GradebooksController do
         before do
           category.create_groups(2)
           category2.create_groups(2)
-          @groupless_category = @course.group_categories.create!(name: "no groups!")
         end
 
         it "includes the student group categories for the course" do
           get :show, params: { course_id: @course.id }
-          expect(group_categories_json.pluck("id")).to contain_exactly(category.id, category2.id, @groupless_category.id)
+          expect(group_categories_json.pluck("id")).to contain_exactly(category.id, category2.id)
         end
 
         it "does not include deleted group categories" do
           category2.destroy!
 
           get :show, params: { course_id: @course.id }
-          expect(group_categories_json.pluck("id")).to contain_exactly(category.id, @groupless_category.id)
+          expect(group_categories_json.pluck("id")).to contain_exactly(category.id)
         end
 
         it "includes the groups within each category" do
@@ -1285,13 +1210,6 @@ describe GradebooksController do
 
           category2_json = group_categories_json.find { |category_json| category_json["id"] == category2.id }
           expect(category2_json["groups"].pluck("id")).to match_array(category2.groups.pluck(:id))
-        end
-
-        it "includes an empty groups array for categories without groups" do
-          get :show, params: { course_id: @course.id }
-
-          groupless_json = group_categories_json.find { |cat| cat["id"] == @groupless_category.id }
-          expect(groupless_json["groups"]).to be_empty
         end
       end
 
@@ -1398,37 +1316,6 @@ describe GradebooksController do
           expect(gradebook_options[:allow_apply_score_to_ungraded]).to be false
         end
       end
-
-      describe "restrict_quantitative_data" do
-        context "when RQD is not enabled" do
-          it "returns false when teacher views gradebook" do
-            user_session(@teacher)
-            get :show, params: { course_id: @course.id }
-            expect(gradebook_options.fetch(:restrict_quantitative_data)).to be(false)
-          end
-        end
-
-        context "when RQD is enabled" do
-          before :once do
-            # truthy feature flag
-            Account.default.enable_feature! :restrict_quantitative_data
-
-            # truthy setting
-            Account.default.settings[:restrict_quantitative_data] = { value: true, locked: true }
-            Account.default.save!
-
-            # truthy permission(since enabled is being "not"ed)
-            Account.default.role_overrides.create!(role: student_role, enabled: false, permission: "restrict_quantitative_data")
-            Account.default.reload
-          end
-
-          it "returns true when teacher views gradebook" do
-            user_session(@teacher)
-            get :show, params: { course_id: @course.id }
-            expect(gradebook_options.fetch(:restrict_quantitative_data)).to be(true)
-          end
-        end
-      end
     end
 
     describe "csv" do
@@ -1532,7 +1419,7 @@ describe GradebooksController do
 
       it "is enabled for teachers" do
         get :show, params: { course_id: @course.id }
-        expect(assigns[:js_env][:STUDENT_CONTEXT_CARDS_ENABLED]).to be true
+        expect(assigns[:js_env][:STUDENT_CONTEXT_CARDS_ENABLED]).to eq true
       end
     end
 
@@ -1811,14 +1698,14 @@ describe GradebooksController do
             @course.root_account.disable_feature! :improved_lmgb
             get :show, params: { course_id: @course.id }
             gradebook_env = assigns[:js_env][:GRADEBOOK_OPTIONS]
-            expect(gradebook_env[:IMPROVED_LMGB]).to be false
+            expect(gradebook_env[:IMPROVED_LMGB]).to eq false
           end
 
           it "is true if the feature flag is on" do
             @course.root_account.enable_feature! :improved_lmgb
             get :show, params: { course_id: @course.id }
             gradebook_env = assigns[:js_env][:GRADEBOOK_OPTIONS]
-            expect(gradebook_env[:IMPROVED_LMGB]).to be true
+            expect(gradebook_env[:IMPROVED_LMGB]).to eq true
           end
         end
 
@@ -1827,14 +1714,14 @@ describe GradebooksController do
             @course.enable_feature!(:outcome_service_results_to_canvas)
             get :show, params: { course_id: @course.id }
             js_env = assigns[:js_env]
-            expect(js_env[:outcome_service_results_to_canvas]).to be true
+            expect(js_env[:outcome_service_results_to_canvas]).to eq true
           end
 
           it "is set to false if outcome_service_results_to_canvas feature flag is disabled" do
             @course.disable_feature!(:outcome_service_results_to_canvas)
             get :show, params: { course_id: @course.id }
             js_env = assigns[:js_env]
-            expect(js_env[:outcome_service_results_to_canvas]).to be false
+            expect(js_env[:outcome_service_results_to_canvas]).to eq false
           end
         end
 
@@ -1843,14 +1730,14 @@ describe GradebooksController do
             @course.root_account.enable_feature!(:outcome_average_calculation)
             get :show, params: { course_id: @course.id }
             js_env = assigns[:js_env]
-            expect(js_env[:OUTCOME_AVERAGE_CALCULATION]).to be true
+            expect(js_env[:OUTCOME_AVERAGE_CALCULATION]).to eq true
           end
 
           it "is set to false if outcome_average_calculation ff is disabled" do
             @course.root_account.disable_feature!(:outcome_average_calculation)
             get :show, params: { course_id: @course.id }
             js_env = assigns[:js_env]
-            expect(js_env[:OUTCOME_AVERAGE_CALCULATION]).to be false
+            expect(js_env[:OUTCOME_AVERAGE_CALCULATION]).to eq false
           end
         end
       end
@@ -2062,12 +1949,12 @@ describe GradebooksController do
         it "is set to true if outcome_gradebook is enabled for the course" do
           @course.enable_feature!(:outcome_gradebook)
           get "history", params: { course_id: @course.id }
-          expect(assigns[:js_env][:OUTCOME_GRADEBOOK_ENABLED]).to be true
+          expect(assigns[:js_env][:OUTCOME_GRADEBOOK_ENABLED]).to eq true
         end
 
         it "is set to false if outcome_gradebook is not enabled for the course" do
           get "history", params: { course_id: @course.id }
-          expect(assigns[:js_env][:OUTCOME_GRADEBOOK_ENABLED]).to be false
+          expect(assigns[:js_env][:OUTCOME_GRADEBOOK_ENABLED]).to eq false
         end
       end
     end
@@ -2163,7 +2050,7 @@ describe GradebooksController do
   end
 
   describe "POST 'update_submission'" do
-    let(:json) { response.parsed_body }
+    let(:json) { JSON.parse(response.body) }
 
     describe "returned JSON" do
       before(:once) do
@@ -2189,34 +2076,24 @@ describe GradebooksController do
         end
 
         it "includes assignment_visibility" do
-          submissions = json.pluck("submission")
+          submissions = json.map { |submission| submission["submission"] }
           expect(submissions).to all include("assignment_visible" => true)
-        end
-
-        it "includes missing in base submission object" do
-          submission = json.first["submission"]
-          expect(submission).to include("missing" => false)
         end
 
         it "includes missing in submission history" do
           submission_history = json.first["submission"]["submission_history"]
-          submissions = submission_history.pluck("submission")
+          submissions = submission_history.map { |submission| submission["submission"] }
           expect(submissions).to all include("missing" => false)
-        end
-
-        it "includes late in base submission object" do
-          submission = json.first["submission"]
-          expect(submission).to include("late" => false)
         end
 
         it "includes late in submission history" do
           submission_history = json.first["submission"]["submission_history"]
-          submissions = submission_history.pluck("submission")
+          submissions = submission_history.map { |submission| submission["submission"] }
           expect(submissions).to all include("late" => false)
         end
 
         it "includes user_ids" do
-          submissions = json.pluck("submission")
+          submissions = json.map { |submission| submission["submission"] }
           expect(submissions).to all include("user_id")
         end
       end
@@ -2226,94 +2103,50 @@ describe GradebooksController do
           user_session(@teacher)
         end
 
-        context "setting grades" do
-          let(:post_params) do
-            {
-              course_id: @course.id,
-              submission: {
-                assignment_id: @assignment.id,
-                user_id: @student.id,
-                grade: 10,
-                set_by_default_grade: true
-              }
+        let(:post_params) do
+          {
+            course_id: @course.id,
+            submission: {
+              assignment_id: @assignment.id,
+              user_id: @student.id,
+              grade: 10,
+              set_by_default_grade: true
             }
-          end
-
-          it "does not set the grader_id on missing submissions if set_by_default_grade is true" do
-            @assignment.update!(due_at: 10.days.ago, submission_types: "online_text_entry")
-
-            expect { post(:update_submission, params: post_params, format: :json) }.not_to change {
-              @submission.reload.grader_id
-            }.from(nil)
-          end
-
-          it "sets the grader_id on missing submissions if set_by_default_grade is false" do
-            post_params[:submission][:set_by_default_grade] = false
-            @assignment.update!(due_at: 10.days.ago, submission_types: "online_text_entry")
-
-            expect { post(:update_submission, params: post_params, format: :json) }.to change {
-              @submission.reload.grader_id
-            }.from(nil).to(@teacher.id)
-          end
-
-          it "sets the grader_id on missing submissions when set_by_default_grade is true and the late policy status is missing" do
-            @assignment.update!(due_at: 10.days.ago, submission_types: "online_text_entry")
-            @submission.update!(late_policy_status: "missing")
-
-            expect { post(:update_submission, params: post_params, format: :json) }.to change {
-              @submission.reload.grader_id
-            }.from(nil).to(@teacher.id)
-          end
-
-          it "sets the grader_id on non missing submissions when set_by_default_grade is true" do
-            @assignment.update!(due_at: 10.days.from_now, submission_types: "online_text_entry")
-
-            expect { post(:update_submission, params: post_params, format: :json) }.to change {
-              @submission.reload.grader_id
-            }.from(nil).to(@teacher.id)
-          end
+          }
         end
 
-        context "marking students as missing" do
-          let(:post_params) do
-            {
-              course_id: @course.id,
-              submission: {
-                assignment_id: @assignment.id,
-                user_id: @student.id,
-                late_policy_status: "missing",
-                set_by_default_grade: true
-              }
-            }
-          end
+        it "does not set the grader_id on missing submissions if set_by_default_grade is true" do
+          @assignment.update!(due_at: 10.days.ago, submission_types: "online_text_entry")
 
-          it "marks not-yet-graded students as missing" do
-            expect { post(:update_submission, params: post_params, format: :json) }.to change {
-              @submission.reload.missing?
-            }.from(false).to(true)
-          end
+          expect { post(:update_submission, params: post_params, format: :json) }.not_to change {
+            @submission.reload.grader_id
+          }.from(nil)
+        end
 
-          it "marks already-graded students as missing" do
-            @assignment.grade_student(@student, grade: 2, grader: @teacher)
-            expect { post(:update_submission, params: post_params, format: :json) }.to change {
-              @submission.reload.missing?
-            }.from(false).to(true)
-          end
+        it "sets the grader_id on missing submissions if set_by_default_grade is false" do
+          post_params[:submission][:set_by_default_grade] = false
+          @assignment.update!(due_at: 10.days.ago, submission_types: "online_text_entry")
 
-          it "marks not-yet-graded students as missing when passed dont_overwrite_grades param" do
-            params = post_params.merge(dont_overwrite_grades: true)
-            expect { post(:update_submission, params:, format: :json) }.to change {
-              @submission.reload.missing?
-            }.from(false).to(true)
-          end
+          expect { post(:update_submission, params: post_params, format: :json) }.to change {
+            @submission.reload.grader_id
+          }.from(nil).to(@teacher.id)
+        end
 
-          it "does not modify already-graded students when passed dont_overwrite_grades param" do
-            @assignment.grade_student(@student, grade: 2, grader: @teacher)
-            params = post_params.merge(dont_overwrite_grades: true)
-            expect { post(:update_submission, params:, format: :json) }.not_to change {
-              @submission.reload.missing?
-            }.from(false)
-          end
+        it "sets the grader_id on missing submissions when set_by_default_grade is true and the late policy status is missing" do
+          @assignment.update!(due_at: 10.days.ago, submission_types: "online_text_entry")
+          @submission.update!(late_policy_status: "missing")
+
+          expect { post(:update_submission, params: post_params, format: :json) }.to change {
+            @submission.reload.grader_id
+          }.from(nil).to(@teacher.id)
+        end
+
+        it "sets the grader_id on non missing submissions when set_by_default_grade is true" do
+          @assignment.update!(due_at: 10.days.from_now, submission_types: "online_text_entry")
+
+          expect { post(:update_submission, params: post_params, format: :json) }.to change {
+            @submission.reload.grader_id
+          }.from(nil).to(@teacher.id)
         end
       end
 
@@ -2360,14 +2193,14 @@ describe GradebooksController do
           it "includes anonymous_ids on submission_comments" do
             params_with_comment = post_params.deep_merge(submission: { score: 10 })
             post(:update_submission, params: params_with_comment, format: :json)
-            comments = json.first.fetch("submission").fetch("submission_comments").pluck("submission_comment")
+            comments = json.first.fetch("submission").fetch("submission_comments").map { |c| c["submission_comment"] }
             expect(comments).to all have_key("anonymous_id")
           end
 
           it "excludes author_name on submission_comments" do
             params_with_comment = post_params.deep_merge(submission: { score: 10 })
             post(:update_submission, params: params_with_comment, format: :json)
-            comments = json.first.fetch("submission").fetch("submission_comments").pluck("submission_comment")
+            comments = json.first.fetch("submission").fetch("submission_comments").map { |c| c["submission_comment"] }
             comments.each do |comment|
               expect(comment).not_to have_key("author_name")
             end
@@ -2388,7 +2221,7 @@ describe GradebooksController do
         expect(response).to be_redirect
         expect(assigns[:assignment]).to eql(@assignment)
         expect(assigns[:submissions]).not_to be_nil
-        expect(assigns[:submissions].length).to be(1)
+        expect(assigns[:submissions].length).to eql(1)
         expect(assigns[:submissions][0].submission_comments).not_to be_nil
         expect(assigns[:submissions][0].submission_comments[0].comment).to eql("some comment")
       end
@@ -2404,10 +2237,10 @@ describe GradebooksController do
         expect(response).to be_redirect
         expect(assigns[:assignment]).to eql(@assignment)
         expect(assigns[:submissions]).not_to be_nil
-        expect(assigns[:submissions].length).to be(1)
+        expect(assigns[:submissions].length).to eql(1)
         expect(assigns[:submissions][0].submission_comments).not_to be_nil
         expect(assigns[:submissions][0].submission_comments[0].comment).to eql("some comment")
-        expect(assigns[:submissions][0].submission_comments[0].attachments.length).to be(1)
+        expect(assigns[:submissions][0].submission_comments[0].attachments.length).to eql(1)
         expect(assigns[:submissions][0].submission_comments[0].attachments[0].display_name).to eql("doc.doc")
       end
 
@@ -2468,7 +2301,7 @@ describe GradebooksController do
         end
 
         it "allows media comments for submissions" do
-          expect(@media_comment).not_to be_nil
+          expect(@media_comment).not_to be nil
           expect(@media_comment.media_comment_id).to eql "asdfqwerty"
         end
 
@@ -2567,9 +2400,9 @@ describe GradebooksController do
         expect(pg.submission_comments.first.comment).to eq "provisional!"
 
         # confirm the response JSON shows provisional information
-        json = response.parsed_body
+        json = JSON.parse response.body
         expect(json.first.fetch("submission").fetch("score")).to eq 100
-        expect(json.first.fetch("submission").fetch("grade_matches_current_submission")).to be true
+        expect(json.first.fetch("submission").fetch("grade_matches_current_submission")).to eq true
         expect(json.first.fetch("submission").fetch("submission_comments").first.fetch("submission_comment").fetch("comment")).to eq "provisional!"
       end
 
@@ -2606,7 +2439,7 @@ describe GradebooksController do
         end
 
         let(:submission_json) do
-          response_json = response.parsed_body
+          response_json = JSON.parse(response.body)
           response_json[0]["submission"].with_indifferent_access
         end
 
@@ -2645,7 +2478,7 @@ describe GradebooksController do
 
         submission.reload
         pg = submission.provisional_grade(@teacher)
-        expect(pg.graded_anonymously).to be true
+        expect(pg.graded_anonymously).to eq true
 
         submission = @assignment.submit_homework(@student, body: "hello")
         post "update_submission",
@@ -2660,7 +2493,7 @@ describe GradebooksController do
 
         submission.reload
         pg = submission.provisional_grade(@teacher)
-        expect(pg.graded_anonymously).to be false
+        expect(pg.graded_anonymously).to eq false
       end
 
       it "doesn't create a provisional grade when the student has one already" do
@@ -2668,14 +2501,9 @@ describe GradebooksController do
         other_teacher = teacher_in_course(course: @course, active_all: true).user
         @assignment.grade_student(@student, grade: 2, grader: other_teacher, provisional: true)
 
-        post "update_submission",
-             params: { course_id: @course.id,
-                       submission: { score: 100,
-                                     comment: "provisional!",
-                                     assignment_id: @assignment.id,
-                                     user_id: @student.id,
-                                     provisional: true } },
-             format: :json
+        post "update_submission", params: { course_id: @course.id,
+                                            submission: { score: 100, comment: "provisional!", assignment_id: @assignment.id,
+                                                          user_id: @student.id, provisional: true } }, format: :json
         expect(response).to_not be_successful
         expect(response.body).to include("The maximum number of graders has been reached for this assignment")
       end
@@ -2685,14 +2513,9 @@ describe GradebooksController do
         other_teacher = teacher_in_course(course: @course, active_all: true).user
         submission.find_or_create_provisional_grade!(other_teacher)
 
-        post "update_submission",
-             params: { course_id: @course.id,
-                       submission: { score: 100,
-                                     comment: "provisional!",
-                                     assignment_id: @assignment.id,
-                                     user_id: @student.id,
-                                     provisional: true } },
-             format: :json
+        post "update_submission", params: { course_id: @course.id,
+                                            submission: { score: 100, comment: "provisional!", assignment_id: @assignment.id,
+                                                          user_id: @student.id, provisional: true } }, format: :json
         expect(response).to be_successful
       end
 
@@ -2723,14 +2546,14 @@ describe GradebooksController do
         # confirm "provisional" grades/comments were written
         pg = submission.provisional_grade(@teacher, final: true)
         expect(pg.score).to eq 100
-        expect(pg.final).to be true
+        expect(pg.final).to eq true
         expect(pg.submission_comments.first.comment).to eq "provisional!"
 
         # confirm the response JSON shows provisional information
-        json = response.parsed_body
+        json = JSON.parse response.body
         expect(json[0]["submission"]["score"]).to eq 100
         expect(json[0]["submission"]["provisional_grade_id"]).to eq pg.id
-        expect(json[0]["submission"]["grade_matches_current_submission"]).to be true
+        expect(json[0]["submission"]["grade_matches_current_submission"]).to eq true
         expect(json[0]["submission"]["submission_comments"].first["submission_comment"]["comment"]).to eq "provisional!"
       end
 
@@ -2751,7 +2574,7 @@ describe GradebooksController do
         }
 
         post(:update_submission, params: post_params, format: :json)
-        submission_json = response.parsed_body.first.fetch("submission")
+        submission_json = JSON.parse(response.body).first.fetch("submission")
         provisional_grade = ModeratedGrading::ProvisionalGrade.find(submission_json.fetch("provisional_grade_id"))
         expect(provisional_grade).not_to be_final
       end
@@ -2774,7 +2597,7 @@ describe GradebooksController do
       end
       let(:request_params) { { course_id: @course.id, submission: submission_params } }
 
-      let(:response_json) { response.parsed_body }
+      let(:response_json) { JSON.parse(response.body) }
 
       it "returns an error code of MAX_GRADERS_REACHED if a MaxGradersReachedError is raised" do
         @assignment.grade_student(@student, provisional: true, grade: 5, grader: @teacher)
@@ -3010,7 +2833,7 @@ describe GradebooksController do
               @teacher.reload
 
               saved_group_id = @teacher.get_preference(:gradebook_settings, @course.global_id).dig("filter_rows_by", "student_group_id")
-              expect(saved_group_id).to be_nil
+              expect(saved_group_id).to be nil
             end
 
             it "does not set selected_student_group" do
@@ -3093,13 +2916,13 @@ describe GradebooksController do
     describe "reassignment" do
       it "allows teacher reassignment" do
         get "speed_grader", params: { course_id: @course, assignment_id: @assignment.id }
-        expect(controller.instance_variable_get(:@can_reassign_submissions)).to be true
+        expect(controller.instance_variable_get(:@can_reassign_submissions)).to eq true
       end
 
       it "does not allow student reassignment" do
         user_session(@student)
         get "speed_grader", params: { course_id: @course, assignment_id: @assignment.id }
-        expect(controller.instance_variable_get(:@can_reassign_submissions)).to be_nil
+        expect(controller.instance_variable_get(:@can_reassign_submissions)).to eq nil
       end
 
       context "with moderated grading" do
@@ -3114,13 +2937,13 @@ describe GradebooksController do
         it "does not allow non-final grader to reassign" do
           user_session(@ta)
           get "speed_grader", params: { course_id: @course, assignment_id: @mod_assignment.id }
-          expect(controller.instance_variable_get(:@can_reassign_submissions)).to be false
+          expect(controller.instance_variable_get(:@can_reassign_submissions)).to eq false
         end
 
         it "allows final grader to reassign" do
           user_session(@teacher)
           get "speed_grader", params: { course_id: @course, assignment_id: @mod_assignment.id }
-          expect(controller.instance_variable_get(:@can_reassign_submissions)).to be true
+          expect(controller.instance_variable_get(:@can_reassign_submissions)).to eq true
         end
       end
     end
@@ -3163,21 +2986,20 @@ describe GradebooksController do
 
       context "when a section has previously been selected" do
         before do
-          @teacher.set_preference(:gradebook_settings,
-                                  @course.global_id,
+          @teacher.set_preference(:gradebook_settings, @course.global_id,
                                   { filter_rows_by: { section_id: @course.course_sections.first.id } })
         end
 
         it 'clears the selected section for the course if passed the value "all"' do
           post "speed_grader_settings", params: { course_id: @course.id, selected_section_id: "all" }
 
-          expect(course_settings.dig("filter_rows_by", "section_id")).to be_nil
+          expect(course_settings.dig("filter_rows_by", "section_id")).to be nil
         end
 
         it "clears the selected section if passed an invalid value" do
           post "speed_grader_settings", params: { course_id: @course.id, selected_section_id: "hahahaha" }
 
-          expect(course_settings.dig("filter_rows_by", "section_id")).to be_nil
+          expect(course_settings.dig("filter_rows_by", "section_id")).to be nil
         end
 
         it "clears the selected section if passed a non-active section in the course" do
@@ -3186,14 +3008,14 @@ describe GradebooksController do
 
           post "speed_grader_settings", params: { course_id: @course.id, selected_section_id: deleted_section.id }
 
-          expect(course_settings.dig("filter_rows_by", "section_id")).to be_nil
+          expect(course_settings.dig("filter_rows_by", "section_id")).to be nil
         end
 
         it "clears the selected section if passed a section ID not in the course" do
           section_in_other_course = Course.create!.course_sections.create!
           post "speed_grader_settings", params: { course_id: @course.id, selected_section_id: section_in_other_course.id }
 
-          expect(course_settings.dig("filter_rows_by", "section_id")).to be_nil
+          expect(course_settings.dig("filter_rows_by", "section_id")).to be nil
         end
       end
     end
@@ -3324,14 +3146,14 @@ describe GradebooksController do
       context = object_double(@course, feature_enabled?: false)
       @controller.instance_variable_set(:@context, context)
 
-      expect(@controller.post_grades_feature?).to be(false)
+      expect(@controller.post_grades_feature?).to eq(false)
     end
 
     it "returns false when context does not allow grade publishing by user" do
       context = object_double(@course, feature_enabled?: true, allows_grade_publishing_by: false)
       @controller.instance_variable_set(:@context, context)
 
-      expect(@controller.post_grades_feature?).to be(false)
+      expect(@controller.post_grades_feature?).to eq(false)
     end
 
     it "returns false when #can_do is false" do
@@ -3339,7 +3161,7 @@ describe GradebooksController do
       @controller.instance_variable_set(:@context, context)
       allow(@controller).to receive(:can_do).and_return(false)
 
-      expect(@controller.post_grades_feature?).to be(false)
+      expect(@controller.post_grades_feature?).to eq(false)
     end
 
     it "returns true when all conditions are met" do
@@ -3347,7 +3169,7 @@ describe GradebooksController do
       @controller.instance_variable_set(:@context, context)
       allow(@controller).to receive(:can_do).and_return(true)
 
-      expect(@controller.post_grades_feature?).to be(true)
+      expect(@controller.post_grades_feature?).to eq(true)
     end
   end
 
@@ -3486,7 +3308,7 @@ describe GradebooksController do
       progress = Progress.find(returned_id)
 
       aggregate_failures do
-        expect(progress).not_to be_nil
+        expect(progress).not_to be nil
         expect(progress.tag).to eq "override_grade_update"
       end
     end
@@ -3506,8 +3328,8 @@ describe GradebooksController do
 
     def make_request(**additional_params)
       params = additional_params.reverse_merge({ course_id: @course.id, assignment_ids: ["1", "2"], student_ids: ["11", "22"] })
-      put :apply_score_to_ungraded_submissions, params:, format: :json
-      response.parsed_body
+      put :apply_score_to_ungraded_submissions, params: params, format: :json
+      JSON.parse(response.body)
     end
 
     describe "authorization" do
@@ -3547,12 +3369,12 @@ describe GradebooksController do
 
       it "does not accept empty assignment ids" do
         put :apply_score_to_ungraded_submissions, params: { course_id: @course.id, percent: 95.0, assignment_ids: [], student_ids: ["11", "22"] }, format: :json
-        expect(response.parsed_body["error"]).to eq "no_assignment_ids_provided"
+        expect(JSON.parse(response.body)["error"]).to eq "no_assignment_ids_provided"
       end
 
       it "does not accept empty student ids" do
         put :apply_score_to_ungraded_submissions, params: { course_id: @course.id, percent: 95.0, assignment_ids: ["1", "2"], student_ids: [] }, format: :json
-        expect(response.parsed_body["error"]).to eq "no_student_ids_provided"
+        expect(JSON.parse(response.body)["error"]).to eq "no_student_ids_provided"
       end
     end
   end

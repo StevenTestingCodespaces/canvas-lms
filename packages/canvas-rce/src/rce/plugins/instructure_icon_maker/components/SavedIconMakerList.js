@@ -19,31 +19,22 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {View} from '@instructure/ui-view'
-import Images, {RCSImageCollectionType} from '../../instructure_image/Images'
+import Images from '../../instructure_image/Images'
+import {useStoreProps} from '../../shared/StoreContext'
 import {ICON_MAKER_ICONS} from '../svg/constants'
 
-const SavedIconMakerList = props => {
-  const {
-    sortBy,
-    searchString,
-    onImageEmbed,
-    canvasOrigin,
-    fetchInitialImages,
-    fetchNextImages,
-    contextType,
-  } = {
-    ...props,
-  }
-  const {files, bookmark, isLoading, hasMore} = props.images[contextType]
+const SavedIconMakerList = ({sortBy, searchString, onImageEmbed, canvasOrigin}) => {
+  const storeProps = useStoreProps()
+  const {files, bookmark, isLoading, hasMore} = storeProps.images[storeProps.contextType]
 
   return (
     <View>
       <Images
-        fetchInitialImages={() => fetchInitialImages({category: ICON_MAKER_ICONS})}
-        fetchNextImages={() => fetchNextImages({category: ICON_MAKER_ICONS})}
-        contextType={contextType}
+        fetchInitialImages={() => storeProps.fetchInitialImages({category: ICON_MAKER_ICONS})}
+        fetchNextImages={() => storeProps.fetchNextImages({category: ICON_MAKER_ICONS})}
+        contextType={storeProps.contextType}
         images={{
-          [contextType]: {
+          [storeProps.contextType]: {
             files,
             bookmark,
             hasMore,
@@ -60,19 +51,14 @@ const SavedIconMakerList = props => {
   )
 }
 
-/* eslint-disable react/no-unused-prop-types */
 SavedIconMakerList.propTypes = {
   sortBy: PropTypes.shape({
     sort: PropTypes.oneOf(['date_added', 'alphabetical']).isRequired,
     order: PropTypes.oneOf(['asc', 'desc']).isRequired,
   }),
-  images: RCSImageCollectionType.isRequired,
-  contextType: PropTypes.string.isRequired,
   searchString: PropTypes.string,
   onImageEmbed: PropTypes.func,
   canvasOrigin: PropTypes.string,
-  fetchInitialImages: PropTypes.func,
-  fetchNextImages: PropTypes.func,
 }
 
 SavedIconMakerList.defaultProps = {
@@ -83,6 +69,5 @@ SavedIconMakerList.defaultProps = {
   searchString: '',
   onImageEmbed: () => {},
 }
-/* eslint-enable react/no-unused-prop-types */
 
 export default SavedIconMakerList

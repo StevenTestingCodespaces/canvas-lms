@@ -1,6 +1,5 @@
 <% define_content :link do %>
-<%# TODO: once react_discussions_post is no longer feature_flag_dependent, remove the anchor param %>
-  <%= polymorphic_url([asset.context, :discussion_topic], id: asset.discussion_topic_id, anchor: "entry-#{asset.id}", entry_id: asset.id) %>
+  <%= polymorphic_url([asset.context, :discussion_topic], id: asset.discussion_topic_id, entry_id: asset.id) %>
 <% end %>
 
 <% define_content :subject do %>
@@ -44,5 +43,8 @@
 <%= html_to_simple_html(asset.message, :base_url => dashboard_url) %>
 </p>
 
-<%= t("View the reply in the discussion using the link below.") %>
+<%= t("View the reply in the discussion: ") %>
+<a href="<%= content(:link) %>">
+  <%= content(:link) %>
+</a>
 

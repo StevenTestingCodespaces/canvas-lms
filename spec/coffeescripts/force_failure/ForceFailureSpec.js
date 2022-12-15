@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-QUnit.module('ForceFailure', {})
+QUnit.module('ForceFailure.coffee', {})
 
 test('a failure is not forced', () => {
   equal(__karma__.config.args.includes('FORCE_FAILURE'), false)

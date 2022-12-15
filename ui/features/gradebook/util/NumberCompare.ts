@@ -15,15 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License along
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
-function isNumber(value: number | null): value is number {
-  return typeof value === 'number'
-}
+const isNumber = value => typeof value === 'number'
 
-export default function numberCompare(
-  a: number | null,
-  b: number | null,
-  options: {descending?: boolean} = {}
-) {
+export default function numberCompare(a: number, b: number, options: {descending?: boolean} = {}) {
   return !isNumber(a)
     ? !isNumber(b)
       ? 0

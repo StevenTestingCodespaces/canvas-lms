@@ -40,7 +40,7 @@ describe EventStream do
     end
 
     it "returns nil if lookup not set" do
-      expect(EventStream.current_shard).to be_nil
+      expect(EventStream.current_shard).to eq nil
     end
   end
 

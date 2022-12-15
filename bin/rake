@@ -1,14 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-unless ARGV.include?("--rakefile")
-  ARGV.push("--rakefile", File.expand_path("../Rakefile", __dir__))
-end
-
 begin
-  load File.expand_path("spring", __dir__)
+  load File.expand_path("../spring", __FILE__)
 rescue LoadError
-  nil
 end
-require "bundler/setup"
-load Gem.bin_path("rake", "rake")
+require 'bundler/setup'
+load Gem.bin_path('rake', 'rake')

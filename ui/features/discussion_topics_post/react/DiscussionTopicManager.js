@@ -16,6 +16,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
+import {CREATE_DISCUSSION_ENTRY} from '../graphql/Mutations'
 import {DISCUSSION_QUERY} from '../graphql/Queries'
 import {DiscussionTopicToolbarContainer} from './containers/DiscussionTopicToolbarContainer/DiscussionTopicToolbarContainer'
 import {DiscussionTopicRepliesContainer} from './containers/DiscussionTopicRepliesContainer/DiscussionTopicRepliesContainer'
@@ -23,25 +25,19 @@ import {DiscussionTopicContainer} from './containers/DiscussionTopicContainer/Di
 import errorShipUrl from '@canvas/images/ErrorShip.svg'
 import GenericErrorPage from '@canvas/generic-error-page'
 import {getOptimisticResponse, responsiveQuerySizes} from './utils'
-import {
-  HIGHLIGHT_TIMEOUT,
-  SearchContext,
-  DiscussionManagerUtilityContext,
-  AllThreadsState,
-} from './utils/constants'
+import {HIGHLIGHT_TIMEOUT, SearchContext, DiscussionManagerUtilityContext} from './utils/constants'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import {IsolatedViewContainer} from './containers/IsolatedViewContainer/IsolatedViewContainer'
 import LoadingIndicator from '@canvas/loading-indicator'
 import {NoResultsFound} from './components/NoResultsFound/NoResultsFound'
 import PropTypes from 'prop-types'
-import React, {useEffect, useState} from 'react'
-import {useQuery} from 'react-apollo'
+import React, {useContext, useEffect, useState} from 'react'
+import {useMutation, useQuery} from 'react-apollo'
 import {SplitScreenViewContainer} from './containers/SplitScreenViewContainer/SplitScreenViewContainer'
 import {DrawerLayout} from '@instructure/ui-drawer-layout'
 import {Mask} from '@instructure/ui-overlays'
 import {Responsive} from '@instructure/ui-responsive'
 import {View} from '@instructure/ui-view'
-import useCreateDiscussionEntry from './hooks/useCreateDiscussionEntry'
 
 const I18n = useI18nScope('discussion_topics_post')
 
@@ -52,8 +48,6 @@ const DiscussionTopicManager = props => {
   const [sort, setSort] = useState('desc')
   const [pageNumber, setPageNumber] = useState(ENV.current_page)
   const [searchPageNumber, setSearchPageNumber] = useState(0)
-  const [allThreadsStatus, setAllThreadsStatus] = useState(AllThreadsState.None)
-  const [expandedThreads, setExpandedThreads] = useState([])
   const searchContext = {
     searchTerm,
     setSearchTerm,
@@ -65,10 +59,6 @@ const DiscussionTopicManager = props => {
     setPageNumber,
     searchPageNumber,
     setSearchPageNumber,
-    allThreadsStatus,
-    setAllThreadsStatus,
-    expandedThreads,
-    setExpandedThreads,
   }
   const [userSplitScreenPreference, setUserSplitScreenPreference] = useState(
     ENV.DISCUSSION?.preferences?.discussions_splitscreen_view || false
@@ -82,23 +72,13 @@ const DiscussionTopicManager = props => {
 
   // Isolated View State
   const [threadParentEntryId, setThreadParentEntryId] = useState(
-    ENV.isolated_view
-      ? ENV.discussions_deep_link?.root_entry_id
-      : ENV.discussions_deep_link?.parent_id
+    ENV.discussions_deep_link?.root_entry_id
   )
   const [replyFromId, setReplyFromId] = useState(null)
   const [isolatedViewOpen, setIsolatedViewOpen] = useState(
-    !ENV.split_screen_view && !!ENV.discussions_deep_link?.root_entry_id
+    !!ENV.discussions_deep_link?.root_entry_id
   )
-
-  // split screen view
-  const [isSplitScreenViewOpen, setSplitScreenViewOpen] = useState(
-    ENV.split_screen_view &&
-      ENV.DISCUSSION?.preferences?.discussions_splitscreen_view &&
-      !!(ENV.discussions_deep_link?.parent_id
-        ? ENV.discussions_deep_link?.parent_id
-        : ENV.discussions_deep_link?.entry_id)
-  )
+  const [isSplitScreenViewOpen, setSplitScreenViewOpen] = useState(false)
   const [isSplitScreenViewOverlayed, setSplitScreenViewOverlayed] = useState(false)
   const [editorExpanded, setEditorExpanded] = useState(false)
 
@@ -109,17 +89,9 @@ const DiscussionTopicManager = props => {
 
   const [isUserMissingInitialPost, setIsUserMissingInitialPost] = useState(null)
 
-  const [isGradedDiscussion, setIsGradedDiscussion] = useState(false)
-
   const discussionManagerUtilities = {
     replyFromId,
     setReplyFromId,
-    userSplitScreenPreference,
-    setUserSplitScreenPreference,
-    highlightEntryId,
-    setHighlightEntryId,
-    setIsGradedDiscussion,
-    isGradedDiscussion,
   }
 
   // Unread filter
@@ -192,6 +164,7 @@ const DiscussionTopicManager = props => {
     }
   }
 
+  const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
   const variables = {
     discussionID: props.discussionTopicId,
     perPage: ENV.per_page,
@@ -217,10 +190,6 @@ const DiscussionTopicManager = props => {
     fetchPolicy: isUserMissingInitialPost || searchTerm ? 'network-only' : 'cache-and-network',
     skip: waitForUnreadFilter,
   })
-
-  useEffect(() => {
-    setIsGradedDiscussion(!!discussionTopicQuery?.data?.legacyNode?.assignment)
-  }, [discussionTopicQuery])
 
   const updateDraftCache = (cache, result) => {
     try {
@@ -301,21 +270,19 @@ const DiscussionTopicManager = props => {
     }
   }
 
-  const onEntryCreationCompletion = data => {
-    setHighlightEntryId(data.createDiscussionEntry.discussionEntry._id)
-    if (sort === 'asc') {
-      setPageNumber(discussionTopicQuery.data.legacyNode.entriesTotalPages - 1)
-    }
-    if (
-      discussionTopicQuery.data.legacyNode.availableForUser &&
-      discussionTopicQuery.data.legacyNode.initialPostRequiredForCurrentUser
-    ) {
-      discussionTopicQuery.refetch(variables)
-    }
-  }
-
-  // Used when replying to the Topic directly
-  const {createDiscussionEntry} = useCreateDiscussionEntry(onEntryCreationCompletion, updateCache)
+  const [createDiscussionEntry] = useMutation(CREATE_DISCUSSION_ENTRY, {
+    update: updateCache,
+    onCompleted: data => {
+      setOnSuccess(I18n.t('The discussion entry was successfully created.'))
+      setHighlightEntryId(data.createDiscussionEntry.discussionEntry._id)
+      if (sort === 'asc') {
+        setPageNumber(discussionTopicQuery.data.legacyNode.entriesTotalPages - 1)
+      }
+    },
+    onError: () => {
+      setOnFailure(I18n.t('There was an unexpected error creating the discussion entry.'))
+    },
+  })
 
   // why || waitForUnreadFilter: when waitForUnreadFilter, discussionTopicQuery is skipped, but this does not set loading.
   // why && !searchTerm: this is for the search if you type it triggers useQuery and you lose the search.
@@ -351,7 +318,7 @@ const DiscussionTopicManager = props => {
               viewPortWidth: '100vw',
             },
             desktop: {
-              viewPortWidth: '480px',
+              viewPortWidth: '50vw',
             },
           }}
           render={responsiveProps => {
@@ -365,7 +332,7 @@ const DiscussionTopicManager = props => {
                   <Mask onClick={() => setSplitScreenViewOpen(false)} />
                 )}
                 <DrawerLayout.Content label="Splitscreen View Content">
-                  <View display="block" padding="medium medium 0 small" height="100vh">
+                  <View display="block" padding="medium medium 0 0">
                     <DiscussionTopicToolbarContainer
                       discussionTopic={discussionTopicQuery.data.legacyNode}
                       setUserSplitScreenPreference={setUserSplitScreenPreference}
@@ -375,18 +342,17 @@ const DiscussionTopicManager = props => {
                     <DiscussionTopicContainer
                       updateDraftCache={updateDraftCache}
                       discussionTopic={discussionTopicQuery.data.legacyNode}
-                      createDiscussionEntry={(message, file, isAnonymousAuthor) => {
+                      createDiscussionEntry={(message, fileId, isAnonymousAuthor) => {
                         createDiscussionEntry({
                           variables: {
                             discussionTopicId: ENV.discussion_topic_id,
                             message,
-                            fileId: file?._id,
+                            fileId,
                             courseID: ENV.course_id,
                             isAnonymousAuthor,
                           },
                           optimisticResponse: getOptimisticResponse({
                             message,
-                            attachment: file,
                             isAnonymous:
                               !!discussionTopicQuery.data.legacyNode.anonymousState &&
                               discussionTopicQuery.data.legacyNode.canReplyAnonymously,
@@ -394,6 +360,15 @@ const DiscussionTopicManager = props => {
                         })
                       }}
                       isHighlighted={isTopicHighlighted}
+                      onDiscussionReplyPost={() => {
+                        // When post requires a reply, check to see if we can refatch after initial post
+                        if (
+                          discussionTopicQuery.data.legacyNode.availableForUser &&
+                          discussionTopicQuery.data.legacyNode.initialPostRequiredForCurrentUser
+                        ) {
+                          discussionTopicQuery.refetch(variables)
+                        }
+                      }}
                     />
 
                     {discussionTopicQuery.data.legacyNode.discussionEntriesConnection.nodes

@@ -23,8 +23,6 @@ BrowserSupport = Struct.new(:browser, :version) do
   class << self
     def supported?(user_agent)
       browser = Browser.new(user_agent)
-      return true if respondus? browser
-      return true if chrome_os_lts? browser
       return false if minimum_browsers.any? { |min| browser.send("#{min.browser}?", "<#{min.version}") }
 
       true # if we don't recognize it (e.g. Android), be nice
@@ -37,37 +35,6 @@ BrowserSupport = Struct.new(:browser, :version) do
     def minimum_browsers
       @minimum_browsers ||= (configuration["minimums"] || [])
                             .map { |browser, version| new(browser, version.to_s) }
-    end
-
-    private
-
-    def lts
-      @lts = OpenStruct.new(configuration["chrome_os_lts"])
-    end
-
-    #
-    # Respondus lockdown browser includes a telltale in the User-Agent string which
-    # is platform-dependent. Hopefully this never needs to be modified.
-    #
-    def respondus?(browser)
-      return true if browser.platform.mac? && browser.ua.match(/ CMAC \d[.\d]+;/)
-      return true if browser.platform.windows? && browser.ua.match(/ CLDB \d[.\d]+;/)
-
-      false
-    end
-
-    #
-    # Chrome OS has a long-term support (LTS) channel which is updated every 6 months.
-    # Unfortunately, the LTS distinction is not reflected in the User-Agent string.
-    # This method checks if the browser is Chrome running on Chrome OS and compares it
-    # to the specific major LTS version specified in the configuration file.
-    #
-    def chrome_os_lts?(browser)
-      return false unless browser.platform.chrome_os?
-      return false unless browser.chrome?(lts.chrome)
-      return true if /X11; CrOS \w+ #{lts.platform}/.match?(browser.ua)
-
-      false
     end
   end
 end

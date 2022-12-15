@@ -40,7 +40,7 @@ namespace :i18n do
   js_index_file = Rails.root.join("config/locales/generated/en-js-index.json").to_s
 
   # Directory to contain the auto-generated translation files for the frontend.
-  js_translation_files_dir = Rails.public_path.join("javascripts/translations").to_s
+  js_translation_files_dir = Rails.root.join("public/javascripts/translations").to_s
 
   # like the top-level :environment, but just the i18n-y stuff we need.
   # also it's faster and doesn't require a db \o/
@@ -108,18 +108,15 @@ namespace :i18n do
 
   task extract_js: [] do
     exit 1 unless system(
-      js_i18nliner_path,
-      "export",
-      "--translationsFile",
-      js_translations_file,
-      "--indexFile",
-      js_index_file
+      js_i18nliner_path, "export",
+      "--translationsFile", js_translations_file,
+      "--indexFile", js_index_file
     )
   end
 
   # TODO: remove once we're sure all places that called i18n:generate are now
   # calling i18n:extract (e.g. caturday)
-  desc "Alias for i18n:extract"
+  desc 'Alias for i18n:extract'
   task generate: [:extract]
 
   desc "generate JavaScript translation files"
@@ -166,14 +163,16 @@ namespace :i18n do
     end
 
     t = Time.now
-    translations = YAML.safe_load(File.open(source_translations_file))
+    translations = YAML.safe_load(open(source_translations_file))
 
     I18n.extend I18nTasks::Lolcalize
     lolz_translations = {}
     lolz_translations["lolz"] = process_lolz.call(translations["en"])
     puts
 
-    File.write("config/locales/lolz.yml", lolz_translations.to_yaml(line_width: -1))
+    File.open("config/locales/lolz.yml", "w") do |f|
+      f.write(lolz_translations.to_yaml(line_width: -1))
+    end
     print "\nFinished generating LOLZ from #{strings_processed} strings in #{Time.now - t} seconds\n"
 
     # add lolz to the locales.yml file
@@ -186,7 +185,9 @@ namespace :i18n do
         "crowdsourced" => true
       }
 
-      File.write("config/locales/locales.yml", locales.to_yaml(line_width: -1))
+      File.open("config/locales/locales.yml", "w") do |f|
+        f.write(locales.to_yaml(line_width: -1))
+      end
       print "Added LOLZ to locales\n"
     end
   end
@@ -250,7 +251,7 @@ namespace :i18n do
       loop do
         puts "Enter local branch containing current en translations (default master):"
         current_branch = $stdin.gets.strip
-        break if current_branch.blank? || current_branch !~ /[^a-z0-9_.-]/
+        break if current_branch.blank? || current_branch !~ /[^a-z0-9_.\-]/
       end
       current_branch = nil if current_branch.blank?
 
@@ -267,7 +268,7 @@ namespace :i18n do
                     else
                       current_strings
                     end
-      File.write(export_filename, new_strings.expand_keys.to_yaml(line_width: -1))
+      File.open(export_filename, "w") { |f| f.write new_strings.expand_keys.to_yaml(line_width: -1) }
 
       push = "n"
       y_n = %w[y n]
@@ -343,7 +344,9 @@ namespace :i18n do
 
     next if complete_translations.nil?
 
-    File.write("config/locales/#{import.language}.yml", { import.language => complete_translations }.to_yaml(line_width: -1))
+    File.open("config/locales/#{import.language}.yml", "w") do |f|
+      f.write({ import.language => complete_translations }.to_yaml(line_width: -1))
+    end
   end
 
   desc "Imports new translations, ignores missing or unexpected keys"
@@ -391,8 +394,86 @@ namespace :i18n do
 
     puts({
       language: import.language,
-      errors:,
+      errors: errors,
     }.to_json)
+  end
+
+  def parsed_languages(languages)
+    if languages.present?
+      if languages.include?(">")
+        languages.split(",").map { |lang| lang.split(">") }.to_h
+      else
+        languages.split(",")
+      end
+    else
+      %w[ar zh fr ja pt es ru]
+    end
+  end
+
+  def import_languages(import_type, args)
+    require "json"
+    languages = parsed_languages(args[:languages])
+    source_file = args[:source_file] || source_translations_file
+    source_translations = YAML.safe_load(File.read(source_file))
+
+    languages.each do |lang|
+      if lang.is_a?(Array)
+        lang, remote_lang = *lang
+      else
+        lang, remote_lang = lang, lang.sub("-", "_")
+      end
+
+      puts "Downloading #{remote_lang}.yml"
+      yml =
+        case import_type
+        when :transifex
+          json = transifex_download(args[:user], args[:password], remote_lang)
+          JSON.parse(json)["content"]
+        when :s3
+          s3_download(args[:s3_bucket], remote_lang)
+        end
+      File.write("tmp/#{lang}.yml", yml)
+      new_translations = { lang => YAML.safe_load(yml)[remote_lang] }
+
+      puts "Importing #{lang}.yml"
+      autoimport(source_translations, new_translations)
+    end
+  end
+
+  def transifex_download(user, password, transifex_lang)
+    require "open-uri"
+
+    transifex_url = "http://www.transifex.com/api/2/project/canvas-lms/"
+    translation_url = transifex_url + "resource/canvas-lms/translation"
+    userpass = "#{user}:#{Shellwords.escape(password)}"
+    `curl -L --user #{userpass} #{translation_url}/#{transifex_lang}/`
+  end
+
+  def s3_download(bucket_name, s3_lang)
+    require "aws-sdk-s3"
+
+    bucket = Aws::S3::Resource.new(
+      access_key_id: ENV["AWS_ACCESS_KEY_ID"],
+      secret_access_key: ENV["AWS_SECRET_ACCESS_KEY"],
+      region: ENV["AWS_REGION"]
+    ).bucket(bucket_name)
+    bucket.object("translations/canvas-lms/#{s3_lang}/#{s3_lang}.yml").get.body.read
+  end
+
+  desc "Download language files from Transifex"
+  task :transifex, [:user, :password, :languages] do |_t, args| # rubocop:disable Rails/RakeEnvironment
+    languages = transifex_languages(args[:languages])
+    transifex_download(args[:user], args[:password], languages)
+  end
+
+  desc "Download language files from Transifex and import them"
+  task :transifeximport, %i[user password languages source_file] => :environment do |_t, args|
+    import_languages(:transifex, args)
+  end
+
+  desc "Download language files from s3 and import them"
+  task :s3import, %i[s3_bucket languages source_file] => :environment do |_t, args|
+    import_languages(:s3, args)
   end
 
   desc "Lock a key so translators cannot change it"

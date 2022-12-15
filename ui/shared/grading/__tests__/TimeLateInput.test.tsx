@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -55,31 +54,16 @@ describe('TimeLateInput', () => {
     }
   })
 
-  it('displays "Days" as the text next to the input when the late policy interval is "day"', () => {
+  it('displays "Day(s)" as the text next to the input when the late policy interval is "day"', () => {
     const {getByText} = renderComponent()
-    const numberInputText = getByText('Days')
+    const numberInputText = getByText(/day\(s\)/i)
     expect(numberInputText).toBeInTheDocument()
   })
 
-  it('displays "Day" as the text next to the input when set to be late 1 day', () => {
-    props.secondsLate = 60 * 60 * 24
-    const {getByText} = renderComponent()
-    const numberInputText = getByText('Day')
-    expect(numberInputText).toBeInTheDocument()
-  })
-
-  it('displays "Hours as the text next to the input when the late policy interval is "hour"', () => {
+  it('displays "Hour(s) as the text next to the input when the late policy interval is "hour"', () => {
     props.lateSubmissionInterval = 'hour'
     const {getByText} = renderComponent()
-    const numberInputText = getByText('Hours')
-    expect(numberInputText).toBeInTheDocument()
-  })
-
-  it('displays "Hour" as the text next to the input when set to be late 1 hour', () => {
-    props.secondsLate = 60 * 60
-    props.lateSubmissionInterval = 'hour'
-    const {getByText} = renderComponent()
-    const numberInputText = getByText('Hour')
+    const numberInputText = getByText(/hour\(s\)/i)
     expect(numberInputText).toBeInTheDocument()
   })
 
@@ -96,21 +80,21 @@ describe('TimeLateInput', () => {
 
   it('converts the value unit to days if the late policy interval is "day"', () => {
     props.secondsLate = 2 * SECONDS_PER_DAY
-    const input = getTimeLateInput(DAYS) as HTMLInputElement
+    const input = getTimeLateInput(DAYS)
     expect(input.value).toEqual('2')
   })
 
   it('converts the value unit to hours if the late policy interval is "hour"', () => {
     props.secondsLate = 2 * SECONDS_PER_DAY
     props.lateSubmissionInterval = 'hour'
-    const input = getTimeLateInput(HOURS) as HTMLInputElement
+    const input = getTimeLateInput(HOURS)
     expect(input.value).toEqual('48')
   })
 
   it('rounds the input value to two digits after the decimal point', () => {
     props.secondsLate = 2 * SECONDS_PER_DAY + 4 * SECONDS_PER_MINUTE
     props.lateSubmissionInterval = 'hour'
-    const input = getTimeLateInput(HOURS) as HTMLInputElement
+    const input = getTimeLateInput(HOURS)
     expect(input.value).toEqual('48.07')
   })
 

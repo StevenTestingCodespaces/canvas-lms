@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require "net/http"
+
 module Lti
   class LogoutService
     # the register-logout-callback token expiration time in seconds

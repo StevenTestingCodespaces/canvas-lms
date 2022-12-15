@@ -61,8 +61,8 @@ describe "quiz taking" do
 
   it "allows to take the quiz as long as there are attempts left",
      :xbrowser,
-     custom_timeout: 30,
-     priority: "1" do
+     priority: "1",
+     custom_timeout: 30 do
     @quiz.allowed_attempts = 2
     @quiz.save!
     get "/courses/#{@course.id}/quizzes/#{@quiz.id}"
@@ -107,7 +107,7 @@ describe "quiz taking" do
     quiz = quiz_model
     bank = AssessmentQuestionBank.create!(context: @course)
     3.times do
-      assessment_question_model(bank:)
+      assessment_question_model(bank: bank)
       question = bank.assessment_questions.last
       question.question_data[:points_possible] = 1
       question.save!

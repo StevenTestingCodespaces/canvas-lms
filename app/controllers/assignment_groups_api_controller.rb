@@ -57,9 +57,9 @@ class AssignmentGroupsApiController < ApplicationController
       includes.delete("assignment_visibility") unless @context.grants_any_right?(@current_user, :read_as_admin, :manage_grades, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS)
       render json: assignment_group_json(@assignment_group, @current_user, session, includes, {
                                            stringify_json_ids: stringify_json_ids?,
-                                           override_dates:,
-                                           assignments:,
-                                           submissions:
+                                           override_dates: override_dates,
+                                           assignments: assignments,
+                                           submissions: submissions
                                          })
     end
   end
@@ -83,6 +83,10 @@ class AssignmentGroupsApiController < ApplicationController
   # @argument integration_data [Object]
   #   The integration data of the Assignment Group
   #
+  # @argument rules
+  #   The grading rules that are applied within this assignment group
+  #   See the Assignment Group object definition for format
+  #
   # @returns AssignmentGroup
   def create
     @assignment_group = @context.assignment_groups.temp_record
@@ -99,25 +103,7 @@ class AssignmentGroupsApiController < ApplicationController
   # @API Edit an Assignment Group
   #
   # Modify an existing Assignment Group.
-  #
-  # @argument name [String]
-  #   The assignment group's name
-  #
-  # @argument position [Integer]
-  #   The position of this assignment group in relation to the other assignment groups
-  #
-  # @argument group_weight [Float]
-  #   The percent of the total grade that this assignment group represents
-  #
-  # @argument sis_source_id [String]
-  #   The sis source id of the Assignment Group
-  #
-  # @argument integration_data [Object]
-  #   The integration data of the Assignment Group
-  #
-  # @argument rules
-  #   The grading rules that are applied within this assignment group
-  #   See the Assignment Group object definition for format
+  # Accepts the same parameters as Assignment Group creation
   #
   # @returns AssignmentGroup
   def update

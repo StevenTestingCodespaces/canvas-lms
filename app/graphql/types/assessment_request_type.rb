@@ -26,7 +26,6 @@ module Types
     implements Interfaces::LegacyIDInterface
 
     field :workflow_state, String, null: false
-    field :asset_id, String, null: false
 
     field :user, UserType, null: false
     def user

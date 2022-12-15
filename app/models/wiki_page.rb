@@ -20,6 +20,9 @@
 
 require "atom"
 
+# Force loaded so that it will be in ActiveRecord::Base.descendants for switchman to use
+require_dependency "assignment_student_visibility"
+
 class WikiPage < ActiveRecord::Base
   attr_readonly :wiki_id
   attr_accessor :saved_by
@@ -52,8 +55,6 @@ class WikiPage < ActiveRecord::Base
   belongs_to :context, polymorphic: [:course, :group]
   belongs_to :root_account, class_name: "Account"
 
-  has_many :wiki_page_lookups, inverse_of: :wiki_page
-
   acts_as_url :title, sync_url: true
 
   validate :validate_front_page_visibility
@@ -75,7 +76,7 @@ class WikiPage < ActiveRecord::Base
   }
 
   scope :not_ignored_by, lambda { |user, purpose|
-    where.not(Ignore.where(asset_type: "WikiPage", user_id: user, purpose:).where("asset_id=wiki_pages.id").arel.exists)
+    where("NOT EXISTS (?)", Ignore.where(asset_type: "WikiPage", user_id: user, purpose: purpose).where("asset_id=wiki_pages.id"))
   }
   scope :todo_date_between, ->(starting, ending) { where(todo_date: starting...ending) }
   scope :for_courses_and_groups, lambda { |course_ids, group_ids|
@@ -92,7 +93,7 @@ class WikiPage < ActiveRecord::Base
   TITLE_LENGTH = 255
   SIMPLY_VERSIONED_EXCLUDE_FIELDS = %i[workflow_state editing_roles notify_of_update].freeze
 
-  self.ignored_columns += %i[view_count]
+  self.ignored_columns = %i[view_count]
 
   def ensure_wiki_and_context
     self.wiki_id ||= (context.wiki_id || context.wiki.id)
@@ -133,21 +134,15 @@ class WikiPage < ActiveRecord::Base
         p.save_without_broadcasting!
       end
     end
-
-    if context.wiki_pages.not_deleted.where(title: self.title).where.not(id:).first
-      if /-\d+\z/.match?(self.title)
-        # A page with this title already exists and the title ends in -<some number>.
-        # This has potential to conflict with our handling of duplicate title names.
-        # We tried to fix in earnest but there are too many edge cases. Thus, we just disallow this.
-        errors.add(:title, t("A page with this title already exists. Please choose a different title."))
-      end
-      n = 2
+    if context.wiki_pages.not_deleted.where(title: self.title).where.not(id: id).first
+      real_title = self.title.gsub(/-(\d*)\z/, "") # remove any "-#" at the end
+      n = $1 ? $1.to_i + 1 : 2
       new_title = nil
       loop do
         mod = "-#{n}"
-        new_title = self.title[0...(TITLE_LENGTH - mod.length)] + mod
+        new_title = real_title[0...(TITLE_LENGTH - mod.length)] + mod
         n = n.succ
-        break unless context.wiki_pages.not_deleted.where(title: new_title).where.not(id:).exists?
+        break unless context.wiki_pages.not_deleted.where(title: new_title).where.not(id: id).exists?
       end
 
       self.title = new_title
@@ -355,7 +350,7 @@ class WikiPage < ActiveRecord::Base
   def effective_roles
     context_roles = context.default_wiki_editing_roles rescue nil
     roles = (editing_roles || context_roles || default_roles).split(",")
-    (roles == %w[teachers]) ? [] : roles # "Only teachers" option doesn't grant rights excluded by RoleOverrides
+    roles == %w[teachers] ? [] : roles # "Only teachers" option doesn't grant rights excluded by RoleOverrides
   end
 
   def available_for?(user, session = nil)
@@ -506,14 +501,14 @@ class WikiPage < ActiveRecord::Base
     result = WikiPage.new({
                             title: opts_with_default[:copy_title] || get_copy_title(self, t("Copy"), self.title),
                             wiki_id: self.wiki_id,
-                            context_id:,
-                            context_type:,
-                            body:,
+                            context_id: context_id,
+                            context_type: context_type,
+                            body: body,
                             workflow_state: "unpublished",
-                            user_id:,
-                            protected_editing:,
-                            editing_roles:,
-                            todo_date:
+                            user_id: user_id,
+                            protected_editing: protected_editing,
+                            editing_roles: editing_roles,
+                            todo_date: todo_date
                           })
     if assignment && opts_with_default[:duplicate_assignment]
       result.assignment = assignment.duplicate({

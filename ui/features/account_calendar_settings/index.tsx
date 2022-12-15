@@ -22,11 +22,6 @@ import ReactDOM from 'react-dom'
 import ready from '@instructure/ready'
 
 import {AccountCalendarSettings} from './react/components/AccountCalendarSettings'
-import {EnvAccountsAdminTools} from '@canvas/global/env/EnvAccounts'
-import {GlobalEnv} from '@canvas/global/env/GlobalEnv'
-
-// Allow unchecked access to module-specific ENV variables
-declare const ENV: GlobalEnv & EnvAccountsAdminTools
 
 ready(() => {
   ReactDOM.render(

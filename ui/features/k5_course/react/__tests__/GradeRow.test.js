@@ -52,7 +52,6 @@ describe('GradeRow', () => {
     missing: false,
     hasComments: false,
     currentUserId: '1',
-    restrictQuantitativeData: false,
     dateFormatter,
     ...overrides,
   })
@@ -98,15 +97,6 @@ describe('GradeRow', () => {
       )
       expect(getByText('5 pts')).toBeInTheDocument()
       expect(getByText('Out of 5 pts')).toBeInTheDocument()
-    })
-
-    it('does not show points when restrictQuantitativeData is true', () => {
-      const {queryByText} = render(
-        <table>
-          <tbody>{GradeRow({...getProps({restrictQuantitativeData: true})})}</tbody>
-        </table>
-      )
-      expect(queryByText('Out of 5 pts')).not.toBeInTheDocument()
     })
 
     it('shows — pts for ungraded assignment with points gradingType', () => {

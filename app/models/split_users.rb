@@ -24,8 +24,7 @@ class SplitUsers
     { table: "asset_user_accesses",
       scope: -> { where(context_type: "Course") } }.freeze,
     { table: "asset_user_accesses",
-      scope: -> { joins(:context_group).where(groups: { context_type: "Course" }) },
-      context_id: "groups.context_id" }.freeze,
+      scope: -> { joins(:context_group).where(groups: { context_type: "Course" }) }, context_id: "groups.context_id" }.freeze,
     { table: "calendar_events",
       scope: -> { where(context_type: "Course") } }.freeze,
     { table: "calendar_events",
@@ -45,12 +44,10 @@ class SplitUsers
     { table: "discussion_entries",
       scope: -> { joins({ discussion_topic: :group }).where(groups: { context_type: "Course" }) },
       context_id: "groups.context_id" }.freeze,
-    { table: "discussion_entries",
-      foreign_key: :editor_id,
+    { table: "discussion_entries", foreign_key: :editor_id,
       scope: -> { joins(:discussion_topic).where(discussion_topics: { context_type: "Course" }) },
       context_id: "discussion_topics.context_id" }.freeze,
-    { table: "discussion_entries",
-      foreign_key: :editor_id,
+    { table: "discussion_entries", foreign_key: :editor_id,
       scope: -> { joins({ discussion_topic: :group }).where(groups: { context_type: "Course" }) },
       context_id: "groups.context_id" }.freeze,
     { table: "discussion_topics",
@@ -58,11 +55,9 @@ class SplitUsers
     { table: "discussion_topics",
       scope: -> { joins(:group).where(groups: { context_type: "Course" }) },
       context_id: "groups.context_id" }.freeze,
-    { table: "discussion_topics",
-      foreign_key: :editor_id,
+    { table: "discussion_topics", foreign_key: :editor_id,
       scope: -> { where(context_type: "Course") } }.freeze,
-    { table: "discussion_topics",
-      foreign_key: :editor_id,
+    { table: "discussion_topics", foreign_key: :editor_id,
       scope: -> { joins(:group).where(groups: { context_type: "Course" }) },
       context_id: "groups.context_id" }.freeze,
     { table: "page_views",
@@ -70,8 +65,7 @@ class SplitUsers
     { table: "rubric_assessments",
       scope: -> { joins({ submission: :assignment }) },
       context_id: "assignments.context_id" }.freeze,
-    { table: "rubric_assessments",
-      foreign_key: :assessor_id,
+    { table: "rubric_assessments", foreign_key: :assessor_id,
       scope: -> { joins({ submission: :assignment }) },
       context_id: "assignments.context_id" }.freeze,
     { table: "submission_comments", foreign_key: :author_id }.freeze,
@@ -121,7 +115,6 @@ class SplitUsers
         records = check_and_update_local_ids(records) if merge_data.from_user_id > Shard::IDS_PER_SHARD
         records = records.preload(:context)
         restore_merge_items
-        undo_move_lti_ids
         move_records_to_old_user(records, pseudonyms)
         # update account associations for each split out user
         users = [restored_user, source_user]
@@ -152,18 +145,6 @@ class SplitUsers
     MERGE_ITEM_TYPES.each do |klass, user_attr|
       ids = merge_data.items.where(item_type: klass.to_s + "_ids").take&.item
       Shard.partition_by_shard(ids) { |shard_ids| klass.to_s.classify.constantize.where(id: shard_ids).update_all(user_attr => restored_user.id) } if ids
-    end
-  end
-
-  def undo_move_lti_ids
-    old_lti_id = merge_data.items.where(item_type: "lti_id").pick(:item)
-    old_uuid = merge_data.items.where(item_type: "uuid").pick(:item)
-    if old_lti_id && old_uuid
-      # if these merge items are here, we moved LTI IDs as part of the merge
-      # and we need to move them back now
-      UserMerge.from(source_user).move_lti_ids_to(restored_user)
-      source_user.override_lti_id_lock = true
-      source_user.update(lti_id: old_lti_id, uuid: old_uuid)
     end
   end
 
@@ -271,9 +252,7 @@ class SplitUsers
     # passing the array to update_all so we can get postgres to add the position for us.
     unless scope.empty?
       scope.update_all(["user_id=?, position=position+?, root_account_ids='{?}'",
-                        restored_user.id,
-                        max_position,
-                        restored_user.root_account_ids])
+                        restored_user.id, max_position, restored_user.root_account_ids])
     end
 
     cc_records.where.not(previous_workflow_state: "non existent").each do |cr|

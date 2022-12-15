@@ -79,7 +79,7 @@ class Quizzes::QuizQuestion::MatchGroup
     end
 
     def to_hash
-      { text:, match_id: id }
+      { text: text, match_id: id }
     end
   end
 end

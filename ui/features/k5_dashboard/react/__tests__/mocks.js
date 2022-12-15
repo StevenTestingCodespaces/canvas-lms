@@ -212,13 +212,7 @@ export const defaultEnv = {
   },
   MOMENT_LOCALE: 'en',
   TIMEZONE: 'America/Denver',
-  USE_CLASSIC_FONT: false,
 }
-
-const accountCalendarContexts = [
-  {asset_string: 'account_1', name: 'CSU'},
-  {asset_string: 'account_2', name: 'Math Dept'},
-]
 
 export const defaultK5DashboardProps = {
   canDisableElementaryDashboard: false,
@@ -236,5 +230,4 @@ export const defaultK5DashboardProps = {
   canAddObservee: false,
   observedUsersList: [{id: currentUser.id, name: currentUser.display_name}],
   openTodosInNewTab: true,
-  accountCalendarContexts,
 }

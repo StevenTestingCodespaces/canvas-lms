@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License along
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection'
+import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection.coffee'
 
-import GroupCategory from '../models/GroupCategory'
+import GroupCategory from '../models/GroupCategory.coffee'
 
 export default class GroupCategoryCollection extends PaginatedCollection {
   comparator(category) {

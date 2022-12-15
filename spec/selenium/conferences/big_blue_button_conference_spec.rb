@@ -247,18 +247,13 @@ describe "BigBlueButton conferences" do
       f("button[title='New Conference']").click
 
       force_click("input[value='add_to_calendar']")
-      driver.switch_to.alert.accept
       wait_for_ajaximations
 
-      start_date_picker = fj("label:contains('Start Date')")
-      end_date_picker = fj("label:contains('End Date')")
-      # for both dates, we will base the selection off of the row of the 15th.
-      # no matter the current date when the test is being done, this row will
-      # always be enabled
-      start_date_picker.click
-      fj("button:contains('15')").find_element(:xpath, "../..").find_elements(:css, "button").first.click
-      end_date_picker.click
-      fj("button:contains('15')").find_element(:xpath, "../..").find_elements(:css, "button").last.click
+      f("input[label='Start Date']").clear
+      f("input[label='Start Date']").send_keys "August 6, 2021"
+      f("input[label='End Date']").clear
+      f("input[label='End Date']").send_keys "August 8, 2021"
+      f("input[label='End Date']").send_keys(:enter)
       fj("button:contains('Create')").click
       wait_for_ajaximations
 
@@ -266,61 +261,6 @@ describe "BigBlueButton conferences" do
       wc = WebConference.last
       expect(ce.web_conference_id).to eq wc.id
       expect(ce.start_at).to eq wc.start_at
-    end
-
-    it "does not invite all if add to calendar cancels" do
-      @section = @course.course_sections.create!(name: "test section")
-      student_in_section(@section, user: @student)
-      get conferences_index_page
-      new_conference_button.click
-
-      # unclick invite all course members
-      f("div#tab-attendees").click
-      expect(f("input[value='invite_all']").attribute("checked")).to be_truthy
-      fj("label:contains('Invite all course members')").click
-      expect(f("input[value='invite_all']").attribute("checked")).to be_falsey
-
-      # invite course members
-      f("[data-testid='address-input']").click
-      f("[data-testid='section-#{@section.id}']").click
-      expect(@section.participants.count).to eq ff("[data-testid='address-tag']").count
-
-      # click, then cancel add to calendar
-      f("div#tab-settings").click
-      force_click("input[value='add_to_calendar']")
-      driver.switch_to.alert.dismiss
-      wait_for_ajaximations
-
-      # ensure add to calendar remains unclicked
-      expect(f("input[type='checkbox'][value='add_to_calendar']").attribute("checked")).to be_falsey
-
-      # ensure invite all course members remains unclicked
-      # ensure course members still remain
-      f("div#tab-attendees").click
-      expect(f("input[value='invite_all']").attribute("checked")).to be_falsey
-      expect(@section.participants.count).to eq ff("[data-testid='address-tag']").count
-    end
-
-    it "unchecks remove observers if invite_all is unchecked." do
-      @section = @course.course_sections.create!(name: "test section")
-      student_in_section(@section, user: @student)
-      get conferences_index_page
-      new_conference_button.click
-
-      # unclick invite all course members
-      f("div#tab-attendees").click
-      expect(f("input[value='invite_all']").attribute("checked")).to be_truthy
-      expect(f("input[value='remove_observers']").attribute("checked")).to be_falsey
-
-      # check remove observers
-      fj("label:contains('Remove all course observer members')").click
-      expect(f("input[value='remove_observers']").attribute("checked")).to be_truthy
-
-      # uncheck invite all
-      fj("label:contains('Invite all course members')").click
-      expect(f("input[value='invite_all']").attribute("checked")).to be_falsey
-      expect(f("input[value='remove_observers']").attribute("checked")).to be_falsey
-      expect(f("input[value='remove_observers']").attribute("disabled")).to be_truthy
     end
 
     it "disables unchangeable properties when conference has begun" do
@@ -493,7 +433,7 @@ describe "BigBlueButton conferences" do
       end
 
       context "and the conference has recordings" do
-        before do
+        before(:once) do
           stub_request(:get, /getRecordings/)
             .with(query: bbb_fixtures[:get_recordings])
             .to_return(body: big_blue_button_mock_response("get_recordings", "two"))
@@ -501,16 +441,8 @@ describe "BigBlueButton conferences" do
         end
 
         it "includes list with recordings", priority: "2" do
-          @conference.ended_at = 2.days.ago
-          @conference.save!
           get conferences_index_page
-          fj("a:contains('#{@conference.title}')").click
-
-          # if the first letter is capitalized, this means
-          # the helper method for translating was called
-          expect(fj("div.ig-details a:contains('Statistics')")).to be_truthy
-          expect(fj("div.ig-details a:contains('Presentation')")).to be_truthy
-          expect(fj("div.ig-details a:contains('Video')")).to be_truthy
+          verify_conference_includes_recordings
         end
       end
 

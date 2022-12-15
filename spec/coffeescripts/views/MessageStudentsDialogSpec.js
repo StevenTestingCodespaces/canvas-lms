@@ -18,7 +18,7 @@
 
 import MessageStudentsDialog from '@canvas/message-students-dialog'
 import $ from 'jquery'
-import {map} from 'lodash'
+import {pluck} from 'underscore'
 
 QUnit.module('MessageStudentsDialog', {
   setup() {
@@ -77,11 +77,12 @@ test('#getFormValues returns correct values', function () {
   const messageBody = 'Students please take your quiz, dang it!'
   this.dialog.$messageBody.val(messageBody)
   const json = this.dialog.getFormData()
+  const {body, recipients} = json
   strictEqual(json.body, messageBody, 'includes message body')
   strictEqual(json.recipientGroupName, undefined, "doesn't include recipientGroupName")
   deepEqual(
     json.recipients,
-    map(this.testData.recipientGroups[0].recipients, 'id'),
+    pluck(this.testData.recipientGroups[0].recipients, 'id'),
     'includes list of ids'
   )
 })

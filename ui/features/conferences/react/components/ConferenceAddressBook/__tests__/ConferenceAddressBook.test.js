@@ -18,10 +18,7 @@
 
 import React from 'react'
 import {fireEvent, render} from '@testing-library/react'
-import injectGlobalAlertContainers from '@canvas/util/react/testing/injectGlobalAlertContainers'
 import {ConferenceAddressBook} from '../ConferenceAddressBook'
-
-injectGlobalAlertContainers()
 
 describe('ConferenceAddressBook', () => {
   afterEach(() => {

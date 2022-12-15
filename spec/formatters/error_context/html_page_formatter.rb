@@ -19,6 +19,7 @@
 
 require_relative "./base_formatter"
 require "escape_code"
+require "forwardable"
 
 module ErrorContext
   class HTMLPageFormatter < BaseFormatter
@@ -43,7 +44,9 @@ module ErrorContext
     def write_error_page
       return if summary.discard?
 
-      File.write(File.join(errors_path, "index.html"), error_page_content)
+      File.open(File.join(errors_path, "index.html"), "w") do |file|
+        file.write error_page_content
+      end
     end
 
     def error_page_content

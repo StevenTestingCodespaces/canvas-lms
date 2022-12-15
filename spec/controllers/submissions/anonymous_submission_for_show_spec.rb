@@ -113,8 +113,8 @@ describe Submissions::AnonymousSubmissionForShow do
       anonymous_id: submission.anonymous_id,
       assignment_id: assignment.id,
       context: course,
-      preview:,
-      version:
+      preview: preview,
+      version: version
     )
   end
 end

@@ -20,10 +20,10 @@ import React from 'react'
 import {act, fireEvent, render, waitFor} from '@testing-library/react'
 import {ImageSection} from '../ImageSection'
 import fetchMock from 'fetch-mock'
-import FakeEditor from '../../../../../../__tests__/FakeEditor'
+import FakeEditor from '../../../../../shared/__tests__/FakeEditor'
 import svg from '../SingleColor/svg'
 import {Size} from '../../../../svg/constants'
-import {convertFileToBase64} from '../../../../../shared/fileUtils'
+import {convertFileToBase64} from '../../../../svg/utils'
 
 jest.useFakeTimers()
 jest.mock('../../../../../shared/StoreContext', () => {
@@ -105,7 +105,7 @@ jest.mock('../../../../../../../bridge', () => {
   }
 })
 
-jest.mock('../../../../../shared/ImageCropper/imageCropUtils', () => {
+jest.mock('../../ImageCropper/imageCropUtils', () => {
   return {
     createCroppedImageSvg: () =>
       Promise.resolve({
@@ -114,7 +114,7 @@ jest.mock('../../../../../shared/ImageCropper/imageCropUtils', () => {
   }
 })
 
-jest.mock('../../../../../shared/fileUtils')
+jest.mock('../../../../svg/utils')
 
 describe('ImageSection', () => {
   let scrollIntoView
@@ -126,7 +126,6 @@ describe('ImageSection', () => {
     editing: false,
     editor: {},
     onChange: jest.fn(),
-    canvasOrigin: 'https://canvas.instructor.com',
   }
 
   const subject = overrides => render(<ImageSection {...{...defaultProps, ...overrides}} />)
@@ -340,6 +339,30 @@ describe('ImageSection', () => {
     })
   })
 
+  describe('when the cropper FF is off', () => {
+    let rendered
+
+    beforeEach(() => {
+      fetchMock.mock('/api/session', '{}')
+
+      rendered = subject({
+        editor: new FakeEditor(),
+        rcsConfig: {features: {icon_maker_cropper: false}},
+      })
+      fireEvent.click(rendered.getByText('Add Image'))
+    })
+
+    afterEach(() => fetchMock.restore())
+
+    it('does not render the "Upload Image" button', () => {
+      expect(rendered.queryByText('Upload Image')).not.toBeInTheDocument()
+    })
+
+    it('does not render the "Course Images" button', () => {
+      expect(rendered.queryByText('Course Images')).not.toBeInTheDocument()
+    })
+  })
+
   describe('when no image is selected', () => {
     it('renders a "None Selected" message', () => {
       const {getByText} = subject()
@@ -355,6 +378,7 @@ describe('ImageSection', () => {
 
     beforeEach(() => {
       const rendered = subject({
+        rcsConfig: {features: {icon_maker_cropper: true}},
         settings: {size: Size.Small, shape: 'square'},
       })
 
@@ -488,6 +512,7 @@ describe('ImageSection', () => {
 
       rendered = subject({
         editor: new FakeEditor(),
+        rcsConfig: {features: {icon_maker_cropper: true}},
       })
 
       fireEvent.click(rendered.getByText('Add Image'))
@@ -518,7 +543,7 @@ describe('ImageSection', () => {
     let getByTestId, getByText
 
     beforeEach(() => {
-      const rendered = subject()
+      const rendered = subject({rcsConfig: {features: {icon_maker_cropper: true}}})
 
       getByTestId = rendered.getByTestId
       getByText = rendered.getByText
@@ -595,7 +620,7 @@ describe('ImageSection', () => {
         })
         fireEvent.click(getByTestId('icon-maker-art'))
         convertFileToBase64.mockImplementation(
-          jest.requireActual('../../../../../shared/fileUtils').convertFileToBase64
+          jest.requireActual('../../../../svg/utils').convertFileToBase64
         )
       })
 

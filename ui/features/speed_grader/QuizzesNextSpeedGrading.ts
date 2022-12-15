@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2016 - present Instructure, Inc.
  *
@@ -31,7 +30,7 @@
 // refreshGradesCb executes the normal speedGrader refresh grades
 // actions, plus whatever callback is passed in as an argument
 
-import type {Submission} from '../../api.d'
+import type {Submission} from './jquery/speed_grader.d'
 import $ from 'jquery'
 
 function sendPostMessage($iframe_holder, message) {
@@ -87,10 +86,6 @@ function setup(EG, $iframe_holder, registerCb, refreshGradesCb, speedGraderWindo
         return registerCb(postChangeSubmissionMessage, message.payload || {singleLtiLaunch: true})
       case 'quizzesNext.submissionUpdate':
         return refreshGradesCb(quizzesNextChange, retryRefreshGrades, 1000)
-      case 'quizzesNext.previousStudent':
-        return EG.prev()
-      case 'quizzesNext.nextStudent':
-        return EG.next()
     }
   }
 
@@ -109,19 +104,7 @@ export function postGradeByQuestionChangeMessage($iframe_holder, enabled) {
   sendPostMessage($iframe_holder, message)
 }
 
-export function postChangeSubmissionVersionMessage($iframe_holder, submission) {
-  const message = {
-    subject: 'canvas.speedGraderSubmissionChange',
-    submission: {...submission, external_tool_url: submission.url},
-  }
-  const contentWindow = $iframe_holder.children()[0]?.contentWindow
-  if (contentWindow) {
-    contentWindow.postMessage(message, '*')
-  }
-}
-
 export default {
   setup,
   postGradeByQuestionChangeMessage,
-  postChangeSubmissionVersionMessage,
 }

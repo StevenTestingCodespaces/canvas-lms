@@ -18,7 +18,7 @@
 
 import $ from 'jquery'
 
-import SetDefaultGradeDialog from '@canvas/grading/jquery/SetDefaultGradeDialog'
+import SetDefaultGradeDialog from '@canvas/grading/jquery/SetDefaultGradeDialog.coffee'
 import SetDefaultGradeDialogManager from 'ui/features/gradebook/react/shared/SetDefaultGradeDialogManager'
 import AsyncComponents from 'ui/features/gradebook/react/default_gradebook/AsyncComponents'
 
@@ -37,8 +37,8 @@ function createAssignmentProp() {
   }
 }
 
-function createGetStudentsProp() {
-  return _assignmentId => [
+function createStudentsProp() {
+  return [
     {
       id: '11',
       name: 'Clark Kent',
@@ -74,9 +74,8 @@ QUnit.module('SetDefaultGradeDialogManager#isDialogEnabled')
 test('returns true when submissions are loaded', () => {
   const manager = new SetDefaultGradeDialogManager(
     createAssignmentProp(),
-    createGetStudentsProp(),
+    createStudentsProp(),
     'contextId',
-    true,
     'selectedSection',
     false,
     true
@@ -88,9 +87,8 @@ test('returns true when submissions are loaded', () => {
 test('returns false when submissions are not loaded', () => {
   const manager = new SetDefaultGradeDialogManager(
     createAssignmentProp(),
-    createGetStudentsProp(),
+    createStudentsProp(),
     'contextId',
-    true,
     'selectedSection',
     false,
     false
@@ -102,9 +100,8 @@ test('returns false when submissions are not loaded', () => {
 test('returns false when grades are not published', () => {
   const manager = new SetDefaultGradeDialogManager(
     {...createAssignmentProp(), grades_published: false},
-    createGetStudentsProp(),
+    createStudentsProp(),
     'contextId',
-    true,
     'selectedSection',
     false,
     true
@@ -123,9 +120,8 @@ QUnit.module('SetDefaultGradeDialogManager#showDialog', {
 
     return new SetDefaultGradeDialogManager(
       assignment,
-      createGetStudentsProp(),
+      createStudentsProp(),
       'contextId',
-      true,
       'selectedSection',
       opts.isAdmin,
       true

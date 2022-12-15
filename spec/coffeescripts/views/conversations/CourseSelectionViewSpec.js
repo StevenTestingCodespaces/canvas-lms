@@ -16,11 +16,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Course from '@canvas/courses/backbone/models/Course'
+import Course from '@canvas/courses/backbone/models/Course.coffee'
 import CourseSelectionView from 'ui/features/conversations/backbone/views/CourseSelectionView'
 import CourseCollection from 'ui/features/conversations/backbone/collections/CourseCollection'
 import FavoriteCourseCollection from 'ui/features/conversations/backbone/collections/FavoriteCourseCollection'
-import GroupCollection from '@canvas/groups/backbone/collections/GroupCollection'
+import GroupCollection from '@canvas/groups/backbone/collections/GroupCollection.coffee'
 import fakeENV from 'helpers/fakeENV'
 import assertions from 'helpers/assertions'
 

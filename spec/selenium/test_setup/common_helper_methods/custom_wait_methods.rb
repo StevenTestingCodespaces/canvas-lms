@@ -114,11 +114,10 @@ module CustomWaitMethods
 
   # NOTE: for "$.timers" see https://github.com/jquery/jquery/blob/6c2c7362fb18d3df7c2a7b13715c2763645acfcb/src/effects.js#L638
   ANIMATION_COUNT_SCRIPT = "return (typeof($) !== 'undefined' && $.timers) ? $.timers.length : 0"
-  ANIMATION_ELEMENTS_SCRIPT = <<~JS
-    return $.timers.map(t => (
-     t.elem.tagName + (t.elem.id?'#'+t.elem.id:'') + (t.elem.className?'.'+t.elem.className.replaceAll(' ','.'):'')
-    ))
-  JS
+  ANIMATION_ELEMENTS_SCRIPT =
+    "return $.timers.map(t => (" \
+    " t.elem.tagName + (t.elem.id?'#'+t.elem.id:'') + (t.elem.className?'.'+t.elem.className.replaceAll(' ','.'):'')" \
+    "))"
   def wait_for_animations(bridge = nil)
     bridge = driver if bridge.nil?
 
@@ -178,8 +177,8 @@ module CustomWaitMethods
     end
   end
 
-  def pause_ajax(&)
-    SeleniumDriverSetup.request_mutex.synchronize(&)
+  def pause_ajax(&block)
+    SeleniumDriverSetup.request_mutex.synchronize(&block)
   end
 
   def keep_trying_until(seconds = SeleniumDriverSetup::SECONDS_UNTIL_GIVING_UP)
@@ -240,8 +239,8 @@ module CustomWaitMethods
     tiny_frame
   end
 
-  def disable_implicit_wait(&)
-    ::SeleniumExtensions::FinderWaiting.disable(&)
+  def disable_implicit_wait(&block)
+    ::SeleniumExtensions::FinderWaiting.disable(&block)
   end
 
   # little wrapper around Selenium::WebDriver::Wait, notably it:
@@ -254,7 +253,7 @@ module CustomWaitMethods
   end
 
   def wait_for_no_such_element(method: nil, timeout: SeleniumExtensions::FinderWaiting.timeout)
-    wait_for(method:, timeout:, ignore: []) do
+    wait_for(method: method, timeout: timeout, ignore: []) do
       # so find_element calls return ASAP
       disable_implicit_wait do
         yield

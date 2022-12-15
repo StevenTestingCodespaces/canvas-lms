@@ -17,7 +17,7 @@
 //
 
 import $ from 'jquery'
-import PaginatedView from '@canvas/pagination/backbone/views/PaginatedView'
+import PaginatedView from '@canvas/pagination/backbone/views/PaginatedView.coffee'
 import '@canvas/jquery/jquery.disableWhileLoading'
 
 export default class TokenSelectorList extends PaginatedView {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -40,7 +39,7 @@ const colorPickerColors = Object.keys(defaultColors).reduce((obj: Color[], key: 
   return obj
 }, [])
 
-function formatColor(color: string) {
+function formatColor(color) {
   if (color[0] !== '#') {
     return `#${color}`
   }
@@ -55,7 +54,7 @@ type Props = {
   colorPickerButtonRef: (button: HTMLButtonElement) => void
   colorPickerContentRef: (content: HTMLDivElement) => void
   colorPickerAfterClose: () => void
-  afterSetColor: (color: string, successFn: () => void, errorFn: () => void) => void
+  afterSetColor: (color: string, arg2: any, arg3: any) => void
 }
 
 type State = {
@@ -63,13 +62,13 @@ type State = {
 }
 
 class StatusColorListItem extends React.Component<Props, State> {
-  constructor(props: Props) {
+  constructor(props) {
     super(props)
 
     this.state = {color: props.color}
   }
 
-  setColor = (unformattedColor: string, successFn: () => void, errorFn: () => void) => {
+  setColor = (unformattedColor, successFn, errorFn) => {
     const color = formatColor(unformattedColor)
     this.setState({color}, () => {
       this.props.afterSetColor(color, successFn, errorFn)

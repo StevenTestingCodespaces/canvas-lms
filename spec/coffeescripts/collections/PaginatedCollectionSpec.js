@@ -18,7 +18,7 @@
 
 import $ from 'jquery'
 import Backbone from '@canvas/backbone'
-import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection'
+import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection.coffee'
 import getFakePage from 'helpers/getFakePage'
 
 QUnit.module('PaginatedCollection', {

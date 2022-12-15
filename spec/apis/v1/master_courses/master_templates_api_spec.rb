@@ -25,10 +25,8 @@ describe MasterCourses::MasterTemplatesController, type: :request do
     course_factory
     @template = MasterCourses::MasterTemplate.set_as_master_course(@course)
     account_admin_user(active_all: true)
-    @base_params = { controller: "master_courses/master_templates",
-                     format: "json",
-                     course_id: @course.id.to_s,
-                     template_id: "default" }
+    @base_params = { controller: "master_courses/master_templates", format: "json",
+                     course_id: @course.id.to_s, template_id: "default" }
   end
 
   describe "#show" do
@@ -102,7 +100,7 @@ describe MasterCourses::MasterTemplatesController, type: :request do
 
       json = api_call(:get, @url, @params)
       expect(json.count).to eq 2
-      expect(json.pluck("id")).to match_array([child_course1.id, child_course2.id])
+      expect(json.map { |c| c["id"] }).to match_array([child_course1.id, child_course2.id])
       course1_json = json.detect { |c| c["id"] == child_course1.id }
       expect(course1_json["name"]).to eq child_course1.name
       expect(course1_json["course_code"]).to eq child_course1.course_code
@@ -146,15 +144,6 @@ describe MasterCourses::MasterTemplatesController, type: :request do
 
       json = api_call(:put, @url, @params, { course_ids_to_add: [other_course.id] }, {}, { expected_status: 400 })
       expect(json["message"]).to include("invalid courses")
-    end
-
-    it "does not allow for disassociations during sync" do
-      existing_child = course_factory
-      @template.add_child_course!(existing_child)
-      mig = @template.master_migrations.create!(workflow_state: "queued")
-      @template.update_attribute(:active_migration_id, mig.id)
-      json = api_call(:put, @url, @params, { course_ids_to_remove: [existing_child.id] }, {}, { expected_status: 400 })
-      expect(json["message"]).to include("cannot remove courses while a sync is ongoing")
     end
 
     it "does not try to add other blueprint-associated courses" do
@@ -234,15 +223,15 @@ describe MasterCourses::MasterTemplatesController, type: :request do
       migration = @template.master_migrations.find(json["id"])
       expect(migration).to be_queued
       expect(migration.comment).to eq "seriously"
-      expect(migration.migration_settings[:copy_settings]).to be true
-      expect(migration.send_notification).to be false
+      expect(migration.migration_settings[:copy_settings]).to eq true
+      expect(migration.send_notification).to eq false
     end
 
     it "accepts the send_notification option" do
       json = api_call(:post, @url, @params.merge(send_notification: true))
       migration = @template.master_migrations.find(json["id"])
       expect(migration).to be_queued
-      expect(migration.send_notification).to be true
+      expect(migration.send_notification).to eq true
     end
   end
 
@@ -256,8 +245,7 @@ describe MasterCourses::MasterTemplatesController, type: :request do
 
     describe "blueprint side" do
       it "shows a migration" do
-        json = api_call(:get,
-                        "/api/v1/courses/#{@course.id}/blueprint_templates/default/migrations/#{@migration.id}",
+        json = api_call(:get, "/api/v1/courses/#{@course.id}/blueprint_templates/default/migrations/#{@migration.id}",
                         @base_params.merge(action: "migrations_show", id: @migration.to_param))
         expect(json["workflow_state"]).to eq "queued"
         expect(json["user"]["display_name"]).to eq @user.short_name
@@ -277,8 +265,7 @@ describe MasterCourses::MasterTemplatesController, type: :request do
 
       it "resolves an expired job if necessary" do
         MasterCourses::MasterMigration.where(id: @migration.id).update_all(created_at: 3.days.ago)
-        json = api_call(:get,
-                        "/api/v1/courses/#{@course.id}/blueprint_templates/default/migrations/#{@migration.id}",
+        json = api_call(:get, "/api/v1/courses/#{@course.id}/blueprint_templates/default/migrations/#{@migration.id}",
                         @base_params.merge(action: "migrations_show", id: @migration.to_param))
         expect(json["workflow_state"]).to eq "exports_failed"
       end
@@ -292,9 +279,7 @@ describe MasterCourses::MasterTemplatesController, type: :request do
       end
 
       it "shows a migration" do
-        json = api_call_as_user(@teacher,
-                                :get,
-                                "/api/v1/courses/#{@child_course.id}/blueprint_subscriptions/#{@sub.id}/migrations/#{@minion_migration.id}",
+        json = api_call_as_user(@teacher, :get, "/api/v1/courses/#{@child_course.id}/blueprint_subscriptions/#{@sub.id}/migrations/#{@minion_migration.id}",
                                 @base_params.merge(subscription_id: @sub.to_param, course_id: @child_course.to_param, action: "imports_show", id: @minion_migration.to_param))
         expect(json["workflow_state"]).to eq "completed"
         expect(json["subscription_id"]).to eq @sub.id
@@ -303,9 +288,7 @@ describe MasterCourses::MasterTemplatesController, type: :request do
       end
 
       it "shows migrations" do
-        json = api_call_as_user(@teacher,
-                                :get,
-                                "/api/v1/courses/#{@child_course.id}/blueprint_subscriptions/default/migrations",
+        json = api_call_as_user(@teacher, :get, "/api/v1/courses/#{@child_course.id}/blueprint_subscriptions/default/migrations",
                                 @base_params.merge(subscription_id: "default", course_id: @child_course.to_param, action: "imports_index"))
         expect(json.size).to eq 1
         expect(json[0]["id"]).to eq @minion_migration.id
@@ -322,17 +305,13 @@ describe MasterCourses::MasterTemplatesController, type: :request do
         MasterCourses::MasterMigration.start_new_migration!(other_template, @admin, comment: "Blah!")
         run_jobs
 
-        json = api_call_as_user(me,
-                                :get,
-                                "/api/v1/courses/#{@child_course.id}/blueprint_subscriptions/default/migrations",
+        json = api_call_as_user(me, :get, "/api/v1/courses/#{@child_course.id}/blueprint_subscriptions/default/migrations",
                                 @base_params.merge(subscription_id: "default", course_id: @child_course.to_param, action: "imports_index"))
         expect(json.size).to eq 1
         expect(json[0]["subscription_id"]).to eq other_sub.id
         expect(json[0]["comment"]).to eq "Blah!"
 
-        json = api_call_as_user(me,
-                                :get,
-                                "/api/v1/courses/#{@child_course.id}/blueprint_subscriptions/#{@sub.id}/migrations",
+        json = api_call_as_user(me, :get, "/api/v1/courses/#{@child_course.id}/blueprint_subscriptions/#{@sub.id}/migrations",
                                 @base_params.merge(subscription_id: @sub.to_param, course_id: @child_course.to_param, action: "imports_index"))
         expect(json.size).to eq 1
         expect(json[0]["subscription_id"]).to eq @sub.id
@@ -368,21 +347,13 @@ describe MasterCourses::MasterTemplatesController, type: :request do
       page = @course.wiki_pages.create!(title: "wiki", body: "ohai")
       quiz = @course.quizzes.create!
       file = @course.attachments.create!(filename: "blah", uploaded_data: default_uploaded_data)
-      tool = @course.context_external_tools.create!(name: "new tool",
-                                                    consumer_key: "key",
-                                                    shared_secret: "secret",
-                                                    custom_fields: { "a" => "1", "b" => "2" },
-                                                    url: "http://www.example.com")
+      tool = @course.context_external_tools.create!(name: "new tool", consumer_key: "key",
+                                                    shared_secret: "secret", custom_fields: { "a" => "1", "b" => "2" }, url: "http://www.example.com")
 
-      type_pairs = { "assignment" => assmt,
-                     "attachment" => file,
-                     "discussion_topic" => topic,
-                     "external_tool" => tool,
-                     "lti-quiz" => assmt,
-                     "quiz" => quiz,
-                     "wiki_page" => page }
+      type_pairs = { "assignment" => assmt, "attachment" => file, "discussion_topic" => topic,
+                     "external_tool" => tool, "lti-quiz" => assmt, "quiz" => quiz, "wiki_page" => page }
       type_pairs.each do |content_type, obj|
-        api_call(:put, @url, @params, { content_type:, content_id: obj.id, restricted: "1" }, {}, { expected_status: 200 })
+        api_call(:put, @url, @params, { content_type: content_type, content_id: obj.id, restricted: "1" }, {}, { expected_status: 200 })
         mc_tag = @template.content_tag_for(obj)
         expect(mc_tag.restrictions).to eq @template.default_restrictions
         expect(mc_tag.use_default_restrictions).to be_truthy
@@ -391,15 +362,8 @@ describe MasterCourses::MasterTemplatesController, type: :request do
 
     it "is able to set custom restrictions" do
       assmt = @course.assignments.create!
-      api_call(:put,
-               @url,
-               @params,
-               { content_type: "assignment",
-                 content_id: assmt.id,
-                 restricted: "1",
-                 restrictions: { "content" => "1", "points" => "1" } },
-               {},
-               { expected_status: 200 })
+      api_call(:put, @url, @params, { content_type: "assignment", content_id: assmt.id,
+                                      restricted: "1", restrictions: { "content" => "1", "points" => "1" } }, {}, { expected_status: 200 })
 
       mc_tag = @template.content_tag_for(assmt)
       expect(mc_tag.restrictions).to eq({ content: true, points: true })
@@ -408,28 +372,15 @@ describe MasterCourses::MasterTemplatesController, type: :request do
 
     it "validates custom restrictions" do
       assmt = @course.assignments.create!
-      api_call(:put,
-               @url,
-               @params,
-               { content_type: "assignment",
-                 content_id: assmt.id,
-                 restricted: "1",
-                 restrictions: { "content" => "1", "not_a_real_thing" => "1" } },
-               {},
-               { expected_status: 400 })
+      api_call(:put, @url, @params, { content_type: "assignment", content_id: assmt.id,
+                                      restricted: "1", restrictions: { "content" => "1", "not_a_real_thing" => "1" } }, {}, { expected_status: 400 })
     end
 
     it "is able to unset restrictions" do
       assmt = @course.assignments.create!
       mc_tag = @template.content_tag_for(assmt, { restrictions: @template.default_restrictions, use_default_restrictions: true })
-      api_call(:put,
-               @url,
-               @params,
-               { content_type: "assignment",
-                 content_id: assmt.id,
-                 restricted: "0" },
-               {},
-               { expected_status: 200 })
+      api_call(:put, @url, @params, { content_type: "assignment", content_id: assmt.id,
+                                      restricted: "0" }, {}, { expected_status: 200 })
       mc_tag.reload
       expect(mc_tag.restrictions).to be_blank
       expect(mc_tag.use_default_restrictions).to be_falsey
@@ -517,65 +468,27 @@ describe MasterCourses::MasterTemplatesController, type: :request do
     end
 
     it "returns change information from the blueprint side" do
-      json = api_call_as_user(@admin,
-                              :get,
-                              "/api/v1/courses/#{@master.id}/blueprint_templates/default/migrations/#{@migration.id}/details",
-                              controller: "master_courses/master_templates",
-                              format: "json",
-                              template_id: "default",
-                              id: @migration.to_param,
-                              course_id: @master.to_param,
-                              action: "migration_details")
+      json = api_call_as_user(@admin, :get, "/api/v1/courses/#{@master.id}/blueprint_templates/default/migrations/#{@migration.id}/details",
+                              controller: "master_courses/master_templates", format: "json", template_id: "default",
+                              id: @migration.to_param, course_id: @master.to_param, action: "migration_details")
       expected_result = [
-        { "asset_id" => @page.id,
-          "asset_type" => "wiki_page",
-          "asset_name" => "Unicorn",
-          "change_type" => "created",
-          "html_url" => "http://www.example.com/courses/#{@master.id}/pages/unicorn",
-          "locked" => true,
-          "exceptions" => [] },
-        { "asset_id" => @quiz.id,
-          "asset_type" => "quiz",
-          "asset_name" => "TestQuiz",
-          "change_type" => "created",
-          "html_url" => "http://www.example.com/courses/#{@master.id}/quizzes/#{@quiz.id}",
-          "locked" => false,
-          "exceptions" => [] },
-        { "asset_id" => @assignment.id,
-          "asset_type" => "assignment",
-          "asset_name" => "Blah",
-          "change_type" => "deleted",
+        { "asset_id" => @page.id, "asset_type" => "wiki_page", "asset_name" => "Unicorn", "change_type" => "created",
+          "html_url" => "http://www.example.com/courses/#{@master.id}/pages/unicorn", "locked" => true, "exceptions" => [] },
+        { "asset_id" => @quiz.id, "asset_type" => "quiz", "asset_name" => "TestQuiz", "change_type" => "created",
+          "html_url" => "http://www.example.com/courses/#{@master.id}/quizzes/#{@quiz.id}", "locked" => false, "exceptions" => [] },
+        { "asset_id" => @assignment.id, "asset_type" => "assignment", "asset_name" => "Blah", "change_type" => "deleted",
           "html_url" => "http://www.example.com/courses/#{@master.id}/assignments/#{@assignment.id}",
-          "locked" => false,
-          "exceptions" => [{ "course_id" => @minions.last.id, "conflicting_changes" => ["points"] }] },
-        { "asset_id" => @file.id,
-          "asset_type" => "attachment",
-          "asset_name" => "I Can Rename Files Too",
-          "change_type" => "updated",
-          "html_url" => "http://www.example.com/courses/#{@master.id}/files/#{@file.id}",
-          "locked" => false,
+          "locked" => false, "exceptions" => [{ "course_id" => @minions.last.id, "conflicting_changes" => ["points"] }] },
+        { "asset_id" => @file.id, "asset_type" => "attachment", "asset_name" => "I Can Rename Files Too",
+          "change_type" => "updated", "html_url" => "http://www.example.com/courses/#{@master.id}/files/#{@file.id}",
+          "locked" => false, "exceptions" => [{ "course_id" => @minions.first.id, "conflicting_changes" => ["content"] }] },
+        { "asset_id" => @master.id, "asset_type" => "syllabus", "asset_name" => "Syllabus", "change_type" => "updated",
+          "html_url" => "http://www.example.com/courses/#{@master.id}/assignments/syllabus", "locked" => false,
           "exceptions" => [{ "course_id" => @minions.first.id, "conflicting_changes" => ["content"] }] },
-        { "asset_id" => @master.id,
-          "asset_type" => "syllabus",
-          "asset_name" => "Syllabus",
-          "change_type" => "updated",
-          "html_url" => "http://www.example.com/courses/#{@master.id}/assignments/syllabus",
-          "locked" => false,
-          "exceptions" => [{ "course_id" => @minions.first.id, "conflicting_changes" => ["content"] }] },
-        { "asset_id" => @master.id,
-          "asset_type" => "settings",
-          "asset_name" => "Course Settings",
-          "change_type" => "updated",
-          "html_url" => "http://www.example.com/courses/#{@master.id}/settings",
-          "locked" => false,
-          "exceptions" => [] },
-        { "asset_id" => @external_assignment.id,
-          "asset_type" => "assignment",
-          "asset_name" => "external tool assignment",
-          "change_type" => "created",
-          "html_url" => "http://www.example.com/courses/#{@master.id}/assignments/#{@external_assignment.id}",
-          "locked" => false,
-          "exceptions" => [] }
+        { "asset_id" => @master.id, "asset_type" => "settings", "asset_name" => "Course Settings", "change_type" => "updated",
+          "html_url" => "http://www.example.com/courses/#{@master.id}/settings", "locked" => false, "exceptions" => [] },
+        { "asset_id" => @external_assignment.id, "asset_type" => "assignment", "asset_name" => "external tool assignment", "change_type" => "created",
+          "html_url" => "http://www.example.com/courses/#{@master.id}/assignments/#{@external_assignment.id}", "locked" => false, "exceptions" => [] }
       ]
       expect(json).to match_array(expected_result)
     end
@@ -590,111 +503,54 @@ describe MasterCourses::MasterTemplatesController, type: :request do
       minion_file = minion.attachments.where(migration_id: @template.migration_id_for(@file)).first
       minion_quiz = minion.quizzes.where(migration_id: @template.migration_id_for(@quiz)).first
       minion_external_assignment = minion.assignments.where(migration_id: @template.migration_id_for(@external_assignment)).first
-      json = api_call_as_user(minion.teachers.first,
-                              :get,
+      json = api_call_as_user(minion.teachers.first, :get,
                               "/api/v1/courses/#{minion.id}/blueprint_subscriptions/default/migrations/#{minion_migration.id}/details",
-                              controller: "master_courses/master_templates",
-                              format: "json",
-                              subscription_id: "default",
-                              id: minion_migration.to_param,
-                              course_id: minion.to_param,
-                              action: "import_details")
+                              controller: "master_courses/master_templates", format: "json", subscription_id: "default",
+                              id: minion_migration.to_param, course_id: minion.to_param, action: "import_details")
       expected_result = [
-        { "asset_id" => minion_page.id,
-          "asset_type" => "wiki_page",
-          "asset_name" => "Unicorn",
-          "change_type" => "created",
-          "html_url" => "http://www.example.com/courses/#{minion.id}/pages/unicorn",
-          "locked" => true,
-          "exceptions" => [] },
-        { "asset_id" => minion_quiz.id,
-          "asset_type" => "quiz",
-          "asset_name" => "TestQuiz",
-          "change_type" => "created",
-          "html_url" => "http://www.example.com/courses/#{minion.id}/quizzes/#{minion_quiz.id}",
-          "locked" => false,
-          "exceptions" => [] },
-        { "asset_id" => minion_assignment.id,
-          "asset_type" => "assignment",
-          "asset_name" => "Blah",
-          "change_type" => "deleted",
-          "html_url" => "http://www.example.com/courses/#{minion.id}/assignments/#{minion_assignment.id}",
-          "locked" => false,
-          "exceptions" => [] },
-        { "asset_id" => minion_file.id,
-          "asset_type" => "attachment",
-          "asset_name" => "Some Renamed Nonsense",
-          "change_type" => "updated",
-          "html_url" => "http://www.example.com/courses/#{minion.id}/files/#{minion_file.id}",
-          "locked" => false,
+        { "asset_id" => minion_page.id, "asset_type" => "wiki_page", "asset_name" => "Unicorn", "change_type" => "created",
+          "html_url" => "http://www.example.com/courses/#{minion.id}/pages/unicorn", "locked" => true, "exceptions" => [] },
+        { "asset_id" => minion_quiz.id, "asset_type" => "quiz", "asset_name" => "TestQuiz", "change_type" => "created",
+          "html_url" => "http://www.example.com/courses/#{minion.id}/quizzes/#{minion_quiz.id}", "locked" => false, "exceptions" => [] },
+        { "asset_id" => minion_assignment.id, "asset_type" => "assignment", "asset_name" => "Blah", "change_type" => "deleted",
+          "html_url" => "http://www.example.com/courses/#{minion.id}/assignments/#{minion_assignment.id}", "locked" => false, "exceptions" => [] },
+        { "asset_id" => minion_file.id, "asset_type" => "attachment", "asset_name" => "Some Renamed Nonsense",
+          "change_type" => "updated", "html_url" => "http://www.example.com/courses/#{minion.id}/files/#{minion_file.id}",
+          "locked" => false, "exceptions" => [{ "course_id" => minion.id, "conflicting_changes" => ["content"] }] },
+        { "asset_id" => minion.id, "asset_type" => "syllabus", "asset_name" => "Syllabus", "change_type" => "updated",
+          "html_url" => "http://www.example.com/courses/#{minion.id}/assignments/syllabus", "locked" => false,
           "exceptions" => [{ "course_id" => minion.id, "conflicting_changes" => ["content"] }] },
-        { "asset_id" => minion.id,
-          "asset_type" => "syllabus",
-          "asset_name" => "Syllabus",
-          "change_type" => "updated",
-          "html_url" => "http://www.example.com/courses/#{minion.id}/assignments/syllabus",
-          "locked" => false,
-          "exceptions" => [{ "course_id" => minion.id, "conflicting_changes" => ["content"] }] },
-        { "asset_id" => minion.id,
-          "asset_type" => "settings",
-          "asset_name" => "Course Settings",
-          "change_type" => "updated",
-          "html_url" => "http://www.example.com/courses/#{minion.id}/settings",
-          "locked" => false,
-          "exceptions" => [] },
-        { "asset_id" => minion_external_assignment.id,
-          "asset_type" => "assignment",
-          "asset_name" => "external tool assignment",
-          "change_type" => "created",
-          "html_url" => "http://www.example.com/courses/#{minion.id}/assignments/#{minion_external_assignment.id}",
-          "locked" => false,
-          "exceptions" => [] }
+        { "asset_id" => minion.id, "asset_type" => "settings", "asset_name" => "Course Settings", "change_type" => "updated",
+          "html_url" => "http://www.example.com/courses/#{minion.id}/settings", "locked" => false, "exceptions" => [] },
+        { "asset_id" => minion_external_assignment.id, "asset_type" => "assignment", "asset_name" => "external tool assignment", "change_type" => "created",
+          "html_url" => "http://www.example.com/courses/#{minion.id}/assignments/#{minion_external_assignment.id}", "locked" => false, "exceptions" => [] }
       ]
       expect(json).to match_array(expected_result)
     end
 
     it "returns empty for a non-selective migration" do
       @template.add_child_course!(course_factory(name: "Minion 3"))
-      json = api_call_as_user(@admin,
-                              :get,
-                              "/api/v1/courses/#{@master.id}/blueprint_templates/default/migrations/#{@full_migration.id}/details",
-                              controller: "master_courses/master_templates",
-                              format: "json",
-                              template_id: "default",
-                              id: @full_migration.to_param,
-                              course_id: @master.to_param,
-                              action: "migration_details")
+      json = api_call_as_user(@admin, :get, "/api/v1/courses/#{@master.id}/blueprint_templates/default/migrations/#{@full_migration.id}/details",
+                              controller: "master_courses/master_templates", format: "json", template_id: "default",
+                              id: @full_migration.to_param, course_id: @master.to_param, action: "migration_details")
       expect(json).to eq([])
     end
 
     it "is not tripped up by subscriptions created after the sync" do
       @template.add_child_course!(course_factory(name: "Minion 3"))
-      api_call_as_user(@admin,
-                       :get,
-                       "/api/v1/courses/#{@master.id}/blueprint_templates/default/migrations/#{@migration.id}/details",
-                       controller: "master_courses/master_templates",
-                       format: "json",
-                       template_id: "default",
-                       id: @migration.to_param,
-                       course_id: @master.to_param,
-                       action: "migration_details")
+      api_call_as_user(@admin, :get, "/api/v1/courses/#{@master.id}/blueprint_templates/default/migrations/#{@migration.id}/details",
+                       controller: "master_courses/master_templates", format: "json", template_id: "default",
+                       id: @migration.to_param, course_id: @master.to_param, action: "migration_details")
       expect(response).to be_successful
     end
 
     it "requires manage rights on the course" do
       minion_migration = @minions.first.content_migrations.last
-      api_call_as_user(@minions.last.teachers.first,
-                       :get,
+      api_call_as_user(@minions.last.teachers.first, :get,
                        "/api/v1/courses/#{@minions.first.id}/blueprint_subscriptions/default/migrations/#{minion_migration.id}/details",
-                       { controller: "master_courses/master_templates",
-                         format: "json",
-                         subscription_id: "default",
-                         id: minion_migration.to_param,
-                         course_id: @minions.first.to_param,
-                         action: "import_details" },
-                       {},
-                       {},
-                       { expected_status: 401 })
+                       { controller: "master_courses/master_templates", format: "json", subscription_id: "default",
+                         id: minion_migration.to_param, course_id: @minions.first.to_param, action: "import_details" },
+                       {}, {}, { expected_status: 401 })
     end
 
     it "syncs syllabus content unless changed downstream" do
@@ -719,14 +575,9 @@ describe MasterCourses::MasterTemplatesController, type: :request do
     end
 
     it "reports an incomplete initial sync" do
-      json = api_call_as_user(@admin,
-                              :get,
-                              "/api/v1/courses/#{@master.id}/blueprint_templates/default/unsynced_changes",
-                              controller: "master_courses/master_templates",
-                              format: "json",
-                              template_id: "default",
-                              course_id: @master.to_param,
-                              action: "unsynced_changes")
+      json = api_call_as_user(@admin, :get, "/api/v1/courses/#{@master.id}/blueprint_templates/default/unsynced_changes",
+                              controller: "master_courses/master_templates", format: "json", template_id: "default",
+                              course_id: @master.to_param, action: "unsynced_changes")
       expect(json).to eq([{ "asset_name" => @master.name, "change_type" => "initial_sync" }])
     end
 
@@ -745,45 +596,20 @@ describe MasterCourses::MasterTemplatesController, type: :request do
         @master.syllabus_body = "srslywat"
         @master.save!
 
-        json = api_call_as_user(@admin,
-                                :get,
-                                "/api/v1/courses/#{@master.id}/blueprint_templates/default/unsynced_changes",
-                                controller: "master_courses/master_templates",
-                                format: "json",
-                                template_id: "default",
-                                course_id: @master.to_param,
-                                action: "unsynced_changes")
+        json = api_call_as_user(@admin, :get, "/api/v1/courses/#{@master.id}/blueprint_templates/default/unsynced_changes",
+                                controller: "master_courses/master_templates", format: "json", template_id: "default",
+                                course_id: @master.to_param, action: "unsynced_changes")
         expect(json).to match_array([
-                                      { "asset_id" => @ann.id,
-                                        "asset_type" => "announcement",
-                                        "asset_name" => "Boring",
-                                        "change_type" => "deleted",
-                                        "html_url" => "http://www.example.com/courses/#{@master.id}/announcements/#{@ann.id}",
-                                        "locked" => false },
-                                      { "asset_id" => @file.id,
-                                        "asset_type" => "attachment",
-                                        "asset_name" => "Renamed",
-                                        "change_type" => "updated",
-                                        "html_url" => "http://www.example.com/courses/#{@master.id}/files/#{@file.id}",
-                                        "locked" => true },
-                                      { "asset_id" => @new_page.id,
-                                        "asset_type" => "wiki_page",
-                                        "asset_name" => "New News",
-                                        "change_type" => "created",
-                                        "html_url" => "http://www.example.com/courses/#{@master.id}/pages/new-news",
-                                        "locked" => false },
-                                      { "asset_id" => @folder.id,
-                                        "asset_type" => "folder",
-                                        "asset_name" => "Blergh",
-                                        "change_type" => "updated",
-                                        "html_url" => "http://www.example.com/courses/#{@master.id}/folders/#{@folder.id}",
-                                        "locked" => false },
-                                      { "asset_id" => @master.id,
-                                        "asset_type" => "syllabus",
-                                        "asset_name" => "Syllabus",
-                                        "change_type" => "updated",
-                                        "html_url" => "http://www.example.com/courses/#{@master.id}/assignments/syllabus",
-                                        "locked" => false }
+                                      { "asset_id" => @ann.id, "asset_type" => "announcement", "asset_name" => "Boring", "change_type" => "deleted",
+                                        "html_url" => "http://www.example.com/courses/#{@master.id}/announcements/#{@ann.id}", "locked" => false },
+                                      { "asset_id" => @file.id, "asset_type" => "attachment", "asset_name" => "Renamed", "change_type" => "updated",
+                                        "html_url" => "http://www.example.com/courses/#{@master.id}/files/#{@file.id}", "locked" => true },
+                                      { "asset_id" => @new_page.id, "asset_type" => "wiki_page", "asset_name" => "New News", "change_type" => "created",
+                                        "html_url" => "http://www.example.com/courses/#{@master.id}/pages/new-news", "locked" => false },
+                                      { "asset_id" => @folder.id, "asset_type" => "folder", "asset_name" => "Blergh", "change_type" => "updated",
+                                        "html_url" => "http://www.example.com/courses/#{@master.id}/folders/#{@folder.id}", "locked" => false },
+                                      { "asset_id" => @master.id, "asset_type" => "syllabus", "asset_name" => "Syllabus", "change_type" => "updated",
+                                        "html_url" => "http://www.example.com/courses/#{@master.id}/assignments/syllabus", "locked" => false }
                                     ])
       end
 
@@ -792,14 +618,9 @@ describe MasterCourses::MasterTemplatesController, type: :request do
 
         3.times { |x| @master.wiki_pages.create! title: "Page #{x}" }
 
-        json = api_call_as_user(@admin,
-                                :get,
-                                "/api/v1/courses/#{@master.id}/blueprint_templates/default/unsynced_changes",
-                                controller: "master_courses/master_templates",
-                                format: "json",
-                                template_id: "default",
-                                course_id: @master.to_param,
-                                action: "unsynced_changes")
+        json = api_call_as_user(@admin, :get, "/api/v1/courses/#{@master.id}/blueprint_templates/default/unsynced_changes",
+                                controller: "master_courses/master_templates", format: "json", template_id: "default",
+                                course_id: @master.to_param, action: "unsynced_changes")
 
         expect(json.length).to eq 2
       end
@@ -816,13 +637,9 @@ describe MasterCourses::MasterTemplatesController, type: :request do
     end
 
     it "returns information about the subscription" do
-      json = api_call_as_user(@teacher,
-                              :get,
-                              "/api/v1/courses/#{@minion.id}/blueprint_subscriptions",
-                              controller: "master_courses/master_templates",
-                              format: "json",
-                              course_id: @minion.to_param,
-                              action: "subscriptions_index")
+      json = api_call_as_user(@teacher, :get, "/api/v1/courses/#{@minion.id}/blueprint_subscriptions",
+                              controller: "master_courses/master_templates", format: "json",
+                              course_id: @minion.to_param, action: "subscriptions_index")
       expect(json).to eq([{
                            "id" => @subscription.id,
                            "template_id" => @template.id,
@@ -836,13 +653,9 @@ describe MasterCourses::MasterTemplatesController, type: :request do
     end
 
     it "includes sis_course_id if the caller has permission to see it" do
-      json = api_call_as_user(@admin,
-                              :get,
-                              "/api/v1/courses/#{@minion.id}/blueprint_subscriptions",
-                              controller: "master_courses/master_templates",
-                              format: "json",
-                              course_id: @minion.to_param,
-                              action: "subscriptions_index")
+      json = api_call_as_user(@admin, :get, "/api/v1/courses/#{@minion.id}/blueprint_subscriptions",
+                              controller: "master_courses/master_templates", format: "json",
+                              course_id: @minion.to_param, action: "subscriptions_index")
       expect(json).to eq([{
                            "id" => @subscription.id,
                            "template_id" => @template.id,
@@ -858,13 +671,9 @@ describe MasterCourses::MasterTemplatesController, type: :request do
 
     it "returns an empty array if there is no subscription" do
       course_factory(active_all: true)
-      json = api_call_as_user(@teacher,
-                              :get,
-                              "/api/v1/courses/#{@course.id}/blueprint_subscriptions",
-                              controller: "master_courses/master_templates",
-                              format: "json",
-                              course_id: @course.to_param,
-                              action: "subscriptions_index")
+      json = api_call_as_user(@teacher, :get, "/api/v1/courses/#{@course.id}/blueprint_subscriptions",
+                              controller: "master_courses/master_templates", format: "json",
+                              course_id: @course.to_param, action: "subscriptions_index")
       expect(json).to eq([])
     end
   end

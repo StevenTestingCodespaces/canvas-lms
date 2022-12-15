@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require_dependency "lti/membership_service/course_lis_person_collator"
+
 module Lti::MembershipService
   describe CourseLisPersonCollator do
     context "course with teacher" do
@@ -116,11 +118,8 @@ module Lti::MembershipService
       collator = CourseLisPersonCollator.new(@course, @teacher)
       course_with_teacher(user: @teacher)
       Lti::Asset.opaque_identifier_for(@teacher, context: @course)
-      UserPastLtiId.create!(user_id: @teacher,
-                            context: @course,
-                            user_uuid: "old_uuid",
-                            user_lti_id: "old_lti_id",
-                            user_lti_context_id: "old_lti_context_id")
+      UserPastLtiId.create!(user_id: @teacher, context: @course, user_uuid: "old_uuid",
+                            user_lti_id: "old_lti_id", user_lti_context_id: "old_lti_context_id")
       memberships = collator.memberships
       expect(memberships.map(&:member).map(&:user_id)).to eq([@teacher.reload.lti_context_id])
     end
@@ -175,13 +174,9 @@ module Lti::MembershipService
         @course.enroll_user(@ta, "TaEnrollment", enrollment_state: "active")
         @designer = user_model
         @course.enroll_user(@designer, "DesignerEnrollment", enrollment_state: "active")
-        @student = user_with_managed_pseudonym(active_all: true,
-                                               account: @account,
-                                               name: "John St. Clair",
-                                               sortable_name: "St. Clair, John",
-                                               username: "john@stclair.com",
-                                               sis_user_id: user_sis_id,
-                                               integration_id: "int1")
+        @student = user_with_managed_pseudonym(active_all: true, account: @account, name: "John St. Clair",
+                                               sortable_name: "St. Clair, John", username: "john@stclair.com",
+                                               sis_user_id: user_sis_id, integration_id: "int1")
         @course.enroll_user(@student, "StudentEnrollment", enrollment_state: "active")
         @observer = user_model
         @course.enroll_user(@observer, "ObserverEnrollment", enrollment_state: "active")
@@ -293,13 +288,13 @@ module Lti::MembershipService
     describe "#next_page?" do
       it "returns true when there is an additional page of results" do
         collator = CourseLisPersonCollator.new(@course, @teacher, per_page: 1, page: 1)
-        expect(collator.next_page?).to be(true)
+        expect(collator.next_page?).to eq(true)
       end
 
       it "returns false when there are no more pages" do
         collator = CourseLisPersonCollator.new(@course, @teacher, per_page: 1, page: 5)
         collator.memberships
-        expect(collator.next_page?).to be(false)
+        expect(collator.next_page?).to eq(false)
       end
     end
   end

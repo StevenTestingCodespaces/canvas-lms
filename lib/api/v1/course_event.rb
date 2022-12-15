@@ -46,15 +46,15 @@ module Api::V1::CourseEvent
     end
 
     {
-      id: event.uuid,
+      id: event.id,
       created_at: event.created_at.in_time_zone,
       event_type: event.event_type,
       event_source: event.event_source,
 
       # since its storing data as json it would be nice just to
       # return it directly instead of having to parse it each time.
-      event_data:,
-      links:
+      event_data: event_data,
+      links: links
     }
   end
 

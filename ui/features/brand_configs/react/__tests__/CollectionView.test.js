@@ -301,6 +301,7 @@ describe('CollectionView', () => {
     const confirmButton = within(deleteConfirmModal).getByText('Cancel').closest('button')
     fireEvent.click(confirmButton)
     await fetchMock.flush(false)
+    expect(fetchMock.done()).toBe(false)
     expect(fetchMock.called(deleteURL)).toBe(false)
   })
 })

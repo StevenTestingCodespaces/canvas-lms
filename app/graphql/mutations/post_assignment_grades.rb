@@ -74,12 +74,11 @@ class Mutations::PostAssignmentGrades < Mutations::BaseMutation
         assignment,
         :post_submissions,
         { preserve_method_args: true },
-        progress:,
-        submission_ids:,
-        posting_params:,
-        skip_content_participation_refresh: false
+        progress: progress,
+        submission_ids: submission_ids,
+        posting_params: posting_params
       )
-      { assignment:, progress:, sections: }
+      { assignment: assignment, progress: progress, sections: sections }
     else
       raise GraphQL::ExecutionError, "Error posting assignment grades"
     end

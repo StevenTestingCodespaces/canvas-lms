@@ -158,7 +158,7 @@ describe LoginController do
         allow_any_instance_of(Account).to receive(:require_acceptance_of_terms?).and_return(true)
 
         get "session_token", format: :json
-        expect(response.parsed_body["requires_terms_acceptance"]).to be(true)
+        expect(JSON.parse(response.body)["requires_terms_acceptance"]).to eq(true)
       end
     end
 
@@ -169,17 +169,8 @@ describe LoginController do
         allow_any_instance_of(Account).to receive(:require_acceptance_of_terms?).and_return(false)
 
         get "session_token", format: :json
-        expect(response.parsed_body["requires_terms_acceptance"]).to be(false)
+        expect(JSON.parse(response.body)["requires_terms_acceptance"]).to eq(false)
       end
-    end
-
-    it "rejects javascript scheme" do
-      user_session user_with_pseudonym(active: true)
-      request.headers.merge!({ "CONTENT_TYPE" => "application/json", "HTTP_AUTHORIZATION" => "Bearer #{access_token_for_user(@user)}" })
-      allow_any_instance_of(Account).to receive(:require_acceptance_of_terms?).and_return(false)
-
-      get "session_token", format: :json, params: { return_to: "javascript://localhost/" }
-      expect(response).to have_http_status :unauthorized
     end
   end
 
@@ -203,7 +194,7 @@ describe LoginController do
       account_with_saml(account: Account.default, saml_log_out_url: "https://www.google.com/")
       session[:login_aac] = Account.default.authentication_providers.first.id
       delete "destroy"
-      expect(response).to have_http_status :found
+      expect(response.status).to eq 302
       expect(response.location).to match(%r{^https://www.google.com/\?SAMLRequest=})
     end
 
@@ -211,7 +202,7 @@ describe LoginController do
       account_with_cas(account: Account.default)
       session[:login_aac] = Account.default.authentication_providers.first.id
       delete "destroy"
-      expect(response).to have_http_status :found
+      expect(response.status).to eq 302
       expect(response.location).to match(%r{localhost/cas/})
     end
 
@@ -219,7 +210,7 @@ describe LoginController do
       account_with_saml(account: Account.default, saml_log_out_url: "https://www.google.com/")
       session[:login_aac] = Account.default.canvas_authentication_provider.id
       delete "destroy"
-      expect(response).to have_http_status :found
+      expect(response.status).to eq 302
       expect(response.location).to match(%r{/login/canvas$})
     end
   end

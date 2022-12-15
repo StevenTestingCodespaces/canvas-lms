@@ -27,7 +27,7 @@ import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {Menu} from '@instructure/ui-menu'
 import {IconReplyLine, IconLockLine, IconUnlockLine, IconTrashLine} from '@instructure/ui-icons'
 
-import AnnouncementModel from '@canvas/discussions/backbone/models/Announcement'
+import AnnouncementModel from '@canvas/discussions/backbone/models/Announcement.coffee'
 import SectionsTooltip from '@canvas/sections-tooltip'
 import CourseItemRow from './CourseItemRow'
 import UnreadBadge from '@canvas/unread-badge'
@@ -40,7 +40,6 @@ const I18n = useI18nScope('shared_components')
 export default function AnnouncementRow({
   announcement,
   canManage,
-  canDelete,
   masterCourseData,
   rowRef,
   onSelectedChanged,
@@ -73,24 +72,21 @@ export default function AnnouncementRow({
   )
 
   const renderMenuList = () => {
-    const menuList = []
-    if (canDelete) {
-      menuList.push(
-        <Menu.Item
-          key="delete"
-          value={{action: 'delete', id: announcement.id}}
-          id="delete-announcement-menu-option"
-        >
-          <span aria-hidden="true">
-            <IconTrashLine />
-            &nbsp;&nbsp;{I18n.t('Delete')}
-          </span>
-          <ScreenReaderContent>
-            {I18n.t('Delete announcement %{title}', {title: announcement.title})}
-          </ScreenReaderContent>
-        </Menu.Item>
-      )
-    }
+    const menuList = [
+      <Menu.Item
+        key="delete"
+        value={{action: 'delete', id: announcement.id}}
+        id="delete-announcement-menu-option"
+      >
+        <span aria-hidden="true">
+          <IconTrashLine />
+          &nbsp;&nbsp;{I18n.t('Delete')}
+        </span>
+        <ScreenReaderContent>
+          {I18n.t('Delete announcement %{title}', {title: announcement.title})}
+        </ScreenReaderContent>
+      </Menu.Item>,
+    ]
     if (!announcementsLocked) {
       menuList.push(
         <Menu.Item
@@ -133,7 +129,7 @@ export default function AnnouncementRow({
       replyButton={replyButton}
       ref={rowRef}
       className="ic-announcement-row"
-      selectable={canManage || canDelete}
+      selectable={canManage}
       showAvatar={true}
       id={announcement.id}
       isRead={announcement.read_state === 'read'}
@@ -166,7 +162,7 @@ export default function AnnouncementRow({
         </div>
       }
       actionsContent={readCount}
-      showManageMenu={canManage || canDelete}
+      showManageMenu={canManage}
       onManageMenuSelect={onManageMenuSelect}
       manageMenuOptions={renderMenuList}
       hasReadBadge={true}
@@ -177,7 +173,6 @@ export default function AnnouncementRow({
 AnnouncementRow.propTypes = {
   announcement: announcementShape.isRequired,
   canManage: bool,
-  canDelete: bool,
   canHaveSections: bool,
   masterCourseData: masterCourseDataShape,
   rowRef: func,
@@ -188,7 +183,6 @@ AnnouncementRow.propTypes = {
 
 AnnouncementRow.defaultProps = {
   canManage: false,
-  canDelete: false,
   canHaveSections: false,
   masterCourseData: null,
   rowRef() {},

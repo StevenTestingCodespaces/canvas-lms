@@ -25,7 +25,7 @@ RSpec.describe LiveEvents::EventSerializerProvider do
 
     context "when asset is a ContextExternalTool" do
       let(:opts) { { domain: "test.com" } }
-      let(:asset) { external_tool_model(context: course, opts:) }
+      let(:asset) { external_tool_model(context: course, opts: opts) }
 
       it "serializes the asset" do
         expect(subject).to include(

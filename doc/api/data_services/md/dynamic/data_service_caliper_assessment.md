@@ -8,18 +8,6 @@ Assessment
 **Trigger:** Triggered when a user submits a quiz assignment [old quizzes].
 
 
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
-| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.type** | Attempt |
-
-
-
-
 
 ### Payload Example:
 
@@ -115,6 +103,16 @@ Assessment
 }
 ```
 
+
+
+
+### Event Body Schema
+
+| Field | Description |
+|-|-|
+| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
+| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
+| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
 
 
 

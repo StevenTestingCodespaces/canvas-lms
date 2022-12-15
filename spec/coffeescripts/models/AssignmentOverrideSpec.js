@@ -17,7 +17,7 @@
  */
 
 import AssignmentOverride from '@canvas/assignments/backbone/models/AssignmentOverride'
-import Assignment from '@canvas/assignments/backbone/models/Assignment'
+import Assignment from '@canvas/assignments/backbone/models/Assignment.coffee'
 
 QUnit.module('AssignmentOverride', {
   setup() {

@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "importers"
+
 module Importers
   class QuizGroupImporter < Importer
     self.item_class = Quizzes::QuizGroup
@@ -65,16 +67,10 @@ module Importers
       end
       item.save!
       hash[:questions].each_with_index do |question, i|
-        next unless (aq = question_data[:aq_data][question[:migration_id]] || question_data[:aq_data][question[:assessment_question_migration_id]])
-
-        Importers::QuizQuestionImporter.import_from_migration(aq,
-                                                              question,
-                                                              i + 1,
-                                                              question_data[:qq_ids][quiz.migration_id],
-                                                              context,
-                                                              migration,
-                                                              quiz,
-                                                              item)
+        if (aq = question_data[:aq_data][question[:migration_id]] || question_data[:aq_data][question[:assessment_question_migration_id]])
+          Importers::QuizQuestionImporter.import_from_migration(aq, question, i + 1,
+                                                                question_data[:qq_ids][quiz.migration_id], context, migration, quiz, item)
+        end
       end
 
       item

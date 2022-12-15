@@ -39,7 +39,7 @@ module Lti::Messages
     def generate_post_payload_message(validate_launch: true)
       add_resource_link_request_claims! if include_claims?(:rlid)
       add_line_item_url_to_ags_claim! if include_assignment_and_grade_service_claims?
-      super(validate_launch:)
+      super(validate_launch: validate_launch)
     end
 
     def generate_post_payload_for_assignment(assignment, _outcome_service_url, _legacy_outcome_service_url, _lti_turnitin_outcomes_placement_url)
@@ -131,19 +131,10 @@ module Lti::Messages
     def add_line_item_url_to_ags_claim!
       return if line_item_for_assignment.blank?
 
-      @message.assignment_and_grade_service.lineitem =
-        if @context.root_account.feature_enabled?(:consistent_ags_ids_based_on_account_principal_domain)
-          @expander.controller.lti_line_item_show_url(
-            host: @context.root_account.domain,
-            course_id: course_id_for_ags_url,
-            id: line_item_for_assignment.id
-          )
-        else
-          @expander.controller.lti_line_item_show_url(
-            course_id: course_id_for_ags_url,
-            id: line_item_for_assignment.id
-          )
-        end
+      @message.assignment_and_grade_service.lineitem = @expander.controller.lti_line_item_show_url(
+        course_id: course_id_for_ags_url,
+        id: line_item_for_assignment.id
+      )
     end
   end
 end

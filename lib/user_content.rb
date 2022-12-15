@@ -19,6 +19,7 @@
 
 require "nokogiri"
 require "ritex"
+require "securerandom"
 
 module UserContent
   def self.escape(
@@ -83,7 +84,7 @@ module UserContent
   end
 
   def self.latex_to_mathml(latex)
-    Latex.to_math_ml(latex:)
+    Latex.to_math_ml(latex: latex)
   end
 
   Node = Struct.new(:width, :height, :node_string, :node_hmac)
@@ -117,8 +118,8 @@ module UserContent
     end
   end
 
-  def self.find_equation_images(html, &)
-    html.css("img.equation_image").each(&)
+  def self.find_equation_images(html, &block)
+    html.css("img.equation_image").each(&block)
   end
 
   # TODO: try and discover the motivation behind the "huhs"

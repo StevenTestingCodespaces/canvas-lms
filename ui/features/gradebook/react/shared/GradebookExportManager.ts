@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -224,7 +223,7 @@ class GradebookExportManager {
 
     const studentOrder = getStudentOrder()
     if (studentOrder && studentOrder.length > 0) {
-      params.student_order = studentOrder
+      params.student_order = studentOrder.map(Number)
     }
 
     return axios.post(this.exportingUrl, params).then(response => {

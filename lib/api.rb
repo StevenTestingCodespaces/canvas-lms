@@ -23,26 +23,16 @@ module Api
 
   # find id in collection, by either id or sis_*_id
   # if the collection is over the users table, `self` is replaced by @current_user.id
-  # if `writable` is true and a shadow record is found, the corresponding primary record will be returned
-  # otherwise a read-only shadow record will be returned, to avoid a silent failure when attempting to save it
-  def api_find(collection, id, account: nil, writable: infer_writable_from_request_method)
-    result = api_find_all(collection, [id], account:).first
+  def api_find(collection, id, account: nil)
+    result = api_find_all(collection, [id], account: account).first
     raise(ActiveRecord::RecordNotFound, "Couldn't find #{collection.name} with API id '#{id}'") unless result
-
-    if result.shadow_record?
-      if writable
-        result.reload
-      else
-        result.readonly!
-      end
-    end
 
     result
   end
 
   def api_find_all(collection, ids, account: nil)
     if collection.table_name == User.table_name && @current_user
-      ids = ids.map { |id| (id == "self") ? @current_user.id : id }
+      ids = ids.map { |id| id == "self" ? @current_user.id : id }
     end
     if collection.table_name == Account.table_name
       ids = ids.map do |id|
@@ -72,9 +62,9 @@ module Api
                             .where("(start_at<=? OR start_at IS NULL) AND (end_at >=? OR end_at IS NULL) AND NOT (start_at IS NULL AND end_at IS NULL)", Time.now.utc, Time.now.utc)
                             .limit(2)
                             .to_a
-            current_term = (current_terms.length == 1) ? current_terms.first : :nil
+            current_term = current_terms.length == 1 ? current_terms.first : :nil
           end
-          (current_term == :nil) ? nil : current_term
+          current_term == :nil ? nil : current_term
         else
           id
         end
@@ -89,10 +79,8 @@ module Api
   # returned in the result.
   def self.map_ids(ids, collection, root_account, current_user = nil)
     sis_mapping = sis_find_sis_mapping_for_collection(collection)
-    columns = sis_parse_ids(ids,
-                            sis_mapping[:lookups],
-                            current_user,
-                            root_account:)
+    columns = sis_parse_ids(ids, sis_mapping[:lookups], current_user,
+                            root_account: root_account)
     result = columns.delete(sis_mapping[:lookups]["id"]) || { ids: [] }
     unless columns.empty?
       relation = relation_for_sis_mapping_and_columns(collection, columns, sis_mapping, root_account)
@@ -177,9 +165,9 @@ module Api
 
   MAX_ID = ((2**63) - 1)
   MAX_ID_LENGTH = MAX_ID.to_s.length
-  MAX_ID_RANGE = (-MAX_ID...MAX_ID)
-  ID_REGEX = /\A\d{1,#{MAX_ID_LENGTH}}\z/
-  UUID_REGEX = /\Auuid:(\w{40,})\z/
+  MAX_ID_RANGE = (-MAX_ID...MAX_ID).freeze
+  ID_REGEX = /\A\d{1,#{MAX_ID_LENGTH}}\z/.freeze
+  UUID_REGEX = /\Auuid:(\w{40,})\z/.freeze
 
   def self.not_scoped_to_account?(columns, sis_mapping)
     flattened_array_of_columns = [columns].flatten
@@ -220,7 +208,7 @@ module Api
     # }
     columns = {}
     ids.compact.each do |id|
-      sis_column, sis_id = sis_parse_id(id, current_user, root_account:)
+      sis_column, sis_id = sis_parse_id(id, current_user, root_account: root_account)
 
       next unless sis_column && sis_id
 
@@ -385,7 +373,7 @@ module Api
     action = "#{controller.params[:controller]}##{controller.params[:action]}"
     per_page_requested = controller.params[:per_page] || options[:default] || per_page(action)
     max = options[:max] || max_per_page(action)
-    per_page_requested.to_i.clamp(1, max.to_i)
+    [[per_page_requested.to_i, 1].max, max.to_i].min
   end
 
   # Add [link HTTP Headers](http://www.w3.org/Protocols/9707-link-header.html) for pagination
@@ -398,7 +386,7 @@ module Api
     links = build_links_from_hash(hash)
     controller.response.headers["Link"] = links.join(",") unless links.empty?
     if response_args[:enhanced_return]
-      { hash:, collection: }
+      { hash: hash, collection: collection }
     else
       collection
     end
@@ -537,7 +525,7 @@ module Api
       uri = URI.parse(url)
       raise(ArgumentError, "pagination url is not an absolute uri: #{url}") unless uri.is_a?(URI::HTTP)
 
-      Rack::Utils.parse_nested_query(uri.query).merge(uri:, rel:)
+      Rack::Utils.parse_nested_query(uri.query).merge(uri: uri, rel: rel)
     end
   end
 
@@ -605,12 +593,8 @@ module Api
     ) || attachment&.grants_right?(user, nil, :download)
   end
 
-  def api_user_content(html,
-                       context = @context,
-                       user = @current_user,
-                       preloaded_attachments = {},
-                       options = {},
-                       is_public = false)
+  def api_user_content(html, context = @context, user = @current_user,
+                       preloaded_attachments = {}, options = {}, is_public = false)
     return html if html.blank?
 
     # use the host of the request if available;
@@ -631,11 +615,11 @@ module Api
       rewriter = UserContent::HtmlRewriter.new(context, user)
       rewriter.set_handler("files") do |match|
         UserContent::FilesHandler.new(
-          match:,
-          context:,
-          user:,
-          preloaded_attachments:,
-          is_public:,
+          match: match,
+          context: context,
+          user: user,
+          preloaded_attachments: preloaded_attachments,
+          is_public: is_public,
           in_app: (respond_to?(:in_app?, true) && in_app?)
         ).processed_url
       end
@@ -646,14 +630,12 @@ module Api
                                     context,
                                     host,
                                     protocol,
-                                    target_shard:)
+                                    target_shard: target_shard)
     account = Context.get_account(context) || @domain_root_account
     include_mobile = !(respond_to?(:in_app?, true) && in_app?)
     Html::Content.rewrite_outgoing(
-      html,
-      account,
-      url_helper,
-      include_mobile:,
+      html, account, url_helper,
+      include_mobile: include_mobile,
       rewrite_api_urls: options[:rewrite_api_urls]
     )
   end
@@ -663,7 +645,7 @@ module Api
   # exception: it leaves user-context file links alone
   def process_incoming_html_content(html)
     host, port = [request.host, request.port] if respond_to?(:request)
-    Html::Content.process_incoming(html, host:, port:)
+    Html::Content.process_incoming(html, host: host, port: port)
   end
 
   def value_to_boolean(value)
@@ -691,10 +673,10 @@ module Api
                     (?<minute>[0-5][0-9]):
                     (?<second>60|[0-5][0-9])
                     (?<fraction>\.[0-9]+)?
-                    (?<timezone>Z|[+-](?:2[0-3]|[0-1][0-9]):[0-5][0-9])?$/x
+                    (?<timezone>Z|[+-](?:2[0-3]|[0-1][0-9]):[0-5][0-9])?$/x.freeze
 
   # regex for valid dates
-  DATE_REGEX = %r{^\d{4}[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$}
+  DATE_REGEX = %r{^\d{4}[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$}.freeze
 
   # regex for shard-aware ID
   ID = '(?:\d+~)?\d+'
@@ -746,11 +728,5 @@ module Api
     end
 
     url
-  end
-
-  private
-
-  def infer_writable_from_request_method
-    respond_to?(:request) && %w[PUT POST PATCH DELETE].include?(request&.method)
   end
 end

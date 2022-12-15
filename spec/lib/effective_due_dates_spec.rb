@@ -96,7 +96,7 @@ describe Course do
       before do
         @shard1.activate do
           account = Account.create!
-          course_with_student(account:, active_all: true)
+          course_with_student(account: account, active_all: true)
           assignment_model(course: @course)
         end
       end
@@ -1037,115 +1037,6 @@ describe Course do
           expect(result).to eq expected
         end
 
-        it "deprioritizes due dates from section overrides for nonactive enrollments" do
-          # section
-          section = CourseSection.create!(name: "My Awesome Section", course: @test_course)
-          student_in_section(section, user: @student1)
-          @assignment2.assignment_overrides.create!(
-            due_at: 6.days.from_now(@now),
-            due_at_overridden: true,
-            set: section
-          )
-
-          # group
-          group_with_user(user: @student1, active_all: true)
-          group_override = @assignment2.assignment_overrides.create!(
-            due_at: 3.days.from_now(@now),
-            due_at_overridden: true,
-            set: @group
-          )
-
-          # everyone else
-          @assignment2.due_at = 4.days.from_now(@now)
-          @assignment2.save!
-
-          @test_course.enrollments.find_by(user: @student1, course_section: section).deactivate
-
-          edd = EffectiveDueDates.for_course(@test_course, @assignment2)
-          result = edd.to_hash
-          expected = {
-            @assignment2.id => {
-              @student1.id => {
-                due_at: group_override.due_at,
-                grading_period_id: nil,
-                in_closed_grading_period: false,
-                override_id: group_override.id,
-                override_source: "Group"
-              },
-              @student2.id => {
-                due_at: 4.days.from_now(@now),
-                grading_period_id: nil,
-                in_closed_grading_period: false,
-                override_id: nil,
-                override_source: "Everyone Else"
-              },
-              @student3.id => {
-                due_at: 4.days.from_now(@now),
-                grading_period_id: nil,
-                in_closed_grading_period: false,
-                override_id: nil,
-                override_source: "Everyone Else"
-              }
-            }
-          }
-          expect(result).to eq expected
-        end
-
-        it "does not deprioritize due dates from section overrides for nonactive enrollments when the flag is disabled" do
-          Account.site_admin.disable_feature!(:deprioritize_section_overrides_for_nonactive_enrollments)
-          # section
-          section = CourseSection.create!(name: "My Awesome Section", course: @test_course)
-          student_in_section(section, user: @student1)
-          section_override = @assignment2.assignment_overrides.create!(
-            due_at: 6.days.from_now(@now),
-            due_at_overridden: true,
-            set: section
-          )
-
-          # group
-          group_with_user(user: @student1, active_all: true)
-          @assignment2.assignment_overrides.create!(
-            due_at: 3.days.from_now(@now),
-            due_at_overridden: true,
-            set: @group
-          )
-
-          # everyone else
-          @assignment2.due_at = 4.days.from_now(@now)
-          @assignment2.save!
-
-          @test_course.enrollments.find_by(user: @student1, course_section: section).deactivate
-
-          edd = EffectiveDueDates.for_course(@test_course, @assignment2)
-          result = edd.to_hash
-          expected = {
-            @assignment2.id => {
-              @student1.id => {
-                due_at: section_override.due_at,
-                grading_period_id: nil,
-                in_closed_grading_period: false,
-                override_id: section_override.id,
-                override_source: "CourseSection"
-              },
-              @student2.id => {
-                due_at: 4.days.from_now(@now),
-                grading_period_id: nil,
-                in_closed_grading_period: false,
-                override_id: nil,
-                override_source: "Everyone Else"
-              },
-              @student3.id => {
-                due_at: 4.days.from_now(@now),
-                grading_period_id: nil,
-                in_closed_grading_period: false,
-                override_id: nil,
-                override_source: "Everyone Else"
-              }
-            }
-          }
-          expect(result).to eq expected
-        end
-
         it "treats null due dates as the most permissive due date for a student" do
           # section
           section = CourseSection.create!(name: "My Awesome Section", course: @test_course)
@@ -1386,7 +1277,7 @@ describe Course do
           grading_period = Factories::GradingPeriodHelper.new.create_for_group(
             @gp_group,
             start_date: 20.days.ago(@now),
-            end_date:,
+            end_date: end_date,
             close_date: 10.days.ago(@now)
           )
           override = @assignment2.assignment_overrides.create!(
@@ -1815,7 +1706,7 @@ describe Course do
         expect(@test_course).to receive(:grading_periods?).and_return false
         edd = EffectiveDueDates.for_course(@test_course)
         expect(edd).not_to receive(:to_hash)
-        expect(edd.any_in_closed_grading_period?).to be(false)
+        expect(edd.any_in_closed_grading_period?).to eq(false)
       end
 
       context "with grading periods" do
@@ -1827,7 +1718,7 @@ describe Course do
           override.assignment_override_students.create!(user: @student2)
 
           edd = EffectiveDueDates.for_course(@test_course)
-          expect(edd.any_in_closed_grading_period?).to be(true)
+          expect(edd.any_in_closed_grading_period?).to eq(true)
         end
 
         it "returns false if no student in any assignments has a due date in a closed grading period" do
@@ -1838,7 +1729,7 @@ describe Course do
           override.assignment_override_students.create!(user: @student2)
 
           edd = EffectiveDueDates.for_course(@test_course)
-          expect(edd.any_in_closed_grading_period?).to be(false)
+          expect(edd.any_in_closed_grading_period?).to eq(false)
         end
 
         it "memoizes the result" do
@@ -1892,13 +1783,13 @@ describe Course do
         expect(@test_course).to receive(:grading_periods?).and_return false
         edd = EffectiveDueDates.for_course(@test_course)
         expect(edd).not_to receive(:to_hash)
-        expect(edd.in_closed_grading_period?(@assignment2)).to be(false)
+        expect(edd.in_closed_grading_period?(@assignment2)).to eq(false)
       end
 
       it "returns false if assignment id is nil" do
         edd = EffectiveDueDates.for_course(@test_course, @assignment1)
         expect(edd).not_to receive(:to_hash)
-        expect(edd.in_closed_grading_period?(nil)).to be(false)
+        expect(edd.in_closed_grading_period?(nil)).to eq(false)
       end
 
       context "with grading periods" do
@@ -1913,15 +1804,15 @@ describe Course do
         end
 
         it "returns true if any students in the given assignment have a due date in a closed grading period" do
-          expect(@edd.in_closed_grading_period?(@assignment2)).to be(true)
+          expect(@edd.in_closed_grading_period?(@assignment2)).to eq(true)
         end
 
         it "accepts assignment id as the argument" do
-          expect(@edd.in_closed_grading_period?(@assignment2.id)).to be(true)
+          expect(@edd.in_closed_grading_period?(@assignment2.id)).to eq(true)
         end
 
         it "returns false if no student in the given assignment has a due date in a closed grading period" do
-          expect(@edd.in_closed_grading_period?(@assignment1)).to be(false)
+          expect(@edd.in_closed_grading_period?(@assignment1)).to eq(false)
         end
 
         it "returns true if the specified student has a due date for this assignment" do

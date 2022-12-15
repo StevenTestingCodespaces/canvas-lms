@@ -76,14 +76,14 @@ class AuthenticationProvider::SAML::Federation < AuthenticationProvider::SAML::M
         raise "Problem with validUntil: #{entities.valid_until}"
       end
       raise "Not signed!" unless entities.signed?
-      unless entities.valid_signature?(cert:)
+      unless entities.valid_signature?(cert: cert)
         raise "Invalid signature!"
       end
 
       entities.index_by(&:entity_id)
     end
 
-    def refresh_if_necessary(...)
+    def refresh_if_necessary(*)
       result = super
       # save the new data if there is any
       if Canvas.redis_enabled? && result
@@ -93,3 +93,8 @@ class AuthenticationProvider::SAML::Federation < AuthenticationProvider::SAML::M
     end
   end
 end
+
+# make sure to force these to eager load, otherwise we may try to iterate
+# all federations, but there won't be any
+require_dependency "authentication_provider/saml/in_common"
+require_dependency "authentication_provider/saml/uk_federation"

@@ -22,6 +22,7 @@ import {useScope as useI18nScope} from '@canvas/i18n'
 
 import {DateTime} from '@instructure/ui-i18n'
 import {IconButton} from '@instructure/ui-buttons'
+/* import {DateTimeInput} from '@instructure/ui-forms' */
 import {IconCalendarMonthLine} from '@instructure/ui-icons'
 import {Editable} from '@instructure/ui-editable'
 import {View} from '@instructure/ui-view'

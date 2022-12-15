@@ -44,7 +44,7 @@ class AccessToken < ActiveRecord::Base
 
   before_validation -> { self.developer_key ||= DeveloperKey.default }
 
-  resolves_root_account through: :developer_key
+  resolves_root_account through: ->(instance) { instance.developer_key.root_account_id }
 
   has_a_broadcast_policy
 
@@ -117,10 +117,6 @@ class AccessToken < ActiveRecord::Base
     tokens.reject { |token| token.developer_key&.internal_service }
   end
 
-  def self.site_admin?(token_string)
-    !!authenticate(token_string)&.site_admin?
-  end
-
   def usable?(token_key = :crypted_token)
     return false if expired?
 
@@ -139,12 +135,6 @@ class AccessToken < ActiveRecord::Base
     return true unless developer_key
 
     developer_key.authorized_for_account?(target_account)
-  end
-
-  def site_admin?
-    return false unless global_developer_key_id.present?
-
-    Shard.shard_for(global_developer_key_id).default?
   end
 
   def record_last_used_threshold
@@ -236,7 +226,7 @@ class AccessToken < ActiveRecord::Base
       path = path.gsub(%r{:[^/)]+}, "[^/]+") # handle dynamic segments /courses/:course_id -> /courses/[^/]+
       path = path.gsub(%r{\*[^/)]+}, ".+") # handle glob segments /files/*path -> /files/.+
       path = path.gsub(/\(/, "(?:").gsub(/\)/, "|)") # handle optional segments /files(/[^/]+) -> /files(?:/[^/]+|)
-      path = "#{path}(?:\\.[^/]+|)" # handle format segments /files(.:format) -> /files(?:\.[^/]+|)
+      path = "#{path}(?:\\\.[^/]+|)" # handle format segments /files(.:format) -> /files(?:\.[^/]+|)
       Regexp.new("^#{path}$")
     end
   end

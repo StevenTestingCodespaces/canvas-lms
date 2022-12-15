@@ -29,7 +29,7 @@ describe Quizzes::QuizRegrader::Regrader do
   end
 
   let(:submissions) do
-    1.upto(4).map { |i| double(id: i, completed?: true, latest_submitted_attempt: 1) }
+    1.upto(4).map { |i| double(id: i, completed?: true) }
   end
 
   let(:current_quiz_question_regrades) do
@@ -40,13 +40,13 @@ describe Quizzes::QuizRegrader::Regrader do
     double(quiz_questions: questions,
            id: 1,
            version_number: 1,
-           current_quiz_question_regrades:,
+           current_quiz_question_regrades: current_quiz_question_regrades,
            quiz_submissions: submissions)
   end
 
-  let(:quiz_regrade) { double(id: 1, quiz:) }
+  let(:quiz_regrade) { double(id: 1, quiz: quiz) }
 
-  let(:quiz_regrader) { Quizzes::QuizRegrader::Regrader.new(quiz:) }
+  let(:quiz_regrader) { Quizzes::QuizRegrader::Regrader.new(quiz: quiz) }
 
   before do
     allow(quiz).to receive(:current_regrade).and_return quiz_regrade
@@ -61,7 +61,7 @@ describe Quizzes::QuizRegrader::Regrader do
 
     it "takes an optional submissions argument" do
       submissions = []
-      expect(Quizzes::QuizRegrader::Regrader.new(quiz:, submissions:)
+      expect(Quizzes::QuizRegrader::Regrader.new(quiz: quiz, submissions: submissions)
         .submissions).to eq submissions
     end
   end
@@ -70,7 +70,7 @@ describe Quizzes::QuizRegrader::Regrader do
     it "finds the passed version of the quiz if present" do
       quiz_stub = double
       options = {
-        quiz:,
+        quiz: quiz,
         version_number: 2
       }
 
@@ -85,20 +85,20 @@ describe Quizzes::QuizRegrader::Regrader do
   end
 
   describe "#submissions" do
-    it "skips submissions that are in progress with no prior attempts" do
+    it "skips submissions that are not completed and not untaken" do
       questions << double(id: 5, question_data: { regrade_option: "no_regrade" })
 
-      uncompleted_submission = double(id: 5, completed?: false, latest_submitted_attempt: nil)
+      uncompleted_submission = double(id: 5, completed?: false, untaken?: false)
       submissions << uncompleted_submission
 
       expect(quiz_regrader.submissions.length).to eq 4
       expect(quiz_regrader.submissions.detect { |s| s.id == 5 }).to be_nil
     end
 
-    it "does not skip submissions that are in progress that have prior attempts" do
+    it "skips submissions that are in progress except untaken" do
       questions << double(id: 5, question_data: { regrade_option: "no_regrade" })
 
-      uncompleted_submission = double(id: 5, completed?: false, latest_submitted_attempt: 1)
+      uncompleted_submission = double(id: 5, completed?: false, untaken?: true)
       submissions << uncompleted_submission
 
       expect(quiz_regrader.submissions.length).to eq 5

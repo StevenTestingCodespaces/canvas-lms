@@ -26,16 +26,16 @@ module FileSplitter
   end
 
   # Send it a block, expects @txt to be set in the parser.
-  def each_entry(&)
-    send(format, &)
+  def each_entry(&block)
+    send format, &block
   end
 
-  def each_line(&)
-    @txt.each_line(&)
+  def each_line(&block)
+    @txt.each_line(&block)
   end
 
   # Comma-seperated list, all one list
-  def each_record(&)
-    @txt.split(",").each(&)
+  def each_record(&block)
+    @txt.split(",").each(&block)
   end
 end

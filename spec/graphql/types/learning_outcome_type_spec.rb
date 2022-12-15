@@ -57,7 +57,7 @@ describe Types::LearningOutcomeType do
       raw = outcome_type_raw.resolve("ratings { description points }")
       expect(raw["ratings"].map(&:symbolize_keys)).to eq @outcome.rubric_criterion[:ratings]
 
-      expect(outcome_type.resolve("canEdit")).to be true
+      expect(outcome_type.resolve("canEdit")).to eq true
     end
 
     it "returns outcome without individual ratings and calculation method if FF enabled" do
@@ -77,7 +77,7 @@ describe Types::LearningOutcomeType do
     end
 
     it "returns canEdit false" do
-      expect(outcome_type.resolve("canEdit")).to be false
+      expect(outcome_type.resolve("canEdit")).to eq false
     end
   end
 
@@ -100,18 +100,18 @@ describe Types::LearningOutcomeType do
     end
 
     it "returns false when not assessed" do
-      expect(outcome_type.resolve("assessed")).to be false
+      expect(outcome_type.resolve("assessed")).to eq false
     end
 
     it "returns true when assessed" do
       rubric_assessment_model(rubric: @rubric, user: @student)
-      expect(outcome_type.resolve("assessed")).to be true
+      expect(outcome_type.resolve("assessed")).to eq true
     end
 
     it "returns false when assessment deleted" do
       assessment = rubric_assessment_model(rubric: @rubric, user: @student)
       assessment.learning_outcome_results.destroy_all
-      expect(outcome_type.resolve("assessed")).to be false
+      expect(outcome_type.resolve("assessed")).to eq false
     end
   end
 
@@ -121,13 +121,13 @@ describe Types::LearningOutcomeType do
 
     it "returns false when not imported" do
       expect(outcome_type.resolve("isImported(targetContextType: \"Course\", targetContextId: #{course.id})"))
-        .to be false
+        .to eq false
     end
 
     it "returns true when imported" do
       root_group.add_outcome(@outcome)
       expect(outcome_type.resolve("isImported(targetContextType: \"Course\", targetContextId: #{course.id})"))
-        .to be true
+        .to eq true
     end
   end
 
@@ -167,7 +167,7 @@ describe Types::LearningOutcomeType do
       @alignment1_id = ["D", @alignment1.id].join("_")
       @alignment2_id = ["D", @alignment2.id].join("_")
       @alignment3_id = ["D", @alignment3.id].join("_")
-      @course.account.enable_feature!(:improved_outcomes_management)
+      @course.account.enable_feature!(:outcome_alignment_summary)
     end
 
     context "for users with Admin role" do

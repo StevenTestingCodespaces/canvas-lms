@@ -28,12 +28,12 @@ class ApiRouteSet
   end
   attr_accessor :mapper
 
-  def self.draw(router, prefix = self.prefix, &)
+  def self.draw(router, prefix = self.prefix, &block)
     @@prefixes ||= Set.new
     @@prefixes << prefix
     route_set = new(prefix)
     route_set.mapper = router
-    route_set.instance_eval(&)
+    route_set.instance_eval(&block)
   ensure
     route_set.mapper = nil
   end
@@ -125,8 +125,8 @@ class ApiRouteSet
     # unfortunately, this means that api v1 can't match a sis id that ends with
     # .json -- but see the api docs for info on sending hex-encoded sis ids,
     # which allows any string.
-    ID_REGEX = %r{(?:[^/?.]|\.(?!json(?:\z|[/?])))+}
-    ID_PARAM = /^:(id|\w+_id)$/
+    ID_REGEX = %r{(?:[^/?.]|\.(?!json(?:\z|[/?])))+}.freeze
+    ID_PARAM = /^:(id|\w+_id)$/.freeze
 
     def self.prefix
       "/api/v1"

@@ -21,7 +21,7 @@
 module Quizzes::QuizQuestion::AnswerParsers
   class MultipleDropdowns < AnswerParser
     def parse(question)
-      variables = ActiveSupport::HashWithIndifferentAccess.new
+      variables = HashWithIndifferentAccess.new
 
       @answers.map_with_group! do |answer_group, answer|
         fields = Quizzes::QuizQuestion::RawFields.new(answer)

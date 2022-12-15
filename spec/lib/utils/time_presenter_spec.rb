@@ -32,6 +32,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 
 require_relative "../../spec_helper"
+require_dependency "utils/time_presenter"
 
 module Utils
   describe TimePresenter do
@@ -74,7 +75,7 @@ module Utils
 
       it "returns nil for nil" do
         presenter = TimePresenter.new(nil)
-        expect(presenter.as_string).to be_nil
+        expect(presenter.as_string).to be(nil)
       end
 
       it "can accept a zone override" do

@@ -6,9 +6,8 @@
   </div>
   <div class="form-column-right">
     <div class="border border-trbl border-round">
-
       {{!-- Submission type accepted --}}
-      <select id="assignment_submission_type" name="submission_type" style="margin-left: 0;"
+      <select id="assignment_submission_type" name="submission_type"
         aria-controls="assignment_online_submission_types,assignment_external_tool_settings,assignment_group_selector,assignment_peer_reviews_fields"
         {{disabledIfIncludes frozenAttributes "submission_types"}}>
         {{#if defaultToolName}}
@@ -44,7 +43,7 @@
       <div id="assignment_online_submission_types" aria-enabled="{{isOnlineSubmission}}"
         style="{{hiddenUnless isOnlineSubmission}}">
 
-        <div class="subtitle" style="margin-left: 0;">
+        <div class="subtitle">
           <strong>
             {{#t 'online_entry_options'}}Online Entry Options{{/t}}
           </strong>
@@ -239,12 +238,12 @@
 
       {{!-- External tool submissions --}}
       <div id="assignment_external_tool_settings" style="{{hiddenUnless isNonPlacementExternalTool}}">
-        <div class="subtitle" style="margin-left: 0px;">
+        <div class="subtitle">
           <strong>
             {{#t 'external_tool_options'}}External Tool Options{{/t}}
           </strong>
         </div>
-        <div class="pad-box-mini" style="padding: 10px 0 0">
+        <div class="pad-box-mini">
           <div class="ic-Form-control">
             <label class="ic-Label" for="assignment_external_tool_tag_attributes_url">
               {{#t}}Enter or find an External Tool URL{{/t}}
@@ -254,10 +253,6 @@
                    name="external_tool_tag_attributes[custom_params]"
                    type="hidden"
                    value="{{externalToolCustomParamsStringified}}" />
-            <input id="assignment_external_tool_tag_attributes_line_item"
-                   name="external_tool_tag_attributes[line_item]"
-                   type="hidden"
-                   value="{{externalToolLineItemStringified}}" />
             <input id="assignment_external_tool_tag_attributes_iframe_width"
                    name="external_tool_tag_attributes[link_settings][selection_width]"
                    type="hidden"
@@ -326,7 +321,6 @@
         </label>
       </div>
       {{/unless}}
-
     </div>
   </div>
 </fieldset>

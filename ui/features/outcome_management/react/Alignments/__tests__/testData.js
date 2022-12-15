@@ -26,9 +26,6 @@ export const alignments = [
     moduleUrl: '/courses/1/modules/1',
     moduleWorkflowState: 'unpublished',
     assignmentContentType: 'assignment',
-    assignmentWorkflowState: 'published',
-    quizItems: null,
-    alignmentsCount: 1,
   },
   {
     _id: '2',
@@ -39,9 +36,6 @@ export const alignments = [
     moduleUrl: null,
     moduleWorkflowState: null,
     assignmentContentType: null,
-    assignmentWorkflowState: null,
-    quizItems: null,
-    alignmentsCount: 1,
   },
   {
     _id: '3',
@@ -52,9 +46,6 @@ export const alignments = [
     moduleUrl: '/courses/1/modules/1',
     moduleWorkflowState: 'unpublished',
     assignmentContentType: 'quiz',
-    assignmentWorkflowState: 'published',
-    quizItems: null,
-    alignmentsCount: 1,
   },
   {
     _id: '4',
@@ -65,22 +56,6 @@ export const alignments = [
     moduleUrl: '/courses/1/modules/2',
     moduleWorkflowState: 'active',
     assignmentContentType: 'discussion',
-    assignmentWorkflowState: 'published',
-    quizItems: null,
-    alignmentsCount: 1,
-  },
-  {
-    _id: '5',
-    contentType: 'Assignment',
-    title: 'New Quiz Assignment 1',
-    url: '/courses/1/assignments/5',
-    moduleTitle: 'Module 2',
-    moduleUrl: '/courses/1/modules/2',
-    moduleWorkflowState: 'active',
-    assignmentContentType: 'new_quiz',
-    assignmentWorkflowState: 'published',
-    quizItems: [],
-    alignmentsCount: 1,
   },
 ]
 

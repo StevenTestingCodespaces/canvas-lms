@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import sanitizeUrl from '@canvas/util/sanitizeUrl'
+import sanitizeUrl from 'sanitize-url'
 
 const Helper = {}
 

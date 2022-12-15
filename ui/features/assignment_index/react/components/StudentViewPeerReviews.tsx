@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -18,8 +17,6 @@
  */
 
 import React from 'react'
-import {IconArrowNestLine, IconPeerReviewLine, IconPeerGradedLine} from '@instructure/ui-icons'
-import {View} from '@instructure/ui-view'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import {Assignment, AssessmentRequest} from '../../../../api.d'
 
@@ -32,7 +29,7 @@ type StudentPeerUrlQueryParams = {
 
 type AssignmentPeerReview = Pick<
   Assignment,
-  'id' | 'course_id' | 'anonymous_peer_reviews' | 'assessment_requests' | 'name'
+  'id' | 'course_id' | 'anonymous_peer_reviews' | 'assessment_requests'
 >
 
 export type StudentViewPeerReviewsProps = {
@@ -62,15 +59,11 @@ export const StudentViewPeerReviews = ({assignment}: StudentViewPeerReviewsProps
 
 const PeerReview = ({assessment, assignment, index}: PeerReviewProps) => {
   const title = I18n.t(`Required Peer Review %{index}`, {index: index + 1})
-  const {name: assignmentName} = assignment
-  const screenreaderLabel = I18n.t('%{title} for %{assignmentName}', {title, assignmentName})
   const revieweeUsername = !assessment.available
     ? I18n.t('Not Available')
     : assignment?.anonymous_peer_reviews
     ? I18n.t('Anonymous Student')
     : assessment.user_name
-
-  const {workflow_state} = assessment
 
   const studentPeerReviewUrl = () => {
     const {anonymous_peer_reviews, course_id, id} = assignment
@@ -86,29 +79,38 @@ const PeerReview = ({assessment, assignment, index}: PeerReviewProps) => {
     <li className="context_module_item student-view cannot-duplicate indent_1">
       <div className="ig-row">
         <div className="ig-row__layout">
-          <span
-            className="type_icon display_icons"
-            title={title}
-            role="none"
-            style={{fontSize: '1.125rem'}}
+          <a
+            aria-label={title}
+            tabIndex={-1}
+            style={{
+              position: 'absolute',
+              left: '-10000px',
+              top: 'auto',
+              width: '1px',
+              height: '1px',
+              overflow: 'hidden',
+            }}
+            href={studentPeerReviewUrl()}
           >
-            <View as="span" margin="0 0 0 medium">
-              <IconArrowNestLine />
-            </View>
-            <View as="span" margin="0 0 0 small">
-              {workflow_state === 'completed' ? <IconPeerGradedLine /> : <IconPeerReviewLine />}
-            </View>
+            {title}
+          </a>
+          <span className="type_icon display_icons" title={title} role="none">
+            <span className="screenreader-only">{title}</span>
+            <span>
+              <i className="icon-forward" style={{color: 'inherit'}} />
+              &nbsp;
+              <i className="icon-peer-review" style={{color: 'inherit'}} />
+            </span>
           </span>
           <div className="ig-info">
             <div className="module-item-title">
               <span className="item_name">
-                <a
-                  aria-label={screenreaderLabel}
-                  className="ig-title title item_link"
-                  href={studentPeerReviewUrl()}
-                >
+                <a title={title} className="ig-title title item_link" href={studentPeerReviewUrl()}>
                   {title}
                 </a>
+                <span title={title} className="title locked_title">
+                  {title}
+                </span>
               </span>
             </div>
 

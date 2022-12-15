@@ -19,6 +19,7 @@
 const path = require('path')
 
 exports.canvasDir = path.resolve(__dirname, '..')
+exports.buildDir = path.resolve(__dirname, '../public/dist')
 exports.canvasComponents = [
   'announcements',
   'enrollments',

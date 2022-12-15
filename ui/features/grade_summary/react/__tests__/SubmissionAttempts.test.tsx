@@ -26,30 +26,17 @@ describe('SubmissionAttempts', () => {
         {
           id: '1',
           comment: 'this is a comment',
+          created_at: Date(),
+          edited_at: Date(),
+          updated_at: Date(),
           is_read: false,
-          author_name: 'user 123',
-          display_updated_at: 'Saturday December 1st',
-          attachments: [],
-          media_object: {
-            id: 'm-someid',
-            media_sources: [
-              {
-                height: '1080',
-                width: '1920',
-                url: 'https://www.youtube.com/watch?v=123',
-                content_type: 'video/mp4',
-              },
-            ],
-            media_tracks: [
-              {
-                id: '1',
-                content: 'English',
-                kind: 'subtitles',
-                locale: 'en',
-              },
-            ],
-            title: 'test',
+          author: {
+            display_name: 'user 123',
+            avatar_image_url: '',
+            html_url: '',
+            id: '123',
           },
+          display_updated_at: 'Saturday December 1st',
         },
       ],
       3: [
@@ -57,43 +44,31 @@ describe('SubmissionAttempts', () => {
           id: '5',
           comment: 'this is comment 3',
           is_read: false,
-          author_name: 'user 123',
+          created_at: Date(),
+          edited_at: Date(),
+          updated_at: Date(),
+          author: {
+            display_name: 'user 123',
+            avatar_image_url: '',
+            html_url: '',
+            id: '123',
+          },
           display_updated_at: 'Friday December 2nd',
-          attachments: [],
         },
         {
           id: '6',
           comment: 'this is comment 5',
           is_read: false,
-          author_name: 'user 222',
-          display_updated_at: 'Thursday December 11th',
-          attachments: [
-            {
-              id: '10',
-              mime_class: 'pdf',
-              display_name: 'test.pdf',
-            },
-          ],
-          media_object: {
-            id: 'm-someid',
-            media_sources: [
-              {
-                height: '1080',
-                width: '1920',
-                url: 'https://www.youtube.com/watch?v=123',
-                content_type: 'video/mp4',
-              },
-            ],
-            media_tracks: [
-              {
-                id: '1',
-                content: 'English',
-                kind: 'subtitles',
-                locale: 'en',
-              },
-            ],
-            title: 'test',
+          created_at: Date(),
+          edited_at: Date(),
+          updated_at: Date(),
+          author: {
+            display_name: 'user 222',
+            avatar_image_url: '',
+            html_url: '',
+            id: '222',
           },
+          display_updated_at: 'Thursday December 11th',
         },
       ],
       2: [
@@ -101,9 +76,16 @@ describe('SubmissionAttempts', () => {
           id: '2',
           comment: 'this is a comment 2',
           is_read: false,
-          author_name: 'user 333',
+          created_at: Date(),
+          edited_at: Date(),
+          updated_at: Date(),
+          author: {
+            display_name: 'user 333',
+            avatar_image_url: '',
+            html_url: '',
+            id: '333',
+          },
           display_updated_at: 'Saturday December 1st',
-          attachments: [],
         },
       ],
     },
@@ -119,15 +101,5 @@ describe('SubmissionAttempts', () => {
     expect(queryAllByTestId('submission-comment')).toHaveLength(4)
     expect(queryAllByTestId('submission-comment-unread')).toHaveLength(4)
     expect(queryAllByTestId('submission-comment-unread')).toHaveLength(4)
-    const submissionCommentAuthors = queryAllByTestId('submission-comment-author')
-    expect(submissionCommentAuthors).toHaveLength(4)
-    expect(submissionCommentAuthors[0]).toHaveTextContent('- user 123')
-    expect(submissionCommentAuthors[1]).toHaveTextContent('- user 222')
-    expect(submissionCommentAuthors[2]).toHaveTextContent('- user 333')
-    const attachmentSection = queryAllByTestId('attachment-10')
-    expect(attachmentSection).toHaveLength(1)
-    expect(attachmentSection[0]).toHaveTextContent('test.pdf')
-    const mediaObjectSection = queryAllByTestId('submission-comment-media')
-    expect(mediaObjectSection).toHaveLength(2)
   })
 })

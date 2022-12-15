@@ -24,7 +24,7 @@ import {
   transformApiToInternalItem,
   observedUserId,
   observedUserContextCodes,
-  buildURL,
+  buildURL
 } from '../utilities/apiUtils'
 import {alert} from '../utilities/alertUtils'
 import formatMessage from '../format-message'
@@ -57,7 +57,7 @@ export const {
   gotWayPastItemDate,
   gotWayFutureItemDate,
   gotCourseList,
-  clearLoading,
+  clearLoading
 } = createActions(
   'START_LOADING_ITEMS',
   'CONTINUE_LOADING_INITIAL_ITEMS',
@@ -118,18 +118,13 @@ export function getFirstNewActivityDate(fromMoment) {
     fromMoment = fromMoment.clone().subtract(6, 'months')
     const observed_user_id = observedUserId(getState())
     const context_codes = observedUserContextCodes(getState())
-    let include
-    if (observed_user_id && !getState().singleCourse) {
-      include = ['account_calendars']
-    }
 
     const url = buildURL('/api/v1/planner/items', {
       start_date: fromMoment.toISOString(),
-      include,
       filter: 'new_activity',
       order: 'asc',
       observed_user_id,
-      context_codes,
+      context_codes
     })
 
     const request = asAxios(getPrefetchedXHR(url)) || axios.get(url)
@@ -200,7 +195,7 @@ function loadPastItems(byScrolling) {
     if (byScrolling) dispatch(scrollIntoPastAction())
     dispatch(
       gettingPastItems({
-        seekingNewActivity: false,
+        seekingNewActivity: false
       })
     )
     dispatch(startLoadingPastSaga())
@@ -218,7 +213,7 @@ export function loadPastButtonClicked() {
 export const loadPastUntilNewActivity = () => dispatch => {
   dispatch(
     gettingPastItems({
-      seekingNewActivity: true,
+      seekingNewActivity: true
     })
   )
   dispatch(startLoadingPastUntilNewActivitySaga())
@@ -228,7 +223,7 @@ export const loadPastUntilNewActivity = () => dispatch => {
 export const loadPastUntilToday = () => dispatch => {
   dispatch(
     gettingPastItems({
-      seekingNewActivity: false,
+      seekingNewActivity: false
     })
   )
   dispatch(startLoadingPastUntilTodaySaga())
@@ -336,12 +331,8 @@ function getWayFutureItem(fromMoment) {
     const state = getState()
     const observed_user_id = observedUserId(state)
     let context_codes
-    let include
     if (observed_user_id) {
       context_codes = getContextCodesFromState(state)
-      if (!state.singleCourse) {
-        include = ['account_calendars']
-      }
     } else {
       context_codes = state.singleCourse ? getContextCodesFromState(state) : undefined
     }
@@ -350,9 +341,8 @@ function getWayFutureItem(fromMoment) {
       observed_user_id,
       context_codes,
       end_date: futureMoment.toISOString(),
-      include,
       order: 'desc',
-      per_page: 1,
+      per_page: 1
     })
     const request = asAxios(getPrefetchedXHR(url)) || axios.get(url)
 
@@ -372,12 +362,8 @@ function getWayPastItem(fromMoment) {
     const state = getState()
     const observed_user_id = observedUserId(state)
     let context_codes
-    let include
     if (observed_user_id) {
       context_codes = getContextCodesFromState(state)
-      if (!getState().singleCourse) {
-        include = ['account_calendars']
-      }
     } else {
       context_codes = state.singleCourse ? getContextCodesFromState(state) : undefined
     }
@@ -386,9 +372,8 @@ function getWayPastItem(fromMoment) {
       observed_user_id,
       context_codes,
       start_date: pastMoment.toISOString(),
-      include,
       order: 'asc',
-      per_page: 1,
+      per_page: 1
     })
     const request = asAxios(getPrefetchedXHR(url)) || axios.get(url)
 
@@ -433,7 +418,7 @@ function fetchParams(loadingOptions) {
     return [nextPageUrl, {}]
   } else {
     const params = {
-      [timeParam]: loadingOptions.fromMoment.toISOString(),
+      [timeParam]: loadingOptions.fromMoment.toISOString()
     }
     if (loadingOptions.mode === 'past') {
       params.order = 'desc'
@@ -446,9 +431,6 @@ function fetchParams(loadingOptions) {
     }
     const observeeId = observedUserId(loadingOptions.getState())
     if (observeeId) {
-      if (!loadingOptions.getState().singleCourse) {
-        params.include = ['account_calendars']
-      }
       params.observed_user_id = observeeId
       params.context_codes = observedUserContextCodes(loadingOptions.getState())
     }

@@ -128,11 +128,11 @@ class GradeSummaryPresenter
   end
 
   def student_name
-    student&.name
+    student ? student.name : nil
   end
 
   def student_id
-    student&.id
+    student ? student.id : nil
   end
 
   def groups
@@ -159,15 +159,11 @@ class GradeSummaryPresenter
     # for deactivated students (who themselves can not view those assignments).
     assignments = if user_has_elevated_permissions?
                     AssignmentGroup
-                      .visible_assignments(nil, @context, all_groups, includes:)
+                      .visible_assignments(nil, @context, all_groups, includes: includes)
                       .assigned_to_student(student.id)
                   else
-                    AssignmentGroup.visible_assignments(student, @context, all_groups, includes:)
+                    AssignmentGroup.visible_assignments(student, @context, all_groups, includes: includes)
                   end
-
-    if Account.site_admin.feature_enabled?(:hide_zero_point_quizzes_option)
-      assignments = assignments.not_hidden_in_gradebook
-    end
 
     assignments.where.not(submission_types: %w[not_graded wiki_page]).except(:order)
   end
@@ -283,7 +279,7 @@ class GradeSummaryPresenter
     @courses_with_grades ||= student.shard.activate do
       course_list = if student_is_user?
                       Course.preload(:enrollment_term, :grading_period_groups)
-                            .where(id: student.participating_student_current_and_unrestricted_concluded_course_ids).to_a
+                            .where(id: student.participating_student_current_and_concluded_course_ids).to_a
                     elsif user_an_observer_of_student?
                       observed_courses = []
                       Shard.partition_by_shard(student.participating_student_current_and_concluded_course_ids) do |course_ids|

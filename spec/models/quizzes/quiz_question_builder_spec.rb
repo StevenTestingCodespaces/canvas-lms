@@ -56,7 +56,7 @@ describe Quizzes::QuizQuestionBuilder do
                                                                      {
                                                                        id: 1,
                                                                        name: "some question",
-                                                                       question_type: Quizzes::QuizQuestion::Q_MULTIPLE_DROPDOWNS,
+                                                                       question_type: ::Quizzes::QuizQuestion::Q_MULTIPLE_DROPDOWNS,
                                                                        question_text: "Hello in Chinese is [blank]",
                                                                        answers: [{
                                                                          id: rand(1..999),
@@ -278,7 +278,7 @@ describe Quizzes::QuizQuestionBuilder do
   end
 
   describe "#shuffle_answers" do
-    let(:question) { { answers: } }
+    let(:question) { { answers: answers } }
     let(:answers) { %w[a b c] }
 
     context "on a shuffle answers question" do
@@ -314,7 +314,7 @@ describe Quizzes::QuizQuestionBuilder do
   end
 
   describe "#shuffle_matches" do
-    let(:question) { { matches: } }
+    let(:question) { { matches: matches } }
     let(:matches) { %w[a b c] }
 
     it "shuffles matches for a matching question" do

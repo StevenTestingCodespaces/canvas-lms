@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "csv"
+
 class Quizzes::QuizStatistics::ItemAnalysis < Quizzes::QuizStatistics::Report
   def generatable?
     !quiz.survey?
@@ -58,7 +60,7 @@ class Quizzes::QuizStatistics::ItemAnalysis < Quizzes::QuizStatistics::Report
       item.point_biserials.each_with_index do |point_biserial, i|
         question_item_analysis[:point_biserials] << {
           answer_id: sorted_answers[i],
-          point_biserial:,
+          point_biserial: point_biserial,
           correct: i == 0,
           distractor: i != 0
         }

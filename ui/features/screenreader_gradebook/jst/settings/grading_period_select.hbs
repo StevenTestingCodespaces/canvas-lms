@@ -6,18 +6,16 @@
       </label>
     </div>
     <div class="span8">
-      {{#if selectedGradingPeriod.id}}
-        {{
-          fast-select
-          id="grading_period_select"
-          class="grading_period_select"
-          items=gradingPeriods
-          selected=selectedGradingPeriod
-          valueDefault=selectedGradingPeriod.id
-          valuePath="id"
-          labelPath="title"
-      }}
-     {{/if}}
+      {{
+        fast-select
+        id="grading_period_select"
+        class="grading_period_select"
+        items=gradingPeriods
+        selected=selectedGradingPeriod
+        value=selectedGradingPeriod.id
+        valuePath="id"
+        labelPath="title"
+     }}
     </div>
   </div>
 {{/if}}

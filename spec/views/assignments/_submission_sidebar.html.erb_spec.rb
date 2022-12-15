@@ -36,18 +36,10 @@ describe "assignments/_submission_sidebar" do
     assign(:assignment, assignment)
   end
 
-  context "when submission was proxy" do
-    it "renders the proxy submitter's name" do
-      submission.update!(proxy_submitter: teacher)
-      assign(:current_user_submission, submission)
-      render
-      html = Nokogiri::HTML5.fragment(response.body)
-      expect(html.css("div.content").text).to include teacher.short_name
-    end
-  end
-
   context "when assignment posts manually" do
-    before { assignment.ensure_post_policy(post_manually: true) }
+    before do
+      assignment.ensure_post_policy(post_manually: true)
+    end
 
     it "renders a grade when a grade exists and the submission is posted" do
       assignment.grade_student(student, grader: teacher, score: 23)
@@ -92,7 +84,9 @@ describe "assignments/_submission_sidebar" do
   end
 
   context "when assignment posts automatically" do
-    before { assignment.ensure_post_policy(post_manually: false) }
+    before do
+      assignment.ensure_post_policy(post_manually: false)
+    end
 
     it "renders a grade" do
       assignment.grade_student(student, grader: teacher, score: 23)

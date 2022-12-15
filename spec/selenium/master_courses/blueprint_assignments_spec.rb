@@ -74,7 +74,7 @@ describe "blueprint courses assignments" do
 
   context "in the associated course" do
     before :once do
-      due_date = format_date_for_view(1.month.ago)
+      due_date = format_date_for_view(Time.zone.now - 1.month)
       @copy_from = course_factory(active_all: true)
       @template = MasterCourses::MasterTemplate.set_as_master_course(@copy_from)
       @original_assmt = @copy_from.assignments.create!(
@@ -132,7 +132,8 @@ describe "blueprint courses assignments" do
 
       get "/courses/#{@copy_to.id}/assignments/#{@assmt_copy.id}/edit"
 
-      expect(assignment_header).not_to contain_css(".assignment-delete-container")
+      # when locked, the whole menu is removed
+      expect(assignment_header).not_to contain_css(".al-trigger")
     end
 
     it "shows the delete cog-menu options on the edit when not locked" do

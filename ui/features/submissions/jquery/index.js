@@ -18,7 +18,7 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom'
-import round from '@canvas/round'
+import round from 'round'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import $ from 'jquery'
 import isNumber from 'lodash/isNumber'
@@ -211,11 +211,11 @@ function hasPoints(key, data) {
 }
 function windowResize() {
   const $frame = $('#preview_frame')
-  const margin_top = 20
-  const height = window.screen.height - margin_top
+  const top = $frame.offset().top
+  const height = $(window).height() - top
   $frame.height(height)
   $('#rubric_holder').css({maxHeight: height - 50, overflow: 'auto', zIndex: 5})
-  $('.comments').css({maxHeight: height})
+  $('.comments').height(height)
 }
 
 function insertEmoji(emoji) {
@@ -225,7 +225,7 @@ function insertEmoji(emoji) {
 }
 
 // This `setup` function allows us to control when the setup is triggered.
-// submissions.js requires this file and then immediately triggers it,
+// submissions.coffee requires this file and then immediately triggers it,
 // while submissionsSpec.jsx triggers it after setup is complete.
 export function setup() {
   $(document).ready(function () {
@@ -279,7 +279,7 @@ export function setup() {
           !formData['submission[comment]'] &&
           $("#add_comment_form input[type='file']").length > 0
         ) {
-          formData['submission[comment]'] = I18n.t('see_attached_files', 'Please see attached files')
+          formData['submission[comment]'] = I18n.t('see_attached_files', 'See attached files')
         }
       }
       if (!formData['submission[comment]'] && !formData['submission[media_comment_id]']) {
@@ -469,7 +469,7 @@ export function setup() {
         }
       )
     })
-    $(document).on('click', '#media_recorder_container a', _event => {
+    $('#media_recorder_container a').live('click', _event => {
       $('#add_comment_form').show()
       $('#media_media_recording').hide()
     })

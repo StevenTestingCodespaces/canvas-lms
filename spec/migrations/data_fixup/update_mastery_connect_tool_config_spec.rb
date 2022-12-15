@@ -45,7 +45,7 @@ describe DataFixup::UpdateMasteryConnectToolConfig do
           foo: "bar"
         }
       }.with_indifferent_access
-      tool = external_tool_model(context: @course, opts: { domain: "app.masteryconnect.com", settings: })
+      tool = external_tool_model(context: @course, opts: { domain: "app.masteryconnect.com", settings: settings })
       DataFixup::UpdateMasteryConnectToolConfig.run
       tool.reload
       expect(tool.settings).to eq(settings)

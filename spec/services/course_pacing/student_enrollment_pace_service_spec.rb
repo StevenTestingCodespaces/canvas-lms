@@ -22,8 +22,8 @@ describe CoursePacing::StudentEnrollmentPaceService do
   let(:student) { user_model }
   let(:student_enrollment) { course.enroll_student(student, enrollment_state: "active") }
   let(:extra_enrollment) { course.enroll_student(user_model, enrollment_state: "active") }
-  let!(:pace) { student_enrollment_pace_model(student_enrollment:) }
-  let!(:course_pace) { course_pace_model(course:) }
+  let!(:pace) { student_enrollment_pace_model(student_enrollment: student_enrollment) }
+  let!(:course_pace) { course_pace_model(course: course) }
 
   describe ".paces_in_course" do
     it "returns the paces for the provided course" do
@@ -36,7 +36,7 @@ describe CoursePacing::StudentEnrollmentPaceService do
       pace.destroy!
       expect(
         CoursePacing::StudentEnrollmentPaceService.paces_in_course(course)
-      ).to be_empty
+      ).to match_array []
     end
   end
 
@@ -56,11 +56,11 @@ describe CoursePacing::StudentEnrollmentPaceService do
 
   describe ".template_pace_for" do
     context "the enrollment is within a section" do
-      let(:section) { add_section("Section One", course:) }
-      let(:student_enrollment) { multiple_student_enrollment(student, section, course:) }
+      let(:section) { add_section("Section One", course: course) }
+      let(:student_enrollment) { multiple_student_enrollment(student, section, course: course) }
 
       context "when the section has a pace" do
-        let!(:section_pace) { section_pace_model(section:) }
+        let!(:section_pace) { section_pace_model(section: section) }
 
         it "returns the section pace" do
           expect(CoursePacing::StudentEnrollmentPaceService.template_pace_for(student_enrollment)).to eq section_pace
@@ -78,7 +78,7 @@ describe CoursePacing::StudentEnrollmentPaceService do
           before { course_pace.destroy! }
 
           it "returns nil" do
-            expect(CoursePacing::StudentEnrollmentPaceService.template_pace_for(student_enrollment)).to be_nil
+            expect(CoursePacing::StudentEnrollmentPaceService.template_pace_for(student_enrollment)).to eq nil
           end
         end
       end
@@ -95,7 +95,7 @@ describe CoursePacing::StudentEnrollmentPaceService do
         before { course_pace.destroy! }
 
         it "returns nil" do
-          expect(CoursePacing::StudentEnrollmentPaceService.template_pace_for(student_enrollment)).to be_nil
+          expect(CoursePacing::StudentEnrollmentPaceService.template_pace_for(student_enrollment)).to eq nil
         end
       end
     end
@@ -139,7 +139,7 @@ describe CoursePacing::StudentEnrollmentPaceService do
         allow(pace).to receive(:update).and_return false
         expect(
           CoursePacing::StudentEnrollmentPaceService.update_pace(pace, update_params)
-        ).to be false
+        ).to eq false
       end
     end
   end
@@ -157,26 +157,6 @@ describe CoursePacing::StudentEnrollmentPaceService do
       expect do
         CoursePacing::StudentEnrollmentPaceService.delete_in_context(extra_enrollment)
       end.to raise_error ActiveRecord::RecordNotFound
-    end
-  end
-
-  describe ".valid_context?" do
-    before :once do
-      section_one = add_section("Section One", course:)
-      @first_student_enrollment = course.enroll_student(student, enrollment_state: "active", allow_multiple_enrollments: true)
-      @last_student_enrollment = course.enroll_student(student, enrollment_state: "active", section: section_one, allow_multiple_enrollments: true)
-    end
-
-    it "returns false for enrollments other than the student's most recent" do
-      expect(
-        CoursePacing::StudentEnrollmentPaceService.valid_context?(@first_student_enrollment)
-      ).to be false
-    end
-
-    it "returns true for the most recent student enrollment" do
-      expect(
-        CoursePacing::StudentEnrollmentPaceService.valid_context?(@last_student_enrollment)
-      ).to be true
     end
   end
 end

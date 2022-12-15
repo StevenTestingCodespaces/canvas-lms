@@ -1,7 +1,5 @@
 # Using Docker for Canvas Development
 
-_*This document and its associated scripts are deprecated in favor of the `inst` CLI. Go [here](./../../inst-cli/doc/docker/developing_with_docker.md) for more info.*_
-
 You can use Docker in your development environment for a more seamless
 way to get started developing Canvas.
 
@@ -207,15 +205,16 @@ First add `docker-compose/js-tests.override.yml` to your `COMPOSE_FILE` var in
 `.env`. Then prepare that container with:
 
 ```
-docker-compose run --rm js-tests yarn install
+docker-compose up -d js-tests
+docker-compose exec js-tests yarn install
 ```
 
-If you run into issues with `yarn install`, either during initial setup or after
+If you run into issues with that command, either during initial setup or after
 updating master, try to fix it with a `nuke_node`:
 
 ```
-docker-compose run --rm js-tests ./script/nuke_node.sh
-docker-compose run --rm js-tests yarn install
+docker-compose exec js-tests ./script/nuke_node.sh
+docker-compose exec js-tests yarn install
 ```
 
 ### QUnit Karma Tests in Headless Chrome
@@ -223,21 +222,14 @@ docker-compose run --rm js-tests yarn install
 Run all QUnit tests in watch mode with:
 
 ```
-docker-compose up js-tests
+docker-compose exec js-tests
 ```
 
 Or, if you're iterating on something and want to just run a targeted test file
 in watch mode, set the `JSPEC_PATH` env var, e.g.:
 
 ```
-export JSPEC_PATH=spec/coffeescripts/util/deparamSpec.js
-docker-compose up js-tests
-```
-
-To run a targeted test without watch mode:
-
-```
-docker-compose run --rm -e JSPEC_PATH=spec/coffeescripts/util/deparamSpec.js js-tests yarn test:karma:headless
+docker-compose exex -e JSPEC_PATH=spec/coffeescripts/util/deparamSpec.js js-tests
 ```
 
 ### Jest Tests
@@ -245,20 +237,14 @@ docker-compose run --rm -e JSPEC_PATH=spec/coffeescripts/util/deparamSpec.js js-
 Run all Jest tests with:
 
 ```
-docker-compose run --rm js-tests yarn test:jest
+docker-compose exec js-tests yarn test:jest
 ```
 
-Or run a targeted subset of tests:
-
-```
-docker-compose run --rm js-tests yarn test:jest ui/features/speed_grader/react/__tests__/CommentArea.test.js
-```
-
-To run a targeted subset of tests in watch mode, use `test:jest:watch` and
+Or to run a targeted subset of tests in watch mode, use `test:jest:watch` and
 specify the paths to the test files as one or more arguments, e.g.:
 
 ```
-docker-compose run --rm js-tests yarn test:jest:watch ui/features/speed_grader/react/__tests__/CommentArea.test.js
+docker-compose exec js-tests yarn test:jest:watch app/jsx/actAs/__tests__/ActAsModal.test.js
 ```
 
 ## Selenium

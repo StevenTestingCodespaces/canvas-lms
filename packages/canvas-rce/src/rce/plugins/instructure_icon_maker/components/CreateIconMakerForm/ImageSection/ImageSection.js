@@ -32,10 +32,10 @@ import {Text} from '@instructure/ui-text'
 import Course from './Course'
 import {ImageOptions} from './ImageOptions'
 import {ColorInput} from '../../../../shared/ColorInput'
-import {convertFileToBase64} from '../../../../shared/fileUtils'
+import {convertFileToBase64} from '../../../svg/utils'
 import {transformForShape} from '../../../svg/image'
 import SingleColorSVG from './SingleColor/svg'
-import {createCroppedImageSvg} from '../../../../shared/ImageCropper/imageCropUtils'
+import {createCroppedImageSvg} from '../ImageCropper/imageCropUtils'
 
 const IMAGE_SECTION_ID = 'icon-maker-tray-image-section'
 const getImageSection = () => document.querySelector(`#${IMAGE_SECTION_ID}`)
@@ -52,7 +52,7 @@ const filterSectionStateMetadata = state => {
   return {mode, image, imageName, icon, iconFillColor, cropperSettings}
 }
 
-export const ImageSection = ({settings, onChange, editor, canvasOrigin}) => {
+export const ImageSection = ({settings, onChange, editor, rcsConfig, canvasOrigin}) => {
   const [state, dispatch] = useReducer(reducer, initialState)
   const Upload = React.lazy(() => import('./Upload'))
   const SingleColor = React.lazy(() => import('./SingleColor'))
@@ -192,6 +192,7 @@ export const ImageSection = ({settings, onChange, editor, canvasOrigin}) => {
                 settings={settings}
                 dispatch={dispatch}
                 mountNode={getImageSection}
+                rcsConfig={rcsConfig}
                 trayDispatch={onChange}
               />
             </Flex.Item>
@@ -240,6 +241,7 @@ export const ImageSection = ({settings, onChange, editor, canvasOrigin}) => {
 ImageSection.propTypes = {
   settings: PropTypes.object.isRequired,
   editor: PropTypes.object.isRequired,
+  rcsConfig: PropTypes.object.isRequired,
   onChange: PropTypes.func,
   canvasOrigin: PropTypes.string,
 }

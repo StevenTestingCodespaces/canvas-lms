@@ -16,7 +16,7 @@
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import $ from 'jquery'
-import preventDefault from '@canvas/util/preventDefault'
+import preventDefault from 'prevent-default'
 import 'jqueryui/dialog'
 
 $.fn.openAsDialog = function (options) {

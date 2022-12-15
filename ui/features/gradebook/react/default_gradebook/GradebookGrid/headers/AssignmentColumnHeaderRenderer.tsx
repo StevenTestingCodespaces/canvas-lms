@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -77,10 +76,10 @@ function getProps(column: Column, gradebook: Gradebook, options): AssignmentColu
 
   const processStudent = (student: Student): PartialStudent => ({
     id: student.id,
-    isInactive: Boolean(student.isInactive),
+    isInactive: student.isInactive,
     isTestStudent: student.enrollments[0].type === 'StudentViewEnrollment',
     name: student.name,
-    sortableName: student.sortable_name || '',
+    sortableName: student.sortable_name,
     submission: getSubmission(student, assignmentId),
   })
 
@@ -93,7 +92,7 @@ function getProps(column: Column, gradebook: Gradebook, options): AssignmentColu
 
   // For the "Message Students Who" window, we only want to show students who
   // match active filters, and so must retrieve the list each time.
-  const getCurrentlyShownStudents = (): PartialStudent[] => {
+  const getCurrentlyShownStudents = () => {
     const students = gradebook.visibleStudentsThatCanSeeAssignment(assignmentId)
     return Object.keys(students).map(key => processStudent(students[key]))
   }
@@ -111,7 +110,6 @@ function getProps(column: Column, gradebook: Gradebook, options): AssignmentColu
       allowedAttempts: assignment.allowed_attempts,
       anonymizeStudents: assignment.anonymize_students,
       courseId: assignment.course_id,
-      // @ts-expect-error
       dueDate: assignment.due_at,
       htmlUrl: assignment.html_url,
       gradingType: assignment.grading_type,
@@ -139,7 +137,7 @@ function getProps(column: Column, gradebook: Gradebook, options): AssignmentColu
     },
     getCurrentlyShownStudents,
 
-    onHeaderKeyDown: (event: React.KeyboardEvent) => {
+    onHeaderKeyDown: event => {
       gradebook.handleHeaderKeyDown(event, columnId)
     },
     onMenuDismiss() {
@@ -181,6 +179,7 @@ function getProps(column: Column, gradebook: Gradebook, options): AssignmentColu
 
     showMessageStudentsWithObserversDialog:
       gradebook.options.show_message_students_with_observers_dialog,
+    showUnpostedMenuItem: gradebook.options.new_gradebook_development_enabled,
 
     sortBySetting: {
       direction: sortRowsBySetting.direction,
@@ -197,9 +196,6 @@ function getProps(column: Column, gradebook: Gradebook, options): AssignmentColu
       },
       onSortByMissing: () => {
         gradebook.setSortRowsBySetting(columnId, 'missing', 'ascending')
-      },
-      onSortByExcused: () => {
-        gradebook.setSortRowsBySetting(columnId, 'excused', 'ascending')
       },
       onSortByUnposted: () => {
         gradebook.setSortRowsBySetting(columnId, 'unposted', 'ascending')

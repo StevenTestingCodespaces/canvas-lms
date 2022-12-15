@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import _ from 'lodash'
+import _ from 'underscore'
 import $ from 'jquery'
 import React from 'react'
 import ReactDOM from 'react-dom'
@@ -156,7 +156,7 @@ test('loads enrollment terms', function () {
   const collection = renderComponent()
 
   return Promise.all([terms, sets]).then(() => {
-    propEqual(_.map(collection.state.enrollmentTerms, 'id'), _.map(exampleTerms, 'id'))
+    propEqual(_.pluck(collection.state.enrollmentTerms, 'id'), _.pluck(exampleTerms, 'id'))
   })
 })
 
@@ -166,7 +166,7 @@ test('loads grading period sets', function () {
   const collection = renderComponent()
 
   return Promise.all([terms, sets]).then(() => {
-    propEqual(_.map(collection.state.sets, 'id'), _.map(exampleSets, 'id'))
+    propEqual(_.pluck(collection.state.sets, 'id'), _.pluck(exampleSets, 'id'))
   })
 })
 
@@ -198,7 +198,7 @@ test('uses the name, start date (if no name), or creation date (if no start) for
   const expectedNames = ['Fall 2013 - Art', 'Term starting Jan 3, 2014', 'Term created May 2, 2014']
 
   return Promise.all([this.terms, this.sets]).then(() => {
-    const actualNames = _.map(collection.state.enrollmentTerms, 'displayName')
+    const actualNames = _.pluck(collection.state.enrollmentTerms, 'displayName')
     propEqual(expectedNames, actualNames)
   })
 })
@@ -382,19 +382,19 @@ test('getVisibleSets returns sets that match the search text', function () {
 
   return Promise.all([this.terms, this.sets]).then(() => {
     collection.changeSearchText('201')
-    let filteredIDs = _.map(collection.getVisibleSets(), 'id')
+    let filteredIDs = _.pluck(collection.getVisibleSets(), 'id')
     propEqual(filteredIDs, ['1', '2'])
 
     collection.changeSearchText('pring')
-    filteredIDs = _.map(collection.getVisibleSets(), 'id')
+    filteredIDs = _.pluck(collection.getVisibleSets(), 'id')
     propEqual(filteredIDs, ['2'])
 
     collection.changeSearchText('Fal')
-    filteredIDs = _.map(collection.getVisibleSets(), 'id')
+    filteredIDs = _.pluck(collection.getVisibleSets(), 'id')
     propEqual(filteredIDs, ['1'])
 
     collection.changeSearchText('does not match')
-    filteredIDs = _.map(collection.getVisibleSets(), 'id')
+    filteredIDs = _.pluck(collection.getVisibleSets(), 'id')
     propEqual(collection.getVisibleSets(), [])
   })
 })
@@ -443,11 +443,11 @@ test('deserializes enrollment terms if the AJAX call is successful', function ()
 })
 
 test('uses the name, start date (if no name), or creation date (if no start) for the display name', function () {
-  const expectedNames = _.map(exampleTerms, 'displayName')
+  const expectedNames = _.pluck(exampleTerms, 'displayName')
   const collection = renderComponent()
 
   return Promise.all([this.terms, this.sets]).then(() => {
-    const names = _.map(collection.state.enrollmentTerms, 'displayName')
+    const names = _.pluck(collection.state.enrollmentTerms, 'displayName')
     propEqual(names, expectedNames)
   })
 })
@@ -504,7 +504,7 @@ test('addGradingPeriodSet adds the set to the collection', function () {
   return Promise.all([this.sets, this.terms]).then(() => {
     collection.addGradingPeriodSet(exampleSet)
     ok(collection.refs['show-grading-period-set-1'], 'the grading period set is visible')
-    const setIDs = _.map(collection.state.sets, 'id')
+    const setIDs = _.pluck(collection.state.sets, 'id')
     propEqual(setIDs, ['1'])
   })
 })
@@ -536,7 +536,7 @@ test('removeGradingPeriodSet removes the set from the collection', function () {
 
   return Promise.all([this.sets, this.terms]).then(() => {
     collection.removeGradingPeriodSet('1')
-    const setIDs = _.map(collection.state.sets, 'id')
+    const setIDs = _.pluck(collection.state.sets, 'id')
     propEqual(setIDs, ['2'])
   })
 })
@@ -585,7 +585,7 @@ test('updateSetPeriods updates the grading periods on the given set', function (
 
   return Promise.all([this.sets, this.terms]).then(() => {
     collection.updateSetPeriods('1', [])
-    const set = _.find(collection.state.sets, {id: '1'})
+    const set = _.findWhere(collection.state.sets, {id: '1'})
     propEqual(set.gradingPeriods, [])
   })
 })
@@ -642,7 +642,7 @@ test('"onCancel" focuses on the "edit grading period set" button', function () {
     const {editButton} = set.refs['show-grading-period-set-1']._refs
     Simulate.click(editButton)
     set.refs['edit-grading-period-set-1'].props.onCancel()
-    equal(document.activeElement.innerText, `Edit ${exampleSets[0].title}`)
+    equal(document.activeElement.title, `Edit ${exampleSets[0].title}`)
   })
 })
 

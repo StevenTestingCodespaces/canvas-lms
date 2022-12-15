@@ -25,6 +25,7 @@ import {Flex} from '@instructure/ui-flex'
 import {Highlight} from '../../components/Highlight/Highlight'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import {getDisplayName, isTopicAuthor, responsiveQuerySizes} from '../../utils'
+import {DiscussionManagerUtilityContext} from '../../utils/constants'
 import {DiscussionEntryContainer} from '../DiscussionEntryContainer/DiscussionEntryContainer'
 import PropTypes from 'prop-types'
 import React, {useContext, useState} from 'react'
@@ -46,6 +47,7 @@ import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 const I18n = useI18nScope('discussion_posts')
 
 export const IsolatedParent = props => {
+  const {setReplyFromId} = useContext(DiscussionManagerUtilityContext)
   const [updateIsolatedViewDeeplyNestedAlert] = useMutation(
     UPDATE_ISOLATED_VIEW_DEEPLY_NESTED_ALERT
   )
@@ -91,6 +93,7 @@ export const IsolatedParent = props => {
         authorName={getDisplayName(props.discussionEntry)}
         delimiterKey={`reply-delimiter-${props.discussionEntry._id}`}
         onClick={() => {
+          setReplyFromId(null)
           props.setRCEOpen(true)
         }}
         isReadOnly={props.RCEOpen}
@@ -239,9 +242,9 @@ export const IsolatedParent = props => {
                     anonymousAuthor={props.discussionEntry.anonymousAuthor}
                     message={props.discussionEntry.message}
                     isEditing={isEditing}
-                    onSave={(message, _includeReplyPreview, file) => {
+                    onSave={(message, _includeReplyPreview, fileId) => {
                       if (props.onSave) {
-                        props.onSave(props.discussionEntry, message, file)
+                        props.onSave(props.discussionEntry, message, fileId)
                         setIsEditing(false)
                       }
                     }}

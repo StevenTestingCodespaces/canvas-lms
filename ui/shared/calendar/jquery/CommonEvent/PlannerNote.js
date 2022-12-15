@@ -17,7 +17,7 @@
  */
 
 import {useScope as useI18nScope} from '@canvas/i18n'
-import fcUtil from '../fcUtil'
+import fcUtil from '../fcUtil.coffee'
 import CommonEvent from './CommonEvent'
 import {extend} from '@canvas/util/legacyCoffeesScriptHelpers'
 import '@canvas/datetime'

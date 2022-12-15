@@ -32,11 +32,9 @@ describe UserContent do
 
   describe ".find_equation_images" do
     it "yields each equation image one at a time" do
-      html = <<~HTML
-        <div><ul><li><img class='equation_image'/></li>
-        <li><img class='equation_image'/></li>
-        <li><img class='nothing_special'></li></ul></div>
-      HTML
+      html = "<div><ul><li><img class='equation_image'/></li>"\
+             "<li><img class='equation_image'/></li>"\
+             "<li><img class='nothing_special'></li></ul></div>"
       parsed = Nokogiri::HTML5.fragment(html)
       yield_count = 0
       UserContent.find_equation_images(parsed) do
@@ -174,11 +172,9 @@ describe UserContent do
 
   describe ".latex_to_mathml" do
     it "translates valid latex string cleanly" do
-      mathml = <<~XML.delete("\n")
-        <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline">
-        <mo lspace="thinmathspace" rspace="thinmathspace">&Sum;</mo>
-        <mn>1</mn><mo>.</mo><mo>.</mo><mi>n</mi></math>
-      XML
+      mathml = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"inline\">"\
+               "<mo lspace=\"thinmathspace\" rspace=\"thinmathspace\">&Sum;</mo>"\
+               "<mn>1</mn><mo>.</mo><mo>.</mo><mi>n</mi></math>"
       expect(UserContent.latex_to_mathml('\sum 1..n')).to eq(mathml)
     end
 
@@ -193,41 +189,31 @@ describe UserContent do
 
   describe ".escape" do
     it "stuffs mathml into a data attribute on equation images" do
-      string = <<~HTML
-        <div><ul>
-          <li><img class='equation_image' data-equation-content='\int f(x)/g(x)'/></li>
-          <li><img class='equation_image' data-equation-content='\\sum 1..n'/></li>
-          <li><img class='nothing_special'></li>
-        </ul></div>
-      HTML
+      string = "<div><ul><li><img class='equation_image' data-equation-content='\int f(x)/g(x)'/></li>"\
+               "<li><img class='equation_image' data-equation-content='\\sum 1..n'/></li>"\
+               "<li><img class='nothing_special'></li></ul></div>"
       html = UserContent.escape(string, nil, false)
-      expected = <<~HTML
-        <div><ul>
-          <li>
-            <img class="equation_image" data-equation-content="int f(x)/g(x)"><span class="hidden-readable"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mi>i</mi><mi>n</mi><mi>t</mi><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>/</mo><mi>g</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></math></span>
-          </li>
-          <li>
-            <img class="equation_image" data-equation-content="\\sum 1..n"><span class="hidden-readable"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mo lspace="thinmathspace" rspace="thinmathspace">∑</mo><mn>1</mn><mo>.</mo><mo>.</mo><mi>n</mi></math></span>
-          </li>
-          <li><img class="nothing_special"></li>
-        </ul></div>
-      HTML
+      expected = "<div><ul>\n"\
+                 "<li>\n"\
+                 "<img class=\"equation_image\" data-equation-content=\"int f(x)/g(x)\"><span class=\"hidden-readable\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"inline\"><mi>i</mi><mi>n</mi><mi>t</mi><mi>f</mi><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo><mo>/</mo><mi>g</mi><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></math></span>\n"\
+                 "</li>\n"\
+                 "<li>\n"\
+                 "<img class=\"equation_image\" data-equation-content=\"\\sum 1..n\"><span class=\"hidden-readable\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"inline\"><mo lspace=\"thinmathspace\" rspace=\"thinmathspace\">∑</mo><mn>1</mn><mo>.</mo><mo>.</mo><mi>n</mi></math></span>\n"\
+                 "</li>\n"\
+                 "<li><img class=\"nothing_special\"></li>\n"\
+                 "</ul></div>"
       expect(html).to match_ignoring_whitespace(expected)
     end
 
     it "strips existing mathml before adding any new" do
-      string = <<~HTML
-        <div><img class='equation_image' data-equation-content='\int f(x)/g(x)'/>
-        <span class=hidden-readable><math>3</math></span>text node<span class=hidden-readable><math>4</math></span>
-        </div>
-      HTML
+      string = "<div><img class='equation_image' data-equation-content='\int f(x)/g(x)'/>"\
+               "<span class=\"hidden-readable\"><math>3</math></span>text node<span class=\"hidden-readable\"><math>4</math></span>"\
+               "</div>"
 
       html = UserContent.escape(string, nil, false)
-      expected = <<~HTML
-        <div>
-        <img class="equation_image" data-equation-content="int f(x)/g(x)"><span class="hidden-readable"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mi>i</mi><mi>n</mi><mi>t</mi><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>/</mo><mi>g</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></math></span>text node
-        </div>
-      HTML
+      expected = "<div>\n"\
+                 "<img class=\"equation_image\" data-equation-content=\"int f(x)/g(x)\"><span class=\"hidden-readable\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"inline\"><mi>i</mi><mi>n</mi><mi>t</mi><mi>f</mi><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo><mo>/</mo><mi>g</mi><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></math></span>text node"\
+                 "</div>"
       expect(html).to match_ignoring_whitespace(expected)
     end
   end

@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import mixin from '@canvas/backbone/mixin'
+import mixin from '@canvas/backbone/mixin.coffee'
 
 QUnit.module('mixin')
 

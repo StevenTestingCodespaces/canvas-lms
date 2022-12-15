@@ -19,7 +19,6 @@
 import _ from 'lodash'
 
 import $ from 'jquery'
-import axios from '@canvas/axios'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import fakeENV from 'helpers/fakeENV'
 import numberHelper from '@canvas/i18n/numberHelper'
@@ -39,11 +38,11 @@ function createAssignmentGroups() {
     {
       id: '301',
       assignments: [
-        {id: '201', muted: false, points_possible: 20},
-        {id: '202', muted: true, points_possible: 20},
+        {id: '201', muted: false},
+        {id: '202', muted: true},
       ],
     },
-    {id: '302', assignments: [{id: '203', muted: true, points_possible: 20}]},
+    {id: '302', assignments: [{id: '203', muted: true}]},
   ]
 }
 
@@ -99,7 +98,6 @@ function setPageHtmlFixture() {
         <option value="701">Grading Period 1</option>
         <option value="702">Grading Period 2</option>
       </select>
-      <input type="checkbox" id="only_consider_graded_assignments" checked="true">
       <div id="student-grades-right-content">
         <div class="student_assignment final_grade">
           <span class="grade"></span>
@@ -134,7 +132,6 @@ function setPageHtmlFixture() {
               <span style="display: none;">
                 <span class="original_points">10</span>
                 <span class="original_score">10</span>
-                <span class="submission_status">pending_review</span>
                 <span class="what_if_score"></span>
                 <span class="assignment_id">201</span>
                 <span class="student_entered_score">7</span>
@@ -159,7 +156,6 @@ function setPageHtmlFixture() {
                 <span class="what_if_score"></span>
                 <span class="assignment_id">202</span>
               </span>
-              <span class="unread_dot grade_dot" id="submission_unread_dot_123">&nbsp;</span>
             </div>
           </td>
         </tr>
@@ -180,7 +176,6 @@ function setPageHtmlFixture() {
                 <span class="what_if_score"></span>
                 <span class="assignment_id">203</span>
               </span>
-              <span class="unread_dot grade_dot" id="submission_unread_dot_456">&nbsp;</span>
             </div>
           </td>
         </tr>
@@ -694,32 +689,6 @@ QUnit.module('GradeSummary.setup', {
   },
 })
 
-test('sends an axios request to mark unread submissions as read', function () {
-  ENV.visibility_feedback_enabled = true
-  ENV.assignments_2_student_enabled = true
-  const axiosSpy = sandbox.spy(axios, 'put')
-  GradeSummary.setup()
-  const expectedUrl = `/api/v1/courses/1/submissions/bulk_mark_read`
-  equal(axiosSpy.callCount, 1)
-  deepEqual(axiosSpy.getCall(0).args, [expectedUrl, {submissionIds: ['123', '456']}])
-})
-
-test('does not mark unread submissions as read if assignments_2_student_enabled feature flag off', function () {
-  ENV.visibility_feedback_enabled = true
-  ENV.assignments_2_student_enabled = false
-  const axiosSpy = sandbox.spy(axios, 'put')
-  GradeSummary.setup()
-  equal(axiosSpy.callCount, 0)
-})
-
-test('does not mark unread submissions as read if visibility_feedback_enabled feature flag off', function () {
-  ENV.visibility_feedback_enabled = false
-  ENV.assignments_2_student_enabled = true
-  const axiosSpy = sandbox.spy(axios, 'put')
-  GradeSummary.setup()
-  equal(axiosSpy.callCount, 0)
-})
-
 test('shows the "Show Saved What-If Scores" button when any assignment has a What-If score', function () {
   GradeSummary.setup()
   ok(this.$showWhatIfScoresContainer.is(':visible'), 'button container is visible')
@@ -1030,26 +999,6 @@ test('updates .what_if_score with the parsed value from #grade_entry', function 
   equal(this.$assignment.find('.what_if_score').text(), '5')
 })
 
-test('includes pending_review to for total grade when changing what-if score', function () {
-  ENV.submissions = [
-    {assignment_id: '201', score: 0, workflow_state: 'pending_review'},
-    {assignment_id: '203', score: 10, workflow_state: 'graded'},
-  ]
-
-  // Page load should not include pending_review
-  // Score should be 50% (10/20) for graded assignment 203
-  const $grade = $fixtures.find('.final_grade .grade').first()
-  strictEqual($grade.text(), '50%')
-
-  this.onScoreChange('20')
-  equal(this.$assignment.find('.what_if_score').text(), '20')
-
-  // Total grade should include pending_review
-  // Score should be 75% (10/20 & 20/20) for both assignments
-  strictEqual($grade.text(), '75%')
-  strictEqual(ENV.submissions[0].workflow_state, 'graded')
-})
-
 test('uses I18n to parse the #grade_entry score', function () {
   sandbox.stub(numberHelper, 'parse').withArgs('1.234,56').returns('654321')
   this.onScoreChange('1.234,56')
@@ -1177,7 +1126,6 @@ QUnit.module('GradeSummary - Revert Score', hooks => {
     $assignmentScore.find('.score_holder').append($revertScore)
     $grade.addClass('changed')
     $assignment.find('.original_score').text('5')
-    ENV.submissions[0].workflow_state = 'graded'
   }
 
   hooks.beforeEach(() => {
@@ -1193,12 +1141,6 @@ QUnit.module('GradeSummary - Revert Score', hooks => {
   test('sets the .what_if_score text to the .original_score text', () => {
     GradeSummary.onScoreRevert($assignment)
     equal($assignment.find('.what_if_score').text(), '5')
-  })
-
-  test('sets the submission workflow_state back to original value', () => {
-    equal(ENV.submissions[0].workflow_state, 'graded')
-    GradeSummary.onScoreRevert($assignment)
-    equal(ENV.submissions[0].workflow_state, 'pending_review')
   })
 
   test('sets the .assignment_score title to the "Click to test" message', () => {
@@ -1665,8 +1607,8 @@ QUnit.module('GradeSummary', () => {
           submissionTrayAssignmentUrl: 'assignment.url',
         }
         deepEqual(value, expectedState)
-        equal($.fn.addClass.callCount, 2)
-        equal($.fn.removeClass.callCount, 2)
+        equal($.fn.addClass.callCount, 1)
+        equal($.fn.removeClass.callCount, 1)
       })
       test('should open tray with different prior assignmentId', () => {
         sandbox.stub(useStore, 'getState').returns({
@@ -1689,10 +1631,10 @@ QUnit.module('GradeSummary', () => {
           submissionTrayAssignmentUrl: 'assignment.url',
         }
         deepEqual(value, expectedState)
-        equal($.fn.addClass.callCount, 2)
-        equal($.fn.removeClass.callCount, 2)
+        equal($.fn.addClass.callCount, 1)
+        equal($.fn.removeClass.callCount, 1)
       })
-      test('should close tray if same assignmentId and tray is open', () => {
+      test('should close tray if same assignmentId and trey is open', () => {
         sandbox.stub(useStore, 'getState').returns({
           submissionTrayAssignmentId: '17',
           submissionTrayOpen: true,
@@ -1711,7 +1653,7 @@ QUnit.module('GradeSummary', () => {
         }
         deepEqual(value, expectedState)
         equal($.fn.addClass.callCount, 0)
-        equal($.fn.removeClass.callCount, 2)
+        equal($.fn.removeClass.callCount, 1)
       })
       test('should keep tray open and switch assignmentId for different assignment and tray open', () => {
         sandbox.stub(useStore, 'getState').returns({
@@ -1734,8 +1676,8 @@ QUnit.module('GradeSummary', () => {
           submissionTrayAssignmentUrl: 'assignment.url',
         }
         deepEqual(value, expectedState)
-        equal($.fn.addClass.callCount, 2)
-        equal($.fn.removeClass.callCount, 2)
+        equal($.fn.addClass.callCount, 1)
+        equal($.fn.removeClass.callCount, 1)
       })
     })
   })

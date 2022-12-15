@@ -32,7 +32,6 @@ import '@canvas/grading-standards'
 import FeatureFlags from '@canvas/feature-flags'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import ready from '@instructure/ready'
-import QuantitativeDataOptions from './react/components/QuantitativeDataOptions'
 
 const I18n = useI18nScope('course_settings')
 
@@ -120,27 +119,15 @@ ready(() => {
     ReactDOM.render(
       <Suspense fallback={<Loading />}>
         <CourseAvailabilityOptions
-          canManage={ENV.PERMISSIONS.edit_course_availability}
+          canManage={
+            ENV.PERMISSIONS.can_manage_courses ||
+            (ENV.PERMISSIONS.manage && !ENV.PREVENT_COURSE_AVAILABILITY_EDITING_BY_TEACHERS)
+          }
           viewPastLocked={ENV.RESTRICT_STUDENT_PAST_VIEW_LOCKED}
           viewFutureLocked={ENV.RESTRICT_STUDENT_FUTURE_VIEW_LOCKED}
         />
       </Suspense>,
       availabilityOptionsContainer
-    )
-  }
-
-  const restrictQuantitativeDataContainer = document.getElementById(
-    'restrict_quantitative_data_options_container'
-  )
-  if (restrictQuantitativeDataContainer) {
-    ReactDOM.render(
-      <Suspense fallback={<Loading />}>
-        <QuantitativeDataOptions
-          canManage={ENV.PERMISSIONS.edit_course_availability}
-          restrictQuantitativeData={ENV.RESTRICT_QUANTITATIVE_DATA}
-        />
-      </Suspense>,
-      restrictQuantitativeDataContainer
     )
   }
 

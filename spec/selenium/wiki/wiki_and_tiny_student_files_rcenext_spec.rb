@@ -154,6 +154,7 @@ describe "Wiki pages and Tiny WYSIWYG editor Files", ignore_js_errors: true do
     end
 
     it "shows 2 media files when clicking course media dropdown" do
+      skip("Media object creation issues - LA-385, LA-386 to fix")
       visit_front_page_edit(@course)
 
       click_course_media_toolbar_menuitem
@@ -163,6 +164,7 @@ describe "Wiki pages and Tiny WYSIWYG editor Files", ignore_js_errors: true do
     end
 
     it "shows 1 media file when clicking my media dropdown" do
+      skip("Media object creation issues - LA-385, LA-386 to fix")
       visit_front_page_edit(@course)
 
       click_user_media_toolbar_menuitem

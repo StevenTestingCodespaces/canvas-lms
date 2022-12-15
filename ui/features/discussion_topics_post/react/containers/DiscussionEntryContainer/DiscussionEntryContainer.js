@@ -26,7 +26,6 @@ import {PostMessage} from '../../components/PostMessage/PostMessage'
 import PropTypes from 'prop-types'
 import React, {useContext, useState} from 'react'
 import {responsiveQuerySizes} from '../../utils'
-import {SearchContext} from '../../utils/constants'
 import {Attachment} from '../../../graphql/Attachment'
 import {User} from '../../../graphql/User'
 import {useMutation} from 'react-apollo'
@@ -42,7 +41,6 @@ const I18n = useI18nScope('discussion_posts')
 export const DiscussionEntryContainer = props => {
   const [draftSaved, setDraftSaved] = useState(true)
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
-  const {searchTerm} = useContext(SearchContext)
 
   const [createDiscussionEntryDraft] = useMutation(CREATE_DISCUSSION_ENTRY_DRAFT, {
     update: props.updateDraftCache,
@@ -81,7 +79,7 @@ export const DiscussionEntryContainer = props => {
 
   const hasAuthor = Boolean(props.author || props.anonymousAuthor)
 
-  const threadMode = (props.discussionEntry?.depth > 1 && !searchTerm) || props.threadParent
+  const threadMode = props.discussionEntry?.depth > 1
 
   return (
     <Responsive
@@ -107,16 +105,16 @@ export const DiscussionEntryContainer = props => {
         desktop: {
           direction: 'row',
           authorInfo: {
-            padding: threadMode ? '0 0 small xx-small' : 'xx-small 0 0 0',
+            padding: threadMode ? '0' : 'xx-small 0 0 0',
           },
           postUtilities: {
             align: threadMode ? 'stretch' : 'start',
-            margin: threadMode ? '0 0 x-small small' : '0',
+            margin: threadMode ? '0 0 x-small 0' : '0',
             padding: 'xx-small',
           },
           postMessage: {
-            padding: threadMode || props.isTopic ? '0 0 small xx-small' : '0 0 small xx-large',
-            paddingNoAuthor: '0 0 small small',
+            padding: threadMode ? '0 xx-small xx-small' : 'x-small 0 small xx-large',
+            paddingNoAuthor: '0 0 xx-small xx-small',
             margin: '0',
           },
         },
@@ -138,18 +136,17 @@ export const DiscussionEntryContainer = props => {
         },
       }}
       render={responsiveProps => (
-        <Flex direction="column" padding="0 0 small small">
+        <Flex direction="column">
           <Flex.Item shouldGrow={true} shouldShrink={true} overflowY="visible">
             <Flex direction={props.isTopic ? responsiveProps.direction : 'row'}>
               {hasAuthor && (
                 <Flex.Item
                   shouldGrow={true}
                   shouldShrink={true}
-                  padding={responsiveProps?.authorInfo?.padding}
+                  padding={responsiveProps.authorInfo.padding}
                 >
                   <AuthorInfo
                     author={props.author}
-                    threadParent={props.threadParent}
                     anonymousAuthor={props.anonymousAuthor}
                     editor={props.editor}
                     isUnread={props.isUnread}
@@ -163,18 +160,17 @@ export const DiscussionEntryContainer = props => {
                     discussionEntryVersions={
                       props.discussionEntry?.discussionEntryVersionsConnection?.nodes || []
                     }
-                    reportTypeCounts={props.discussionEntry?.reportTypeCounts}
                     threadMode={threadMode}
                   />
                 </Flex.Item>
               )}
               <Flex.Item
-                align={responsiveProps?.postUtilities?.align}
-                margin={hasAuthor ? responsiveProps?.postUtilities?.margin : '0'}
+                align={responsiveProps.postUtilities.align}
+                margin={hasAuthor ? responsiveProps.postUtilities.margin : '0'}
                 overflowX="hidden"
                 overflowY="hidden"
                 shouldGrow={!hasAuthor}
-                padding={responsiveProps?.postUtilities?.padding}
+                padding={responsiveProps.postUtilities.padding}
               >
                 {props.postUtilities}
               </Flex.Item>
@@ -183,17 +179,16 @@ export const DiscussionEntryContainer = props => {
           <Flex.Item
             padding={
               hasAuthor
-                ? responsiveProps?.postMessage?.padding
-                : responsiveProps?.postMessage?.paddingNoAuthor
+                ? responsiveProps.postMessage.padding
+                : responsiveProps.postMessage.paddingNoAuthor
             }
-            margin={props.isTopic ? '0' : responsiveProps?.postMessage?.margin}
+            margin={props.isTopic ? '0' : responsiveProps.postMessage.margin}
             overflowY="hidden"
             overflowX="hidden"
           >
             {props.quotedEntry && <ReplyPreview {...props.quotedEntry} />}
             <PostMessage
-              isTopic={props.isTopic}
-              threadMode={threadMode && !props.isTopic}
+              threadMode={threadMode}
               discussionEntry={props.discussionEntry}
               discussionAnonymousState={props.discussionTopic?.anonymousState}
               canReplyAnonymously={props.discussionTopic?.canReplyAnonymously}
@@ -253,7 +248,6 @@ DiscussionEntryContainer.propTypes = {
   lastReplyAtDisplay: PropTypes.string,
   deleted: PropTypes.bool,
   isTopicAuthor: PropTypes.bool,
-  threadParent: PropTypes.bool,
   updateDraftCache: PropTypes.func,
   quotedEntry: PropTypes.object,
   attachment: Attachment.shape,
@@ -261,5 +255,4 @@ DiscussionEntryContainer.propTypes = {
 
 DiscussionEntryContainer.defaultProps = {
   deleted: false,
-  threadParent: false,
 }

@@ -17,7 +17,7 @@
  */
 
 import Folder from '@canvas/files/backbone/models/Folder'
-import FileModel from '@canvas/files/backbone/models/File'
+import FileModel from '@canvas/files/backbone/models/File.coffee'
 
 QUnit.module('Folder', {
   setup() {

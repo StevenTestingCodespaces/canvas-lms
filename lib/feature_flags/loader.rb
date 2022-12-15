@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "yaml"
+
 module FeatureFlags
   module Loader
     def self.wrap_hook_method(method_name)
@@ -62,8 +64,8 @@ module FeatureFlags
 
     def self.load_yaml_files
       result = {}
-      (Rails.root.glob("config/feature_flags/*.yml") +
-        Rails.root.glob("gems/plugins/*/config/feature_flags/*.yml")).sort.each do |path|
+      (Dir.glob(Rails.root.join("config/feature_flags/*.yml")) +
+        Dir.glob(Rails.root.join("gems/plugins/*/config/feature_flags/*.yml"))).sort.each do |path|
         result.merge!(YAML.load_file(path))
       end
       result.each do |_name, definition|

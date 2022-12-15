@@ -18,10 +18,7 @@
 
 import tinymce from '@instructure/canvas-rce/es/rce/tinyRCE'
 import * as plugin from '../plugin'
-// FYI, there is a new-improved FakeEditor at@instructure/canvas-rce/src/rce/__tests__/FakeEditor
-// but I failed to get this and other unit tests in canvas_mentions/__tests__ to pass with it
-// Rather than spend days trying to figure that out, I left the old mock around to use here (and only here)
-import FakeEditor from './FakeEditor'
+import FakeEditor from '@instructure/canvas-rce/src/rce/plugins/shared/__tests__/FakeEditor'
 import {screen} from '@testing-library/dom'
 import {KEY_CODES} from '../constants'
 import {onFocusedUserChange, onMentionsExit} from '../events'
@@ -385,12 +382,6 @@ describe('pluginDefinition', () => {
     })
 
     sharedExamplesForHandlersThatUnmount(subject)
-
-    it('removes onWindowMouseDown listener', () => {
-      window.removeEventListener = jest.fn()
-      subject()
-      expect(window.removeEventListener).toHaveBeenCalledTimes(1)
-    })
   })
 
   describe('ViewChange', () => {

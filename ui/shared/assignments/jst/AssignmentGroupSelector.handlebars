@@ -18,7 +18,13 @@
         {{name}}
       </option>
     {{/each}}
-    <option value="new">[ {{#t "assignment_group_options.create_group"}}Create Group{{/t}} ]</option>
+    <option value="new">
+      {{#if new_quizzes_modules_support}}
+        [ {{#t "assignment_group_options.create_group"}}Create Group{{/t}} ]
+      {{else}}
+        [ {{#t "assignment_group_options.new_group"}}New Group{{/t}} ]
+      {{/if}}
+    </option>
   </select>
 </div>
 

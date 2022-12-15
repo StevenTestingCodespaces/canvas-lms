@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License along
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import {extend} from 'lodash'
+import _ from 'underscore'
 import DownloadDialog from '../../components/ic_submission_download_dialog_component'
 import fixtures from '../shared_ajax_fixtures'
 
 function buildComponent(props) {
-  props = extend(props, {assignmentUrl: '/courses/1/assignments/1'})
+  props = _.extend(props, {assignmentUrl: '/courses/1/assignments/1'})
   return DownloadDialog.create(props)
 }
 

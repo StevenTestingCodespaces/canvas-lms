@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -17,13 +16,12 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useState} from 'react'
+import React from 'react'
 import {Modal} from '@instructure/ui-modal'
 import {Heading} from '@instructure/ui-heading'
 import CanvasDateInput from '@canvas/datetime/react/components/DateInput'
 import moment from 'moment'
 import {MomentInput} from 'moment-timezone'
-import type {Moment} from 'moment-timezone'
 import tz from '@canvas/timezone'
 import {View} from '@instructure/ui-view'
 import {Button, CloseButton} from '@instructure/ui-buttons'
@@ -31,10 +29,10 @@ import {useScope as useI18nScope} from '@canvas/i18n'
 
 const I18n = useI18nScope('gradebook')
 
-const formatDate = (date: Date) => tz.format(date, 'date.formats.medium')
+const formatDate = date => tz.format(date, 'date.formats.medium')
 
-function useResetState<T>(initialState: T): [T, (value: T) => void] {
-  const [value, setValue] = useState(initialState)
+const useResetState = initialState => {
+  const [value, setValue] = React.useState(initialState)
   React.useEffect(() => {
     setValue(initialState)
   }, [initialState])
@@ -42,43 +40,22 @@ function useResetState<T>(initialState: T): [T, (value: T) => void] {
   return [value, setValue]
 }
 
-type Props = {
-  endDate: string | null
-  isOpen: boolean
-  onCloseDateModal: () => void
-  onSelectDates: (startDate: string | null, endDate: string | null) => void
-  startDate: string | null
-}
-
 export default function FilterNavDateModal({
+  startDate,
   endDate,
   isOpen,
   onCloseDateModal,
   onSelectDates,
-  startDate,
-}: Props) {
-  const [startDateValue, setStartDateValue] = useResetState<string | null>(startDate)
-  const [endDateValue, setEndDateValue] = useResetState<string | null>(endDate)
-
-  const [startDateMessages, setStartDateMessages] = useState<
-    {
-      text: string
-      type: 'error'
-    }[]
-  >([])
-  const [endDateMessages, setEndDateMessages] = useState<
-    {
-      text: string
-      type: 'error'
-    }[]
-  >([])
+}) {
+  const [startDateValue, setStartDateValue] = useResetState(startDate)
+  const [endDateValue, setEndDateValue] = useResetState(endDate)
 
   return (
     <Modal
       as="form"
       open={isOpen}
       onDismiss={onCloseDateModal}
-      onSubmit={(event: Event) => {
+      onSubmit={event => {
         event.preventDefault()
         onSelectDates(startDateValue, endDateValue)
         onCloseDateModal()
@@ -98,69 +75,39 @@ export default function FilterNavDateModal({
       <Modal.Body>
         <View as="div" margin="0 0 medium 0">
           <CanvasDateInput
-            dataTestid="start-date-input"
-            dateIsDisabled={(date: Moment) =>
-              Boolean(endDateValue && date.toISOString() > endDateValue)
-            }
             display="block"
+            width="100%"
+            dataTestid="start-date-input"
+            renderLabel={I18n.t('Start Date')}
+            selectedDate={startDateValue}
             formatDate={formatDate}
             interaction="enabled"
-            messages={startDateMessages}
             onSelectedDateChange={(inputObj: MomentInput) => {
               if (inputObj instanceof Date) {
-                const startDate_ = moment(inputObj).toISOString()
-                if (endDateValue && startDate_ > endDateValue) {
-                  setStartDateMessages([
-                    {
-                      text: I18n.t('Start date must be before end date'),
-                      type: 'error',
-                    },
-                  ])
-                } else {
-                  setStartDateMessages([])
-                  setStartDateValue(startDate_)
-                }
+                setStartDateValue(moment(inputObj).toISOString())
               } else {
                 setStartDateValue('')
               }
             }}
-            renderLabel={I18n.t('Start Date')}
-            selectedDate={startDateValue}
-            width="100%"
           />
         </View>
 
         <View as="div">
           <CanvasDateInput
-            dataTestid="end-date-input"
-            dateIsDisabled={(date: Moment) =>
-              Boolean(startDateValue && date.toISOString() < startDateValue)
-            }
             display="block"
+            width="100%"
+            dataTestid="end-date-input"
+            renderLabel={I18n.t('End Date')}
+            selectedDate={endDateValue}
             formatDate={formatDate}
             interaction="enabled"
-            messages={endDateMessages}
             onSelectedDateChange={(inputObj: MomentInput) => {
               if (inputObj instanceof Date) {
-                const endDate_ = moment(inputObj).toISOString()
-                if (startDateValue && endDate_ < startDateValue) {
-                  setEndDateMessages([
-                    {
-                      text: I18n.t('End date must be after start date'),
-                      type: 'error',
-                    },
-                  ])
-                } else {
-                  setEndDateMessages([])
-                  setEndDateValue(endDate_)
-                }
+                setEndDateValue(moment(inputObj).toISOString())
               } else {
                 setEndDateValue('')
               }
             }}
-            renderLabel={I18n.t('End Date')}
-            selectedDate={endDateValue}
-            width="100%"
           />
         </View>
       </Modal.Body>

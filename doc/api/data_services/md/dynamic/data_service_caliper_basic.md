@@ -8,19 +8,6 @@ Basic
 **Trigger:** Triggered when a new assignment is created in a course.
 
 
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
-| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].lock_at** | The lock date (assignment is locked after this date) |
-| **data[0].object.type** | AssignableDigitalResource |
-
-
-
-
 
 ### Payload Example:
 
@@ -117,13 +104,6 @@ Basic
 
 
 
-<h2 id="assignment_override_created">assignment_override_created</h2>
-
-**Definition:** The event is emitted anytime an assignment override is created by an end user or API request.
-
-**Trigger:** Triggered when an assignment override is created.
-
-
 ### Event Body Schema
 
 | Field | Description |
@@ -131,17 +111,15 @@ Basic
 | **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].assignment_id** | The Canvas id of the assignment linked to the override. |
-| **data[0].object.extensions["com.instructure.canvas"].all_day** | The overridden all_day flag, or nil if not overridden. |
-| **data[0].object.extensions["com.instructure.canvas"].all_day_date** | The overridden all_day_date, or nil if not overridden. |
-| **data[0].object.extensions["com.instructure.canvas"].lock_at** | The overridden lock_at timestamp, or nil if not overridden. |
-| **data[0].object.extensions["com.instructure.canvas"].type** | Override type - `ADHOC` (list of Students), `CourseSection`, or `Group`. |
-| **data[0].object.extensions["com.instructure.canvas"].course_section_id** | (if `type='CourseSection'`) Canvas section id that this override applies to. |
-| **data[0].object.extensions["com.instructure.canvas"].group_id** | (if `type='Group'`) Canvas group id that this override applies to. |
-| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | Workflow state of the override. (active, deleted) |
-| **data[0].object.type** | Entity |
+| **data[0].object.extensions["com.instructure.canvas"].lock_at** | The lock date (assignment is locked after this date) |
 
 
+
+<h2 id="assignment_override_created">assignment_override_created</h2>
+
+**Definition:** The event is emitted anytime an assignment override is created by an end user or API request.
+
+**Trigger:** Triggered when an assignment override is created.
 
 
 
@@ -241,13 +219,6 @@ Basic
 
 
 
-<h2 id="assignment_override_updated">assignment_override_updated</h2>
-
-**Definition:** The event is emitted anytime an assignment override is updated by an end user or API request. Only changes to the fields included in the body of the event payload will emit the `updated` event.
-
-**Trigger:** Triggered when an assignment override has been modified.
-
-
 ### Event Body Schema
 
 | Field | Description |
@@ -263,9 +234,14 @@ Basic
 | **data[0].object.extensions["com.instructure.canvas"].course_section_id** | (if `type='CourseSection'`) Canvas section id that this override applies to. |
 | **data[0].object.extensions["com.instructure.canvas"].group_id** | (if `type='Group'`) Canvas group id that this override applies to. |
 | **data[0].object.extensions["com.instructure.canvas"].workflow_state** | Workflow state of the override. (active, deleted) |
-| **data[0].object.type** | Entity |
 
 
+
+<h2 id="assignment_override_updated">assignment_override_updated</h2>
+
+**Definition:** The event is emitted anytime an assignment override is updated by an end user or API request. Only changes to the fields included in the body of the event payload will emit the `updated` event.
+
+**Trigger:** Triggered when an assignment override has been modified.
 
 
 
@@ -365,13 +341,6 @@ Basic
 
 
 
-<h2 id="assignment_updated">assignment_updated</h2>
-
-**Definition:** The event is emitted anytime an assignment is updated by an end user or API request. Only changes to the fields included in the body of the event payload will emit the `updated` event.
-
-**Trigger:** Triggered when an assignment has been modified.
-
-
 ### Event Body Schema
 
 | Field | Description |
@@ -379,11 +348,22 @@ Basic
 | **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].lock_at** | The lock date (assignment is locked after this date) |
-| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | 1. Workflow state of the assignment when used in the assignment context (deleted, duplicating, failed_to_import, failed_to_duplicate, failed_to_migrate, importing, published, unpublished) - 2. Workflow state of the enrollment when used in the enrollment context (active, completed, creation_pending, deleted, inactive, invited) |
-| **data[0].object.type** | AssignableDigitalResource |
+| **data[0].object.extensions["com.instructure.canvas"].assignment_id** | The Canvas id of the assignment linked to the override. |
+| **data[0].object.extensions["com.instructure.canvas"].all_day** | The overridden all_day flag, or nil if not overridden. |
+| **data[0].object.extensions["com.instructure.canvas"].all_day_date** | The overridden all_day_date, or nil if not overridden. |
+| **data[0].object.extensions["com.instructure.canvas"].lock_at** | The overridden lock_at timestamp, or nil if not overridden. |
+| **data[0].object.extensions["com.instructure.canvas"].type** | Override type - `ADHOC` (list of Students), `CourseSection`, or `Group`. |
+| **data[0].object.extensions["com.instructure.canvas"].course_section_id** | (if `type='CourseSection'`) Canvas section id that this override applies to. |
+| **data[0].object.extensions["com.instructure.canvas"].group_id** | (if `type='Group'`) Canvas group id that this override applies to. |
+| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | Workflow state of the override. (active, deleted) |
 
 
+
+<h2 id="assignment_updated">assignment_updated</h2>
+
+**Definition:** The event is emitted anytime an assignment is updated by an end user or API request. Only changes to the fields included in the body of the event payload will emit the `updated` event.
+
+**Trigger:** Triggered when an assignment has been modified.
 
 
 
@@ -483,27 +463,23 @@ Basic
 
 
 
-<h2 id="attachment_created">attachment_created</h2>
-
-**Definition:** The event is emitted anytime a new file is uploaded by an end user or API request.
-
-**Trigger:** Triggered anytime a file is uploaded into a course or user file directory.
-
-
 ### Event Body Schema
 
 | Field | Description |
 |-|-|
 | **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.extensions["com.instructure.canvas"].context_id** | The Canvas id of the current context |
-| **data[0].object.extensions["com.instructure.canvas"].context_type** | The type of context where the event happened |
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].filename** | The file name of the attachment. NOTE: This field will be truncated to only include the first 8192 characters. |
-| **data[0].object.extensions["com.instructure.canvas"].folder_id** | The id of the folder where the attachment was saved |
-| **data[0].object.type** | Document |
+| **data[0].object.extensions["com.instructure.canvas"].lock_at** | The lock date (assignment is locked after this date) |
+| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | 1. Workflow state of the assignment when used in the assignment context (deleted, duplicating, failed_to_import, failed_to_duplicate, failed_to_migrate, importing, published, unpublished) - 2. Workflow state of the enrollment when used in the enrollment context (active, completed, creation_pending, deleted, inactive, invited) |
 
 
+
+<h2 id="attachment_created">attachment_created</h2>
+
+**Definition:** The event is emitted anytime a new file is uploaded by an end user or API request.
+
+**Trigger:** Triggered anytime a file is uploaded into a course or user file directory.
 
 
 
@@ -597,13 +573,6 @@ Basic
 
 
 
-<h2 id="attachment_deleted">attachment_deleted</h2>
-
-**Definition:** The event is emitted anytime a file is removed by an end user or API request.
-
-**Trigger:** Triggered anytime a file is deleted from a course or user file directory.
-
-
 ### Event Body Schema
 
 | Field | Description |
@@ -615,9 +584,14 @@ Basic
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
 | **data[0].object.extensions["com.instructure.canvas"].filename** | The file name of the attachment. NOTE: This field will be truncated to only include the first 8192 characters. |
 | **data[0].object.extensions["com.instructure.canvas"].folder_id** | The id of the folder where the attachment was saved |
-| **data[0].object.type** | Document |
 
 
+
+<h2 id="attachment_deleted">attachment_deleted</h2>
+
+**Definition:** The event is emitted anytime a file is removed by an end user or API request.
+
+**Trigger:** Triggered anytime a file is deleted from a course or user file directory.
 
 
 
@@ -714,13 +688,6 @@ Basic
 
 
 
-<h2 id="attachment_updated">attachment_updated</h2>
-
-**Definition:** The event is emitted anytime a file is updated by an end user or API request. Only changes to the fields included in the body of the event payload will emit the `updated` event.
-
-**Trigger:** Triggered anytime a file is updated in a course or user file directory.
-
-
 ### Event Body Schema
 
 | Field | Description |
@@ -732,9 +699,14 @@ Basic
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
 | **data[0].object.extensions["com.instructure.canvas"].filename** | The file name of the attachment. NOTE: This field will be truncated to only include the first 8192 characters. |
 | **data[0].object.extensions["com.instructure.canvas"].folder_id** | The id of the folder where the attachment was saved |
-| **data[0].object.type** | Document |
 
 
+
+<h2 id="attachment_updated">attachment_updated</h2>
+
+**Definition:** The event is emitted anytime a file is updated by an end user or API request. Only changes to the fields included in the body of the event payload will emit the `updated` event.
+
+**Trigger:** Triggered anytime a file is updated in a course or user file directory.
 
 
 
@@ -831,21 +803,25 @@ Basic
 
 
 
+### Event Body Schema
+
+| Field | Description |
+|-|-|
+| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
+| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
+| **data[0].object.extensions["com.instructure.canvas"].context_id** | The Canvas id of the current context |
+| **data[0].object.extensions["com.instructure.canvas"].context_type** | The type of context where the event happened |
+| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
+| **data[0].object.extensions["com.instructure.canvas"].filename** | The file name of the attachment. NOTE: This field will be truncated to only include the first 8192 characters. |
+| **data[0].object.extensions["com.instructure.canvas"].folder_id** | The id of the folder where the attachment was saved |
+
+
+
 <h2 id="course_created">course_created</h2>
 
 **Definition:** The event is emitted anytime a new course is created by an end user or API request.
 
 **Trigger:** Triggered when a new course is created (or copied).
-
-
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.type** | CourseOffering |
-
-
 
 
 
@@ -913,22 +889,19 @@ Basic
 
 
 
-<h2 id="course_updated">course_updated</h2>
-
-**Definition:** The event is emitted anytime a course is updated by an end user or API request. Examples of updates include publishing a course, updating a course name, or changing a course's configuration.
-
-**Trigger:** Triggered when a course is updated.
-
-
 ### Event Body Schema
 
 | Field | Description |
 |-|-|
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | The workflow state of the the course. Can be one of created or claimed (unpublished course), available (published course), completed, or deleted. |
-| **data[0].object.type** | CourseOffering |
 
 
+
+<h2 id="course_updated">course_updated</h2>
+
+**Definition:** The event is emitted anytime a course is updated by an end user or API request. Examples of updates include publishing a course, updating a course name, or changing a course's configuration.
+
+**Trigger:** Triggered when a course is updated.
 
 
 
@@ -998,30 +971,20 @@ Basic
 
 
 
+### Event Body Schema
+
+| Field | Description |
+|-|-|
+| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
+| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | The workflow state of the the course. Can be one of created or claimed (unpublished course), available (published course), completed, or deleted. |
+
+
+
 <h2 id="enrollment_created">enrollment_created</h2>
 
 **Definition:** The event is emitted anytime a new enrollment is added to a course by an end user or API request.
 
 **Trigger:** Triggered when a new course enrollment is created.
-
-
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
-| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.extensions["com.instructure.canvas"].course_id** | The Canvas id of the course for this enrollment |
-| **data[0].object.extensions["com.instructure.canvas"].course_section_id** | The id of the section of the course for the new enrollment |
-| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].limit_privileges_to_course_section** | Whether students can only talk to students within their course section |
-| **data[0].object.extensions["com.instructure.canvas"].type** | The type of enrollment; e.g. StudentEnrollment, TeacherEnrollment, ObserverEnrollment, etc. |
-| **data[0].object.extensions["com.instructure.canvas"].user_id** | The Canvas id of the currently logged in user |
-| **data[0].object.extensions["com.instructure.canvas"].user_name** | The user first and last name |
-| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | 1. Workflow state of the assignment when used in the assignment context (deleted, duplicating, failed_to_import, failed_to_duplicate, failed_to_migrate, importing, published, unpublished) - 2. Workflow state of the enrollment when used in the enrollment context (active, completed, creation_pending, deleted, inactive, invited) |
-| **data[0].object.type** | Entity |
-
-
 
 
 
@@ -1122,28 +1085,28 @@ Basic
 
 
 
-<h2 id="enrollment_state_created">enrollment_state_created</h2>
-
-**Definition:** The event is emitted anytime a new enrollment record is added to a course.
-
-**Trigger:** Triggered when a new course enrollment is created with a new workflow_state.
-
-
 ### Event Body Schema
 
 | Field | Description |
 |-|-|
 | **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.extensions["com.instructure.canvas"].access_is_current** | Indicates if the enrollment_state is up to date |
+| **data[0].object.extensions["com.instructure.canvas"].course_id** | The Canvas id of the course for this enrollment |
+| **data[0].object.extensions["com.instructure.canvas"].course_section_id** | The id of the section of the course for the new enrollment |
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].restricted_access** | Indicates whether enrollment access is restricted, set to 'TRUE' if enrollment state is restricted |
-| **data[0].object.extensions["com.instructure.canvas"].state_is_current** | Indicates if this enrollment_state is up to date |
-| **data[0].object.extensions["com.instructure.canvas"].state** | The state of the enrollment |
-| **data[0].object.extensions["com.instructure.canvas"].state_valid_until** | The time at which this enrollment is no longer valid |
-| **data[0].object.type** | Entity |
+| **data[0].object.extensions["com.instructure.canvas"].limit_privileges_to_course_section** | Whether students can only talk to students within their course section |
+| **data[0].object.extensions["com.instructure.canvas"].type** | The type of enrollment; e.g. StudentEnrollment, TeacherEnrollment, ObserverEnrollment, etc. |
+| **data[0].object.extensions["com.instructure.canvas"].user_id** | The Canvas id of the currently logged in user |
+| **data[0].object.extensions["com.instructure.canvas"].user_name** | The user first and last name |
+| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | 1. Workflow state of the assignment when used in the assignment context (deleted, duplicating, failed_to_import, failed_to_duplicate, failed_to_migrate, importing, published, unpublished) - 2. Workflow state of the enrollment when used in the enrollment context (active, completed, creation_pending, deleted, inactive, invited) |
 
 
+
+<h2 id="enrollment_state_created">enrollment_state_created</h2>
+
+**Definition:** The event is emitted anytime a new enrollment record is added to a course.
+
+**Trigger:** Triggered when a new course enrollment is created with a new workflow_state.
 
 
 
@@ -1239,13 +1202,6 @@ Basic
 
 
 
-<h2 id="enrollment_state_updated">enrollment_state_updated</h2>
-
-**Definition:** The event is emitted anytime an enrollment record workflow state changes.
-
-**Trigger:** Triggered when a course enrollment workflow_state changes.
-
-
 ### Event Body Schema
 
 | Field | Description |
@@ -1258,9 +1214,14 @@ Basic
 | **data[0].object.extensions["com.instructure.canvas"].state_is_current** | Indicates if this enrollment_state is up to date |
 | **data[0].object.extensions["com.instructure.canvas"].state** | The state of the enrollment |
 | **data[0].object.extensions["com.instructure.canvas"].state_valid_until** | The time at which this enrollment is no longer valid |
-| **data[0].object.type** | Entity |
 
 
+
+<h2 id="enrollment_state_updated">enrollment_state_updated</h2>
+
+**Definition:** The event is emitted anytime an enrollment record workflow state changes.
+
+**Trigger:** Triggered when a course enrollment workflow_state changes.
 
 
 
@@ -1349,30 +1310,26 @@ Basic
 
 
 
-<h2 id="enrollment_updated">enrollment_updated</h2>
-
-**Definition:** The event is emitted anytime an enrollment record is updated by an end user or API request. Only changes to the fields included in the body of the event payload will emit the `updated` event.
-
-**Trigger:** Triggered when a course enrollment is modified.
-
-
 ### Event Body Schema
 
 | Field | Description |
 |-|-|
 | **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.extensions["com.instructure.canvas"].course_id** | The Canvas id of the course for this enrollment |
-| **data[0].object.extensions["com.instructure.canvas"].course_section_id** | The id of the section of the course for the new enrollment |
+| **data[0].object.extensions["com.instructure.canvas"].access_is_current** | Indicates if the enrollment_state is up to date |
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].limit_privileges_to_course_section** | Whether students can only talk to students within their course section |
-| **data[0].object.extensions["com.instructure.canvas"].type** | The type of enrollment; e.g. StudentEnrollment, TeacherEnrollment, ObserverEnrollment, etc. |
-| **data[0].object.extensions["com.instructure.canvas"].user_id** | The Canvas id of the currently logged in user |
-| **data[0].object.extensions["com.instructure.canvas"].user_name** | The user first and last name |
-| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | 1. Workflow state of the assignment when used in the assignment context (deleted, duplicating, failed_to_import, failed_to_duplicate, failed_to_migrate, importing, published, unpublished) - 2. Workflow state of the enrollment when used in the enrollment context (active, completed, creation_pending, deleted, inactive, invited) |
-| **data[0].object.type** | Entity |
+| **data[0].object.extensions["com.instructure.canvas"].restricted_access** | Indicates whether enrollment access is restricted, set to 'TRUE' if enrollment state is restricted |
+| **data[0].object.extensions["com.instructure.canvas"].state_is_current** | Indicates if this enrollment_state is up to date |
+| **data[0].object.extensions["com.instructure.canvas"].state** | The state of the enrollment |
+| **data[0].object.extensions["com.instructure.canvas"].state_valid_until** | The time at which this enrollment is no longer valid |
 
 
+
+<h2 id="enrollment_updated">enrollment_updated</h2>
+
+**Definition:** The event is emitted anytime an enrollment record is updated by an end user or API request. Only changes to the fields included in the body of the event payload will emit the `updated` event.
+
+**Trigger:** Triggered when a course enrollment is modified.
 
 
 
@@ -1478,23 +1435,28 @@ Basic
 
 
 
-<h2 id="group_category_created">group_category_created</h2>
-
-**Definition:** The event is emitted anytime a new group category is added to a course group by an end user or API request.
-
-**Trigger:** Triggered when a new group category is created.
-
-
 ### Event Body Schema
 
 | Field | Description |
 |-|-|
 | **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
+| **data[0].object.extensions["com.instructure.canvas"].course_id** | The Canvas id of the course for this enrollment |
+| **data[0].object.extensions["com.instructure.canvas"].course_section_id** | The id of the section of the course for the new enrollment |
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.type** | Entity |
+| **data[0].object.extensions["com.instructure.canvas"].limit_privileges_to_course_section** | Whether students can only talk to students within their course section |
+| **data[0].object.extensions["com.instructure.canvas"].type** | The type of enrollment; e.g. StudentEnrollment, TeacherEnrollment, ObserverEnrollment, etc. |
+| **data[0].object.extensions["com.instructure.canvas"].user_id** | The Canvas id of the currently logged in user |
+| **data[0].object.extensions["com.instructure.canvas"].user_name** | The user first and last name |
+| **data[0].object.extensions["com.instructure.canvas"].workflow_state** | 1. Workflow state of the assignment when used in the assignment context (deleted, duplicating, failed_to_import, failed_to_duplicate, failed_to_migrate, importing, published, unpublished) - 2. Workflow state of the enrollment when used in the enrollment context (active, completed, creation_pending, deleted, inactive, invited) |
 
 
+
+<h2 id="group_category_created">group_category_created</h2>
+
+**Definition:** The event is emitted anytime a new group category is added to a course group by an end user or API request.
+
+**Trigger:** Triggered when a new group category is created.
 
 
 
@@ -1588,22 +1550,21 @@ Basic
 
 
 
-<h2 id="group_created">group_created</h2>
-
-**Definition:** The event is emitted anytime a new group is added to a course by an end user or API request.
-
-**Trigger:** Triggered when a new group is created.
-
-
 ### Event Body Schema
 
 | Field | Description |
 |-|-|
 | **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.type** | Group |
+| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
 
 
+
+<h2 id="group_created">group_created</h2>
+
+**Definition:** The event is emitted anytime a new group is added to a course by an end user or API request.
+
+**Trigger:** Triggered when a new group is created.
 
 
 
@@ -1699,21 +1660,20 @@ Basic
 
 
 
+### Event Body Schema
+
+| Field | Description |
+|-|-|
+| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
+| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
+
+
+
 <h2 id="group_membership_created">group_membership_created</h2>
 
 **Definition:** The event is emitted anytime a new member is added to a course group by an end user or API request.
 
 **Trigger:** Triggered when a new user is added to a group.
-
-
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.type** | Membership |
-
-
 
 
 
@@ -1795,23 +1755,19 @@ Basic
 
 
 
-<h2 id="submission_created">submission_created</h2>
-
-**Definition:** The event is emitted anytime an end user or API request submits an assignment.
-
-**Trigger:** Triggered when a submission gets updated and has not yet been submitted.
-
-
 ### Event Body Schema
 
 | Field | Description |
 |-|-|
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].submission_type** | The types of submission (basic_lti_launch, discussion_topic, media_recording, online_quiz, online_text_entry, online_upload, online_url) |
-| **data[0].object.extensions["com.instructure.canvas"].url** | The URL of the request that triggered the event. Only present in user-generated events |
-| **data[0].object.type** | Attempt |
 
 
+
+<h2 id="submission_created">submission_created</h2>
+
+**Definition:** The event is emitted anytime an end user or API request submits an assignment.
+
+**Trigger:** Triggered when a submission gets updated and has not yet been submitted.
 
 
 
@@ -1889,24 +1845,21 @@ Basic
 
 
 
+### Event Body Schema
+
+| Field | Description |
+|-|-|
+| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
+| **data[0].object.extensions["com.instructure.canvas"].submission_type** | The types of submission (basic_lti_launch, discussion_topic, media_recording, online_quiz, online_text_entry, online_upload, online_url) |
+| **data[0].object.extensions["com.instructure.canvas"].url** | The URL of the request that triggered the event. Only present in user-generated events |
+
+
+
 <h2 id="submission_updated">submission_updated</h2>
 
 **Definition:** The event is emitted anytime an end user or API request re-submits an assignment.
 
 **Trigger:** Triggered when a submission gets updated and has previously been submitted.
-
-
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
-| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].submission_type** | The types of submission (basic_lti_launch, discussion_topic, media_recording, online_quiz, online_text_entry, online_upload, online_url) |
-| **data[0].object.type** | Attempt |
-
-
 
 
 
@@ -2010,20 +1963,22 @@ Basic
 
 
 
+### Event Body Schema
+
+| Field | Description |
+|-|-|
+| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
+| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
+| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
+| **data[0].object.extensions["com.instructure.canvas"].submission_type** | The types of submission (basic_lti_launch, discussion_topic, media_recording, online_quiz, online_text_entry, online_upload, online_url) |
+
+
+
 <h2 id="syllabus_updated">syllabus_updated</h2>
 
 **Definition:** The event is emitted anytime a syllabus is changed in a course by an end user or API request. Only changes to the fields included in the body of the event payload will emit the `updated` event.
 
 **Trigger:** Triggered when a course syllabus gets updated.
-
-
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].object.type** | Document |
-
-
 
 
 
@@ -2106,22 +2061,12 @@ Basic
 
 
 
+
 <h2 id="user_account_association_created">user_account_association_created</h2>
 
 **Definition:** The event is emitted anytime a user is created in an account.
 
 **Trigger:** Triggered when a user is added to an account.
-
-
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].object.extensions["com.instructure.canvas"].is_admin** | Indicates whether a user has an administrator role |
-| **data[0].object.extensions["com.instructure.canvas"].user_id** | The Canvas id of the currently logged in user |
-| **data[0].object.type** | Entity |
-
-
 
 
 
@@ -2187,24 +2132,20 @@ Basic
 
 
 
+### Event Body Schema
+
+| Field | Description |
+|-|-|
+| **data[0].object.extensions["com.instructure.canvas"].is_admin** | Indicates whether a user has an administrator role |
+| **data[0].object.extensions["com.instructure.canvas"].user_id** | The Canvas id of the currently logged in user |
+
+
+
 <h2 id="wiki_page_created">wiki_page_created</h2>
 
 **Definition:** The event is emitted anytime a new wiki page is created by an end user or API request.
 
 **Trigger:** Triggered when a new wiki page is created.
-
-
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
-| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.extensions["com.instructure.canvas"].body** | The body of the new page. NOTE: This field will be truncated to only include the first 8192 characters. |
-| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.type** | Page |
-
-
 
 
 
@@ -2299,13 +2240,6 @@ Basic
 
 
 
-<h2 id="wiki_page_deleted">wiki_page_deleted</h2>
-
-**Definition:** The event is emitted anytime a wiki page is deleted by an end user or API request.
-
-**Trigger:** Triggered when a wiki page is deleted.
-
-
 ### Event Body Schema
 
 | Field | Description |
@@ -2314,9 +2248,14 @@ Basic
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
 | **data[0].object.extensions["com.instructure.canvas"].body** | The body of the new page. NOTE: This field will be truncated to only include the first 8192 characters. |
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.type** | Page |
 
 
+
+<h2 id="wiki_page_deleted">wiki_page_deleted</h2>
+
+**Definition:** The event is emitted anytime a wiki page is deleted by an end user or API request.
+
+**Trigger:** Triggered when a wiki page is deleted.
 
 
 
@@ -2410,13 +2349,6 @@ Basic
 
 
 
-<h2 id="wiki_page_updated">wiki_page_updated</h2>
-
-**Definition:** The event is emitted anytime a wiki page is altered by an end user or API request.
-
-**Trigger:** Triggered when title or body of wiki page is altered.
-
-
 ### Event Body Schema
 
 | Field | Description |
@@ -2425,9 +2357,14 @@ Basic
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
 | **data[0].object.extensions["com.instructure.canvas"].body** | The body of the new page. NOTE: This field will be truncated to only include the first 8192 characters. |
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.type** | Page |
 
 
+
+<h2 id="wiki_page_updated">wiki_page_updated</h2>
+
+**Definition:** The event is emitted anytime a wiki page is altered by an end user or API request.
+
+**Trigger:** Triggered when title or body of wiki page is altered.
 
 
 
@@ -2518,6 +2455,17 @@ Basic
 }
 ```
 
+
+
+
+### Event Body Schema
+
+| Field | Description |
+|-|-|
+| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
+| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
+| **data[0].object.extensions["com.instructure.canvas"].body** | The body of the new page. NOTE: This field will be truncated to only include the first 8192 characters. |
+| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
 
 
 

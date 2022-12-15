@@ -18,7 +18,7 @@
 
 import PropTypes from 'prop-types'
 import Folder from '../../backbone/models/Folder'
-import FilesystemObject from '../../backbone/models/FilesystemObject'
+import FilesystemObject from '../../backbone/models/FilesystemObject.coffee'
 
 export default {
   contextType: PropTypes.oneOf(['users', 'groups', 'accounts', 'courses']),

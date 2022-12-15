@@ -276,7 +276,7 @@ class Quizzes::QuizStatisticsController < ApplicationController
           serialize(statistics)
         end
 
-        render json:
+        render json: json
       end
     end
   end

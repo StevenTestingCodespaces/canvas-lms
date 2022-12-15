@@ -95,7 +95,6 @@
         <xs:element name="home_page_announcement_limit" type="optional_integer" minOccurs="0"/>
         <xs:element name="restrict_student_future_view" type="xs:boolean" minOccurs="0"/>
         <xs:element name="restrict_student_past_view" type="xs:boolean" minOccurs="0"/>
-        <xs:element name="restrict_quantitative_data" type="xs:boolean" minOccurs="0"/>
         <xs:element name="restrict_enrollments_to_course_dates" type="xs:boolean" minOccurs="0"/>
         <xs:element name="public_syllabus_to_auth" type="xs:boolean" minOccurs="0"/>
         <xs:element name="syllabus_course_summary" type="xs:boolean" minOccurs="0"/>
@@ -797,23 +796,19 @@
             <xs:sequence minOccurs="0" maxOccurs="unbounded">
               <xs:element name="track">
                 <xs:complexType>
-                  <xs:simpleContent>
-                    <xs:extension base="xs:string">
-                      <xs:attribute name="identifierref" type="xs:ID" use="required"/>
-                      <xs:attribute name="kind" use="required">
-                        <xs:simpleType>
-                          <xs:restriction base="xs:string">
-                            <xs:enumeration value="subtitles"/>
-                            <xs:enumeration value="captions"/>
-                            <xs:enumeration value="descriptions"/>
-                            <xs:enumeration value="chapters"/>
-                            <xs:enumeration value="metadata"/>
-                          </xs:restriction>
-                        </xs:simpleType>
-                      </xs:attribute>
-                      <xs:attribute name="locale" type="xs:string" use="required"/>
-                    </xs:extension>
-                  </xs:simpleContent>
+                  <xs:attribute name="identifierref" type="xs:ID" use="required"/>
+                  <xs:attribute name="kind" use="required">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:enumeration value="subtitles"/>
+                        <xs:enumeration value="captions"/>
+                        <xs:enumeration value="descriptions"/>
+                        <xs:enumeration value="chapters"/>
+                        <xs:enumeration value="metadata"/>
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                  <xs:attribute name="locale" type="xs:string" use="required"/>
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
@@ -932,19 +927,6 @@
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-      </xs:all>
-    </xs:complexType>
-  </xs:element>
-
-  <xs:element name="context_info">
-    <xs:complexType>
-      <xs:all>
-        <xs:element name="course_id" type="xs:string" minOccurs="1"/>
-        <xs:element name="course_name" type="xs:string" minOccurs="0"/>
-        <xs:element name="root_account_id" type="xs:string" minOccurs="1"/>
-        <xs:element name="root_account_uuid" type="xs:string" minOccurs="1"/>
-        <xs:element name="root_account_name" type="xs:string" minOccurs="0"/>
-        <xs:element name="canvas_domain" type="xs:string" minOccurs="0"/>
       </xs:all>
     </xs:complexType>
   </xs:element>

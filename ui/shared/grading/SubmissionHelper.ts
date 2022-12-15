@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2019 - present Instructure, Inc.
  *
@@ -17,13 +16,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {camelizeProperties, underscoreProperties} from '@canvas/convert-case'
+import {camelize, underscore} from 'convert-case'
 import {originalityReportSubmissionKey} from './originalityReportHelper'
-import type {
-  SubmissionOriginalityData,
-  SimilarityEntry,
-  CamelizedSubmissionWithOriginalityReport,
-} from '@canvas/grading/grading.d'
+import type {PlagiarismData, SimilarityEntry} from '@canvas/grading/grading.d'
 
 export function isGraded(submission) {
   // TODO: remove when we no longer camelize data in Gradebook
@@ -57,9 +52,9 @@ export function isHideable(submission) {
 //   - "pending" reports (reports still being processed)
 //   - scored reports, with higher scores (indicating more likely plagiarism) first
 export function extractSimilarityInfo(submission) {
-  const sub = camelizeProperties(submission) as CamelizedSubmissionWithOriginalityReport
+  const sub = camelize(submission)
   let plagiarismData
-  let type: 'vericite' | 'turnitin' | 'originality_report' | null = null
+  let type
 
   if (sub.vericiteData?.provider === 'vericite') {
     type = 'vericite'
@@ -85,7 +80,13 @@ export function extractSimilarityInfo(submission) {
 }
 
 function getSimilarityEntries(submission, plagiarismData) {
-  const entries: SimilarityEntry[] = []
+  const entries: {
+    id: string
+    data: {
+      status: string
+      similarity_score: number
+    }
+  }[] = []
 
   if (submission.submissionType === 'online_upload' && submission.attachments != null) {
     // A submission with attachments may have a plagiarism report for each
@@ -104,7 +105,7 @@ function getSimilarityEntries(submission, plagiarismData) {
     // may be keyed by the submission version (or not). Try to use the data for
     // the current version (as returned by originalityReportSubmissionKey), but
     // if that's not available, check the "base" submission instead.
-    const originalityReportKey = originalityReportSubmissionKey(underscoreProperties(submission))
+    const originalityReportKey = originalityReportSubmissionKey(underscore(submission))
     const dataForKey = plagiarismData[originalityReportKey]
 
     const baseSubmissionId = `submission_${submission.id}`
@@ -141,7 +142,7 @@ function similarityEntryComparator(a: SimilarityEntry, b: SimilarityEntry): numb
   return orderedStatuses.indexOf(aStatus || 'none') - orderedStatuses.indexOf(bStatus || 'none')
 }
 
-export function similarityIcon(similarityData: SubmissionOriginalityData): string {
+export function similarityIcon(similarityData: PlagiarismData): string {
   const {status, similarity_score} = similarityData
 
   let iconClass

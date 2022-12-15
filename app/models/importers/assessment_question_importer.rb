@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "importers"
+
 module Importers
   class AssessmentQuestionImporter < Importer
     self.item_class = AssessmentQuestion
@@ -149,12 +151,9 @@ module Importers
       end
 
       if (id = hash["assessment_question_id"])
-        AssessmentQuestion.where(id:).update_all(name: hash[:question_name],
-                                                 question_data: hash,
-                                                 workflow_state: "active",
-                                                 created_at: Time.now.utc,
-                                                 updated_at: Time.now.utc,
-                                                 assessment_question_bank_id: bank.id)
+        AssessmentQuestion.where(id: id).update_all(name: hash[:question_name], question_data: hash,
+                                                    workflow_state: "active", created_at: Time.now.utc, updated_at: Time.now.utc,
+                                                    assessment_question_bank_id: bank.id)
       else
         sql = <<~SQL.squish
           INSERT INTO #{AssessmentQuestion.quoted_table_name} (name, question_data, workflow_state, created_at, updated_at, assessment_question_bank_id, migration_id, root_account_id)
@@ -165,11 +164,8 @@ module Importers
           [sql, hash[:question_name], hash.to_yaml, Time.now.utc, Time.now.utc, bank.id, hash[:migration_id], bank.root_account_id]
         )
         GuardRail.activate(:primary) do
-          id = AssessmentQuestion.connection.insert(query,
-                                                    "#{name} Create",
-                                                    AssessmentQuestion.primary_key,
-                                                    nil,
-                                                    AssessmentQuestion.sequence_name)
+          id = AssessmentQuestion.connection.insert(query, "#{name} Create",
+                                                    AssessmentQuestion.primary_key, nil, AssessmentQuestion.sequence_name)
           hash["assessment_question_id"] = id
         end
       end

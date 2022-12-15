@@ -38,15 +38,11 @@ module BlueprintCourseCommon
 
   def create_and_migrate_master_assignments(master)
     template = master.master_course_templates.first
-    @assignment1 = master.assignments.create!(title: "Assignment 1",
-                                              grading_type: "points",
-                                              points_possible: 10.0,
-                                              unlock_at: 2.days.from_now)
+    @assignment1 = master.assignments.create!(title: "Assignment 1", grading_type: "points",
+                                              points_possible: 10.0, unlock_at: Time.zone.now + 2.days)
     template.create_content_tag_for!(@assignment1)
-    @assignment2 = master.assignments.create!(title: "Assignment 2",
-                                              grading_type: "points",
-                                              points_possible: 10.0,
-                                              unlock_at: 2.days.from_now)
+    @assignment2 = master.assignments.create!(title: "Assignment 2", grading_type: "points",
+                                              points_possible: 10.0, unlock_at: Time.zone.now + 2.days)
     tag1 = template.create_content_tag_for!(@assignment2)
     tag1.update(restrictions: { points: true, availability_dates: true })
     run_master_course_migration(master)
@@ -65,9 +61,9 @@ module BlueprintCourseCommon
 
   def create_and_migrate_master_discussions(master)
     template = master.master_course_templates.first
-    @discussion1 = master.discussion_topics.create!(title: "Discussion 1", delayed_post_at: 2.days.from_now)
+    @discussion1 = master.discussion_topics.create!(title: "Discussion 1", delayed_post_at: Time.zone.now + 2.days)
     template.create_content_tag_for!(@discussion1)
-    @discussion2 = master.discussion_topics.create!(title: "Discussion 2", delayed_post_at: 3.days.from_now)
+    @discussion2 = master.discussion_topics.create!(title: "Discussion 2", delayed_post_at: Time.zone.now + 3.days)
     tag1 = template.create_content_tag_for!(@discussion2)
     tag1.update(restrictions: { availability_dates: true })
     run_master_course_migration(master)
@@ -79,8 +75,8 @@ module BlueprintCourseCommon
   end
 
   def update_master_discussion_and_migrate(master)
-    @discussion1.update(delayed_post_at: 1.day.from_now)
-    @discussion2.update(delayed_post_at: 1.day.from_now)
+    @discussion1.update(delayed_post_at: Time.zone.now + 1.day)
+    @discussion2.update(delayed_post_at: Time.zone.now + 1.day)
     run_master_course_migration(master)
   end
 
@@ -107,9 +103,9 @@ module BlueprintCourseCommon
 
   def create_and_migrate_master_quizzes(master)
     template = master.master_course_templates.first
-    @quiz1 = master.quizzes.create!(title: "Quiz 1", due_at: 2.days.from_now)
+    @quiz1 = master.quizzes.create!(title: "Quiz 1", due_at: Time.zone.now + 2.days)
     template.create_content_tag_for!(@quiz1)
-    @quiz2 = master.quizzes.create!(title: "Quiz 2", due_at: 2.days.from_now)
+    @quiz2 = master.quizzes.create!(title: "Quiz 2", due_at: Time.zone.now + 2.days)
     tag1 = template.create_content_tag_for!(@quiz2)
     tag1.update(restrictions: { due_dates: true })
     run_master_course_migration(master)
@@ -117,12 +113,12 @@ module BlueprintCourseCommon
 
   def update_child_quiz(minion)
     child_quiz = minion.quizzes.where(title: @quiz1.title).first
-    child_quiz.update(due_at: 1.day.from_now)
+    child_quiz.update(due_at: Time.zone.now + 1.day)
   end
 
   def update_master_quiz_and_migrate(master)
-    @quiz1.update(due_at: 3.days.from_now)
-    @quiz2.update(due_at: 3.days.from_now)
+    @quiz1.update(due_at: Time.zone.now + 3.days)
+    @quiz2.update(due_at: Time.zone.now + 3.days)
     run_master_course_migration(master)
   end
 

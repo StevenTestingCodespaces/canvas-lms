@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "importers"
+
 module Importers
   class QuizQuestionImporter < Importer
     self.item_class = Quizzes::QuizQuestion
@@ -35,37 +37,24 @@ module Importers
 
       if (id = qq_ids[mig_id])
         data = { quiz_group_id: quiz_group&.id,
-                 assessment_question_id: hash["assessment_question_id"],
-                 question_data: hash,
-                 created_at: Time.now.utc,
-                 updated_at: Time.now.utc,
-                 migration_id: mig_id,
-                 position: }
+                 assessment_question_id: hash["assessment_question_id"], question_data: hash,
+                 created_at: Time.now.utc, updated_at: Time.now.utc, migration_id: mig_id,
+                 position: position }
         data.delete(:assessment_question_id) if hash["assessment_question_id"].nil? && migration.for_master_course_import? # don't undo an existing association
-        Quizzes::QuizQuestion.where(id:).update_all(data)
+        Quizzes::QuizQuestion.where(id: id).update_all(data)
       else
         root_account_id = quiz&.root_account_id || context&.root_account_id
         args = [
-          quiz&.id,
-          quiz_group&.id,
-          hash["assessment_question_id"],
-          hash.to_yaml,
-          Time.now.utc,
-          Time.now.utc,
-          mig_id,
-          position,
-          root_account_id
+          quiz&.id, quiz_group&.id, hash["assessment_question_id"],
+          hash.to_yaml, Time.now.utc, Time.now.utc, mig_id, position, root_account_id
         ]
         query = item_class.send(:sanitize_sql, [<<~SQL.squish, *args])
           INSERT INTO #{Quizzes::QuizQuestion.quoted_table_name} (quiz_id, quiz_group_id, assessment_question_id, question_data, created_at, updated_at, migration_id, position, root_account_id)
           VALUES (?,?,?,?,?,?,?,?,?)
         SQL
         GuardRail.activate(:primary) do
-          qq_ids[mig_id] = item_class.connection.insert(query,
-                                                        "#{item_class.name} Create",
-                                                        item_class.primary_key,
-                                                        nil,
-                                                        item_class.sequence_name)
+          qq_ids[mig_id] = item_class.connection.insert(query, "#{item_class.name} Create",
+                                                        item_class.primary_key, nil, item_class.sequence_name)
         end
       end
       hash

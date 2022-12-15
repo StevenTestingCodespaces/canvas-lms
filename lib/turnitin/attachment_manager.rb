@@ -47,7 +47,9 @@ module Turnitin
           filename = content_disposition.match(/filename=("?)(.+)\1/)[2]
           filename.tr!("/", "-")
           path = File.join(dirname, filename)
-          File.binwrite(path, response.body)
+          File.open(path, "wb") do |f|
+            f.write(response.body)
+          end
           attachment.uploaded_data = Rack::Test::UploadedFile.new(path, response.headers["content-type"], true)
           attachment.display_name = filename
           attachment.user ||= user

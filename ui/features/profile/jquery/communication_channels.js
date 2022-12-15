@@ -273,7 +273,7 @@ $(document).ready(function () {
       $channel.remove()
     },
   })
-  $(document).on('click', 'a.email_address_taken_learn_more', event => {
+  $('a.email_address_taken_learn_more').live('click', event => {
     event.preventDefault()
   })
 

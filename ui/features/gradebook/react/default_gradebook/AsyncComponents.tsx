@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2020 - present Instructure, Inc.
  *
@@ -19,14 +18,14 @@
 
 import React from 'react'
 import {render} from 'react-dom'
-import type {GradebookSettingsModalProps} from './components/GradebookSettingsModal'
 
 async function loadAssignmentPostingPolicyTray() {
   return (await import('../AssignmentPostingPolicyTray/index')).default
 }
 
 async function loadCurveGradesDialog() {
-  return (await import('@canvas/grading/jquery/CurveGradesDialog')).default
+  // @ts-ignore
+  return (await import('@canvas/grading/jquery/CurveGradesDialog.coffee')).default
 }
 
 async function loadGradeDetailTray() {
@@ -54,7 +53,8 @@ async function loadPostAssignmentGradesTray() {
 }
 
 async function loadSetDefaultGradeDialog() {
-  return (await import('@canvas/grading/jquery/SetDefaultGradeDialog')).default
+  // @ts-ignore
+  return (await import('@canvas/grading/jquery/SetDefaultGradeDialog.coffee')).default
 }
 
 const AsyncComponents = {
@@ -73,7 +73,7 @@ const AsyncComponents = {
     render(<GradeDetailTray {...props} />, $container)
   },
 
-  async renderGradebookSettingsModal(props: GradebookSettingsModalProps, $container: HTMLElement) {
+  async renderGradebookSettingsModal(props, $container) {
     const GradebookSettingsModal = await loadGradebookSettingsModal()
     render(<GradebookSettingsModal key="grade_details_tray" {...props} />, $container)
   },

@@ -64,8 +64,6 @@ describe OutcomesServiceAuthoritativeResultsHelper do
           lor.id = nil
           lor.content_tag_id = nil
           lor.context_code = nil
-          lor.artifact_id = nil
-          lor.artifact_type = nil
         end
       end
 
@@ -114,20 +112,20 @@ describe OutcomesServiceAuthoritativeResultsHelper do
 
     LearningOutcomeResult.create!(
       learning_outcome: @outcome,
-      user:,
+      user: user,
       context: @course,
       alignment: @alignment,
       artifact: submission,
       associated_asset: @assignment,
       association_type: "RubricAssociation",
       association_id: @rubric_association.id,
-      title:,
-      score:,
-      possible:,
-      mastery:,
+      title: title,
+      score: score,
+      possible: possible,
+      mastery: mastery,
       created_at: submitted_at,
       updated_at: submitted_at,
-      submitted_at:,
+      submitted_at: submitted_at,
       assessed_at: submitted_at
     )
   end
@@ -155,15 +153,14 @@ describe OutcomesServiceAuthoritativeResultsHelper do
   describe "percentage and mastery calculation" do
     it "where points possible != outcome points possible" do
       # outcome is a 5 point scale that requires 3 to get mastery (a.k.a 60%)
-      outcome = create_outcome
+      create_outcome
 
-      assignments = []
-      20.times do |points|
-        assignments.push(create_alignment)
+      (0...20).each do |points|
+        create_alignment
         create_learning_outcome_result @students[0], points, { points_possible: 19.0 }
       end
 
-      results = convert_to_learning_outcome_results(authoritative_results_from_db, @course, [outcome], @students, assignments)
+      results = convert_to_learning_outcome_results(authoritative_results_from_db)
 
       expect(results.size).to eq 20
       results.each do |r|
@@ -197,23 +194,22 @@ describe OutcomesServiceAuthoritativeResultsHelper do
 
   describe "#rollup_user_results" do
     it "returns a rollup score for each distinct outcome_id" do
-      outcomes = []
-      assignments = []
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[0], 1.0
 
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[0], 3.0
 
       from_lor = rollup_user_results LearningOutcomeResult.all.to_a
-      from_ar = rollup_scores(authoritative_results_from_db, @course, outcomes, @students, assignments)
+      from_ar = rollup_scores(authoritative_results_from_db)
 
       expect(from_lor.size).to eq 2
       from_lor.each_with_index do |ru, i|
         expect(ru.outcome_results.first).to eq LearningOutcomeResult.all[i]
       end
+
       expect(from_lor).to be_eq_rollup from_ar
     end
 
@@ -225,17 +221,16 @@ describe OutcomesServiceAuthoritativeResultsHelper do
         create_outcome({ calculation_method: "highest" })
       ]
 
-      assignments = []
       (1..3).each do |i|
-        4.times do |j|
+        (0..3).each do |j|
           @outcome = outcomes[j]
-          assignments.push(create_alignment)
+          create_alignment
           create_learning_outcome_result @students[0], nil, { submitted_at: time - i.days }
         end
       end
 
       from_lor = rollup_user_results LearningOutcomeResult.all.to_a
-      from_ar = rollup_scores(authoritative_results_from_db, @course, outcomes, @students, assignments)
+      from_ar = rollup_scores(authoritative_results_from_db)
 
       expect(from_lor.size).to eq 0
 
@@ -245,15 +240,15 @@ describe OutcomesServiceAuthoritativeResultsHelper do
 
   describe "#mastery calculation" do
     it "returns maximum score when highest score method is selected" do
-      outcome = create_outcome({ calculation_method: "highest" })
-      assignments = []
+      create_outcome({ calculation_method: "highest" })
+
       [1.0, 3.0].each do |r|
-        assignments.push(create_alignment)
+        create_alignment
         create_learning_outcome_result @students[0], r
       end
 
       from_lor = rollup_user_results LearningOutcomeResult.all.to_a
-      from_ar = rollup_scores(authoritative_results_from_db, @course, [outcome], @students, assignments)
+      from_ar = rollup_scores(authoritative_results_from_db)
 
       expect(from_lor.size).to eq 1
       expect(from_lor[0].count).to eq 2
@@ -263,17 +258,16 @@ describe OutcomesServiceAuthoritativeResultsHelper do
     end
 
     it "returns correct score when latest score method is selected" do
-      outcome = create_outcome({ calculation_method: "latest" })
+      create_outcome({ calculation_method: "latest" })
 
       submission_time = [nil, time, time - 1.day]
-      assignments = []
       [4.0, 3.0, 1.0].each_with_index do |r, i|
-        assignments.push(create_alignment)
+        create_alignment
         create_learning_outcome_result @students[0], r, { submitted_at: submission_time[i] }
       end
 
       from_lor = rollup_user_results LearningOutcomeResult.all.to_a
-      from_ar = rollup_scores(authoritative_results_from_db, @course, [outcome], @students, assignments)
+      from_ar = rollup_scores(authoritative_results_from_db)
 
       expect(from_lor[0].score).to eq 3.0
 
@@ -282,29 +276,23 @@ describe OutcomesServiceAuthoritativeResultsHelper do
 
     it "properly calculates results when method is n# of scores for mastery" do
       def create_from_scores(scores, calculation_int)
-        outcome = create_outcome({ calculation_method: "n_mastery", calculation_int: })
+        create_outcome({ calculation_method: "n_mastery", calculation_int: calculation_int })
 
-        assignments = []
         scores.each do |r|
-          assignments.push(create_alignment)
+          create_alignment
           create_learning_outcome_result @students[0], r
         end
-        [outcome, assignments]
       end
 
-      outcome1, assignments1 = create_from_scores [3.0, 1.0], 3
-      outcome2, assignments2 = create_from_scores [3.0, 1.0, 2.0], 3
-      outcome3, assignments3 = create_from_scores [4.0, 5.0, 1.0, 3.0, 2.0, 3.0], 3
-      outcome4, assignments4 = create_from_scores [1.0, 2.0], 1
-      outcome5, assignments5 = create_from_scores [1.0, 2.0, 3.0], 1
-      outcome6, assignments6 = create_from_scores [1.0, 2.0, 3.0, 4.0], 1
+      create_from_scores [3.0, 1.0], 3
+      create_from_scores [3.0, 1.0, 2.0], 3
+      create_from_scores [4.0, 5.0, 1.0, 3.0, 2.0, 3.0], 3
+      create_from_scores [1.0, 2.0], 1
+      create_from_scores [1.0, 2.0, 3.0], 1
+      create_from_scores [1.0, 2.0, 3.0, 4.0], 1
 
       from_lor = rollup_user_results LearningOutcomeResult.all.to_a
-      from_ar = rollup_scores(authoritative_results_from_db,
-                              @course,
-                              [outcome1, outcome2, outcome3, outcome4, outcome5, outcome6],
-                              @students,
-                              assignments1.concat(assignments2, assignments3, assignments4, assignments5, assignments6))
+      from_ar = rollup_scores(authoritative_results_from_db)
 
       expect(from_lor.size).to eq 6
       # without sorting the arrays this spec may fail at Flakey Spec Catcher
@@ -314,15 +302,15 @@ describe OutcomesServiceAuthoritativeResultsHelper do
     end
 
     it "does not error out and correctly averages when a result has a score of nil" do
-      outcome = create_outcome({ calculation_method: "n_mastery", calculation_int: 3 })
-      assignments = []
+      create_outcome({ calculation_method: "n_mastery", calculation_int: 3 })
+
       [4.0, 5.0, 1.0, 3.0, nil, 3.0].each do |r|
-        assignments.push(create_alignment)
+        create_alignment
         create_learning_outcome_result @students[0], r
       end
 
       from_lor = rollup_user_results LearningOutcomeResult.all.to_a
-      from_ar = rollup_scores(authoritative_results_from_db, @course, [outcome], @students, assignments)
+      from_ar = rollup_scores(authoritative_results_from_db)
 
       expect(from_lor.map(&:score)).to eq [3.75]
 
@@ -330,20 +318,18 @@ describe OutcomesServiceAuthoritativeResultsHelper do
     end
 
     it "properly calculates results when method is decaying average" do
-      outcomes = []
-      outcomes.push(create_outcome({ calculation_method: "decaying_average", calculation_int: 75 }))
-      assignment = create_alignment
+      create_outcome({ calculation_method: "decaying_average", calculation_int: 75 })
+      create_alignment
       create_learning_outcome_result @students[0], 3.0, { submitted_at: time }
 
-      outcomes.push(create_outcome({ calculation_method: "decaying_average", calculation_int: 75 }))
-      assignments = [assignment]
+      create_outcome({ calculation_method: "decaying_average", calculation_int: 75 })
       [4.0, 5.0, 1.0, 3.0].each_with_index do |r, i|
-        assignments.push(create_alignment)
+        create_alignment
         create_learning_outcome_result @students[0], r, { submitted_at: time - i.days }
       end
 
       from_lor = rollup_user_results LearningOutcomeResult.all.to_a
-      from_ar = rollup_scores(authoritative_results_from_db, @course, outcomes, @students, assignments)
+      from_ar = rollup_scores(authoritative_results_from_db)
 
       expect(from_lor.size).to eq 2
       # without sorting the arrays this spec may fail at Flakey Spec Catcher
@@ -355,22 +341,20 @@ describe OutcomesServiceAuthoritativeResultsHelper do
 
   describe "#outcome_service_results_rollups" do
     it "processes learning outcome results into rollups" do
-      assignments = []
-      outcomes = []
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[0], 1.0
 
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[1], 3.0
 
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[2], 2.0
-      results = convert_to_learning_outcome_results(authoritative_results_from_db, @course, outcomes, @students, assignments)
+      results = convert_to_learning_outcome_results(authoritative_results_from_db)
 
-      rollups = outcome_results_rollups(results:, users: @students)
+      rollups = outcome_results_rollups(results: results, users: @students)
       os_rollups = outcome_service_results_rollups(results)
 
       os_rollups.each_with_index do |r, i|
@@ -381,36 +365,32 @@ describe OutcomesServiceAuthoritativeResultsHelper do
     end
 
     it "returns a rollup for each distinct user_id" do
-      assignments = []
-      outcomes = []
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[0], 1.0
 
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[0], 2.0
 
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[1], 3.0
-      results = convert_to_learning_outcome_results(authoritative_results_from_db, @course, outcomes, @students, assignments)
+      results = convert_to_learning_outcome_results(authoritative_results_from_db)
 
       rollups = outcome_service_results_rollups(results)
       expect(rollups.count).to eq 2
     end
 
     it "returns a single rollup for a single user_id" do
-      outcomes = []
-      assignments = []
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[0], 1.0
 
-      outcomes.push(create_outcome)
-      assignments.push(create_alignment)
+      create_outcome
+      create_alignment
       create_learning_outcome_result @students[0], 3.0
-      results = convert_to_learning_outcome_results(authoritative_results_from_db, @course, outcomes, @students, assignments)
+      results = convert_to_learning_outcome_results(authoritative_results_from_db)
 
       rollups = outcome_service_results_rollups(results)
       expect(rollups.count).to eq 1

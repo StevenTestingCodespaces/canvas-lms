@@ -19,6 +19,7 @@
 #
 
 require_relative "../../lti2_spec_helper"
+require_dependency "lti/subscriptions_validator"
 module Lti
   describe SubscriptionsValidator do
     include_context "lti2_spec_helper"
@@ -43,7 +44,7 @@ module Lti
             context: account,
             guid: SecureRandom.uuid,
             shared_secret: "abc",
-            product_family:,
+            product_family: product_family,
             product_version: "1",
             workflow_state: "active",
             raw_data: { "enabled_capability" => ["vnd.instructure.webhooks.root_account.all"] },
@@ -75,7 +76,7 @@ module Lti
             context: account,
             guid: SecureRandom.uuid,
             shared_secret: "abc",
-            product_family:,
+            product_family: product_family,
             product_version: "1",
             workflow_state: "active",
             raw_data: { "enabled_capability" => ["vnd.instructure.webhooks.root_account.quiz_submitted"] },
@@ -119,7 +120,7 @@ module Lti
             context: account,
             guid: SecureRandom.uuid,
             shared_secret: "abc",
-            product_family:,
+            product_family: product_family,
             product_version: "1",
             workflow_state: "active",
             raw_data: { "enabled_capability" => ["vnd.instructure.webhooks.root_account.grade_change"] },
@@ -157,7 +158,7 @@ module Lti
             context: account,
             guid: SecureRandom.uuid,
             shared_secret: "abc",
-            product_family:,
+            product_family: product_family,
             product_version: "1",
             workflow_state: "active",
             raw_data: { "enabled_capability" => ["vnd.instructure.webhooks.root_account.attachment_created"] },
@@ -201,7 +202,7 @@ module Lti
             context: account,
             guid: SecureRandom.uuid,
             shared_secret: "abc",
-            product_family:,
+            product_family: product_family,
             product_version: "1",
             workflow_state: "active",
             raw_data: { "enabled_capability" => ["vnd.instructure.webhooks.root_account.submission_created"] },
@@ -245,7 +246,7 @@ module Lti
             context: account,
             guid: SecureRandom.uuid,
             shared_secret: "abc",
-            product_family:,
+            product_family: product_family,
             product_version: "1",
             workflow_state: "active",
             raw_data: { "enabled_capability" => ["vnd.instructure.webhooks.root_account.submission_updated"] },
@@ -289,7 +290,7 @@ module Lti
             context: account,
             guid: SecureRandom.uuid,
             shared_secret: "abc",
-            product_family:,
+            product_family: product_family,
             product_version: "1",
             workflow_state: "active",
             raw_data: { "enabled_capability" => ["vnd.instructure.webhooks.root_account.plagiarism_resubmit"] },
@@ -334,7 +335,7 @@ module Lti
           context: account,
           guid: SecureRandom.uuid,
           shared_secret: "abc",
-          product_family:,
+          product_family: product_family,
           product_version: "1",
           workflow_state: "active",
           raw_data: { "enabled_capability" => ["vnd.instructure.webhooks.root_account.all"] },
@@ -350,7 +351,7 @@ module Lti
 
       it "Uses the assignment's course as the context" do
         allow_any_instance_of(Lti::ToolProxy).to receive(:active_in_context?).with(an_instance_of(Course)).and_return(true)
-        course = Course.create!(account:)
+        course = Course.create!(account: account)
         assignment = course.assignments.create!(title: "some assignment")
 
         subscription[:ContextType] = "assignment"

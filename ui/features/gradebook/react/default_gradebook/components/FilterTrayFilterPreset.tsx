@@ -44,10 +44,10 @@ export type FilterTrayPresetProps = {
   isActive: boolean
   modules: Module[]
   onChange?: (filter: PartialFilterPreset) => void
-  onCreate?: (filter: PartialFilterPreset) => Promise<boolean>
-  onUpdate?: (filter: FilterPreset) => Promise<boolean>
+  onCreate?: (filter: PartialFilterPreset) => void
+  onUpdate?: (filter: FilterPreset) => Promise<void>
   onDelete?: () => void
-  onToggle: (expanded: boolean) => void
+  onToggle: (boolean) => void
   isExpanded: boolean
   sections: Section[]
   studentGroupCategories: StudentGroupCategoryMap
@@ -81,7 +81,7 @@ export default function FilterTrayPreset({
     setStagedFilters(filterPreset.filters)
   }, [filterPreset.filters])
 
-  const onChangeFilter = (filter: Filter) => {
+  const onChangeFilter = filter => {
     const otherFilters = stagedFilters.filter(c => c.id !== filter.id)
     if (otherFilters.find(c => c.type === filter.type)) {
       throw new Error('filter type already exists')
@@ -97,19 +97,14 @@ export default function FilterTrayPreset({
 
   const handleCreateFilter = () => {
     if (onCreate) {
-      return onCreate({
+      onCreate({
         ...filterPreset,
         name,
         filters: stagedFilters.filter(isFilterNotEmpty),
-      }).then(success => {
-        if (success) {
-          setName('')
-          setStagedFilters(filterPreset.filters)
-          setFilterPresetWasChanged(false)
-        } else {
-          setFilterPresetWasChanged(true)
-        }
       })
+      setName('')
+      setStagedFilters(filterPreset.filters)
+      setFilterPresetWasChanged(false)
     }
   }
 
@@ -120,14 +115,11 @@ export default function FilterTrayPreset({
         name,
         filters: stagedFilters.filter(isFilterNotEmpty),
       } as FilterPreset
-      return onUpdate(updatedFilter).then(success => {
-        if (success) {
-          setFilterPresetWasChanged(false)
-        }
-        if (isActive) {
-          applyFilters(stagedFilters.filter(isFilterNotEmpty))
-        }
-      })
+      onUpdate(updatedFilter)
+      setFilterPresetWasChanged(false)
+      if (isActive) {
+        applyFilters(stagedFilters.filter(isFilterNotEmpty))
+      }
     }
   }
 

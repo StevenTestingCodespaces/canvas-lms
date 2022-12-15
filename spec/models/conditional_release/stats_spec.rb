@@ -18,6 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 require_relative "../../conditional_release_spec_helper"
+require_dependency "conditional_release/stats"
 
 module ConditionalRelease
   describe Stats do
@@ -58,8 +59,8 @@ module ConditionalRelease
         student.update_attribute(:short_name, user_name)
         submissions.map do |data|
           assignment, score, points_possible = data
-          Assignment.where(id: assignment).update_all(points_possible:)
-          Submission.where(assignment_id: assignment, user_id: student).update_all(score:)
+          Assignment.where(id: assignment).update_all(points_possible: points_possible)
+          Submission.where(assignment_id: assignment, user_id: student).update_all(score: score)
         end
       end
 
@@ -104,7 +105,7 @@ module ConditionalRelease
           set_user_submissions(1, "foo", [[@trigger, 32, 40]])
           rollup = Stats.students_per_range(@rule, true).with_indifferent_access
           expect(rollup.dig(:ranges, 0, :students, 0)).to have_key "trend"
-          expect(rollup.dig(:ranges, 0, :students, 0, :trend)).to be_nil
+          expect(rollup.dig(:ranges, 0, :students, 0, :trend)).to eq nil
         end
 
         it "returns the correct trend for a single follow on assignment" do
@@ -156,15 +157,15 @@ module ConditionalRelease
         ids.each do |id|
           points_possible = 100
           points_possible = points_possible_per_id[id] if points_possible_per_id
-          Assignment.where(id:).update_all(title: "assn #{id}", points_possible:)
+          Assignment.where(id: id).update_all(title: "assn #{id}", points_possible: points_possible)
         end
       end
 
       def set_submissions(submissions)
         submissions.map do |data|
           assignment, score, points_possible = data
-          Assignment.where(id: assignment).update_all(points_possible:)
-          Submission.where(assignment_id: assignment, user_id: @student_id).update_all(score:)
+          Assignment.where(id: assignment).update_all(points_possible: points_possible)
+          Submission.where(assignment_id: assignment, user_id: @student_id).update_all(score: score)
         end
       end
 

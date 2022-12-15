@@ -59,10 +59,7 @@ export function DueDateTray({...props}) {
                 </Text>
               </Table.ColHeader>
               {props.isAdmin && (
-                <Table.ColHeader
-                  id="due_date_tray_header_for"
-                  data-testid="due_date_tray_header_for"
-                >
+                <Table.ColHeader data-testid="due_date_tray_header_for">
                   <Text size={responsiveProps.textSize} weight="bold">
                     {I18n.t('For')}
                   </Text>

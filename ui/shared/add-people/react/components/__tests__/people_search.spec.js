@@ -19,9 +19,6 @@
 import {mount} from 'enzyme'
 import React from 'react'
 import PeopleSearch from '../people_search'
-import injectGlobalAlertContainers from '@canvas/util/react/testing/injectGlobalAlertContainers'
-
-injectGlobalAlertContainers()
 
 describe('PeopleSearch', () => {
   const props = {

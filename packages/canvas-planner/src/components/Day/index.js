@@ -19,16 +19,16 @@
 import React, {Component} from 'react'
 import classnames from 'classnames'
 import moment from 'moment-timezone'
+import {themeable} from '@instructure/ui-themeable'
 import {Heading} from '@instructure/ui-heading'
 import {Text} from '@instructure/ui-text'
 import {View} from '@instructure/ui-view'
-import {arrayOf, bool, func, number, shape, string} from 'prop-types'
-import {itemShape, sizeShape, userShape} from '../plannerPropTypes'
-import {getDynamicFullDate, getFriendlyDate, isToday} from '../../utilities/dateUtils'
-import buildStyle from './style'
-// eslint-disable-next-line import/no-named-as-default
+import {bool, shape, string, number, arrayOf, func} from 'prop-types'
+import {userShape, itemShape, sizeShape} from '../plannerPropTypes'
+import styles from './styles.css'
+import theme from './theme'
+import {getFriendlyDate, getDynamicFullDate, isToday} from '../../utilities/dateUtils'
 import MissingAssignments from '../MissingAssignments'
-// eslint-disable-next-line import/no-named-as-default
 import Grouping from '../Grouping'
 import formatMessage from '../../format-message'
 import {animatable} from '../../dynamic-ui'
@@ -48,7 +48,7 @@ export class Day extends Component {
     singleCourseView: bool,
     showMissingAssignments: bool,
     responsiveSize: sizeShape,
-    isObserving: bool,
+    isObserving: bool
   }
 
   static defaultProps = {
@@ -57,17 +57,15 @@ export class Day extends Component {
     singleCourseView: false,
     showMissingAssignments: false,
     responsiveSize: 'large',
-    isObserving: false,
+    isObserving: false
   }
 
   constructor(props) {
     super(props)
-    this.style = buildStyle()
 
     const tzMomentizedDate = moment.tz(props.day, props.timeZone)
-    this.friendlyName = getFriendlyDate(tzMomentizedDate, moment().tz(props.timeZone))
+    this.friendlyName = getFriendlyDate(tzMomentizedDate)
     this.date = getDynamicFullDate(tzMomentizedDate, props.timeZone)
-    this.thisIsToday = isToday(this.props.day)
   }
 
   componentDidMount() {
@@ -112,7 +110,7 @@ export class Day extends Component {
         url={courseInfo.url}
         key={groupKey}
         theme={{
-          titleColor: groupColor,
+          titleColor: groupColor
         }}
         toggleCompletion={this.props.toggleCompletion}
         currentUser={this.props.currentUser}
@@ -151,24 +149,21 @@ export class Day extends Component {
     return groupings
   }
 
-  render = () => (
-    <>
-      <style>{this.style.css}</style>
-      <div
-        className={classnames(this.style.classNames.root, 'planner-day', {
-          'planner-today': this.thisIsToday,
-        })}
-      >
+  render() {
+    const thisIsToday = isToday(this.props.day)
+
+    return (
+      <div className={classnames(styles.root, 'planner-day', {'planner-today': thisIsToday})}>
         <Heading border={this.hasItems() ? 'none' : 'bottom'}>
-          {this.thisIsToday ? (
+          {thisIsToday ? (
             <>
               <Text as="div" size="large" weight="bold">
                 {this.friendlyName}
               </Text>
-              <div className={this.style.classNames.secondary}>{this.date}</div>
+              <div className={styles.secondary}>{this.date}</div>
             </>
           ) : (
-            <div className={this.style.classNames.secondary}>
+            <div className={styles.secondary}>
               {this.friendlyName}, {this.date}
             </div>
           )}
@@ -183,17 +178,18 @@ export class Day extends Component {
             </View>
           )}
         </div>
-        {this.thisIsToday && this.props.showMissingAssignments && (
+        {thisIsToday && this.props.showMissingAssignments && (
           <MissingAssignments
             timeZone={this.props.timeZone}
             responsiveSize={this.props.responsiveSize}
           />
         )}
       </div>
-    </>
-  )
+    )
+  }
 }
 
-const AnimatableDay = animatable(Day)
-AnimatableDay.theme = Day.theme
+const ThemeableDay = themeable(theme, styles)(Day)
+const AnimatableDay = animatable(ThemeableDay)
+AnimatableDay.theme = ThemeableDay.theme
 export default AnimatableDay

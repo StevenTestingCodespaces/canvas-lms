@@ -16,6 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* eslint-disable react/no-this-in-sfc */
 import {useScope as useI18nScope} from '@canvas/i18n'
 import React from 'react'
 import createReactClass from 'create-react-class'
@@ -28,7 +29,7 @@ import MasterCourseLock from '../../MasterCourseLock'
 import FilesystemObjectThumbnail from '@canvas/files/react/components/FilesystemObjectThumbnail'
 import UsageRightsIndicator from '@canvas/files/react/components/UsageRightsIndicator'
 import Folder from '@canvas/files/backbone/models/Folder'
-import preventDefault from '@canvas/util/preventDefault'
+import preventDefault from 'prevent-default'
 import FriendlyDatetime from '@canvas/datetime/react/components/FriendlyDatetime'
 import friendlyBytes from '@canvas/files/util/friendlyBytes'
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -19,8 +18,6 @@
 
 import React from 'react'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import {ApolloProvider, createClient} from '@canvas/apollo'
-import FriendlyDatetime from '@canvas/datetime/react/components/FriendlyDatetime'
 import {ApplyTheme} from '@instructure/ui-themeable'
 import {Alert} from '@instructure/ui-alerts'
 import {Text} from '@instructure/ui-text'
@@ -39,7 +36,6 @@ import SubmissionCommentListItem from './SubmissionCommentListItem'
 import SubmissionCommentCreateForm from './SubmissionCommentCreateForm'
 import SubmissionStatus from './SubmissionStatus'
 import SubmissionTrayRadioInputGroup from './SubmissionTrayRadioInputGroup'
-import ProxyUploadModal from '@canvas/proxy-submission/react/ProxyUploadModal'
 import {extractSimilarityInfo} from '@canvas/grading/SubmissionHelper'
 import type {
   GradingStandard,
@@ -47,12 +43,7 @@ import type {
   PendingGradeInfo,
   SerializedComment,
 } from '../gradebook.d'
-import {
-  CamelizedAssignment,
-  CamelizedSubmission,
-  GradeEntryMode,
-  GradeResult,
-} from '@canvas/grading/grading.d'
+import {CamelizedAssignment, CamelizedSubmission} from '@canvas/grading/grading'
 
 import {Link} from '@instructure/ui-link'
 
@@ -90,10 +81,10 @@ export type SubmissionTrayProps = {
   }
   student: {
     id: string
-    avatarUrl?: string | null
+    avatarUrl?: string
     gradesUrl: string
     isConcluded: boolean
-    name: string | null
+    name: string
   }
   submission: CamelizedSubmission
   courseId: string
@@ -105,23 +96,23 @@ export type SubmissionTrayProps = {
   isInClosedGradingPeriod: boolean
   isInNoGradingPeriod: boolean
   isNotCountedForScore: boolean
-  enterGradesAs: GradeEntryMode
+  enterGradesAs: 'points' | 'percent' | 'passFail' | 'gradingScheme'
   isOpen: boolean
   isFirstStudent: boolean
   isLastStudent: boolean
-  latePolicy?: LatePolicyCamelized
+  latePolicy: LatePolicyCamelized
   locale: string
   editSubmissionComment: (commentId: string | null) => void
   onClose: () => void
   requireStudentGroupForSpeedGrader: boolean
   gradingScheme: null | GradingStandard[]
-  onGradeSubmission: (submission: CamelizedSubmission, gradeInfo: GradeResult) => void
+  onGradeSubmission: (grade: string, excused: boolean) => void
   onRequestClose: () => void
   selectNextAssignment: () => void
   selectPreviousAssignment: () => void
   selectNextStudent: () => void
   selectPreviousStudent: () => void
-  updateSubmission: (submission: CamelizedSubmission) => void
+  updateSubmission: (submission: any) => void
   updateSubmissionComment: (commentId: string, comment: string) => void
   createSubmissionComment: (comment: string) => void
   deleteSubmissionComment: (commentId: string) => void
@@ -129,27 +120,14 @@ export type SubmissionTrayProps = {
   onAnonymousSpeedGraderClick: (speedGraderUrl: string) => void
   submissionComments: SerializedComment[]
   showSimilarityScore: boolean
-  proxySubmissionsAllowed: boolean
-  reloadSubmission: (student: any, submission: any, proxyDetails: any) => void
 }
 
-type SubmissionTrayState = {
-  proxyUploadModalOpen: boolean
-}
-
-export default class SubmissionTray extends React.Component<
-  SubmissionTrayProps,
-  SubmissionTrayState
-> {
+export default class SubmissionTray extends React.Component<SubmissionTrayProps> {
   static defaultProps = {
     gradingDisabled: false,
     latePolicy: {lateSubmissionInterval: 'day'},
     submission: {drop: false},
     pendingGradeInfo: null,
-  }
-
-  state = {
-    proxyUploadModalOpen: false,
   }
 
   cancelCommenting = () => {
@@ -259,53 +237,6 @@ export default class SubmissionTray extends React.Component<
     )
   }
 
-  renderSubmitForStudentLink() {
-    const {proxySubmissionsAllowed} = this.props
-    const isFileUploadAssignment = this.props.assignment?.submissionTypes?.includes('online_upload')
-    if (proxySubmissionsAllowed && isFileUploadAssignment) {
-      return (
-        <View as="div" textAlign="center">
-          <Button
-            variant="link"
-            onClick={this.toggleUploadModal}
-            aria-label={I18n.t('Submit for Student %{name}', {name: this.props.student.name})}
-            data-testid="submit-for-student-button"
-          >
-            {I18n.t('Submit for Student')}
-          </Button>
-        </View>
-      )
-    }
-  }
-
-  renderProxySubmissionIndicator() {
-    const {submission} = this.props
-    if (submission.proxySubmitter) {
-      return (
-        <View as="div" textAlign="center">
-          <Text data-testid="proxy_submitter_name">
-            {I18n.t('Submitted by %{submitter}', {submitter: submission.proxySubmitter})}
-          </Text>
-          <br />
-          <FriendlyDatetime
-            format={I18n.t('#date.formats.date_at_time')}
-            dateTime={submission.submittedAt}
-          />
-        </View>
-      )
-    }
-  }
-
-  closeUploadModal = () => {
-    this.setState({proxyUploadModalOpen: false})
-  }
-
-  toggleUploadModal = () => {
-    this.setState(prevState => {
-      return {proxyUploadModalOpen: !prevState.proxyUploadModalOpen}
-    })
-  }
-
   renderSimilarityScore() {
     const {assignment, submission} = this.props
     const similarityInfo = extractSimilarityInfo(submission)
@@ -327,19 +258,6 @@ export default class SubmissionTray extends React.Component<
         reportUrl={reportUrl}
         similarityScore={similarity_score}
         status={status}
-      />
-    )
-  }
-
-  renderProxyUploadModal = () => {
-    return (
-      <ProxyUploadModal
-        open={this.state.proxyUploadModalOpen}
-        onClose={this.closeUploadModal}
-        assignment={this.props.assignment}
-        student={this.props.student}
-        submission={this.props.submission}
-        reloadSubmission={this.props.reloadSubmission}
       />
     )
   }
@@ -384,137 +302,129 @@ export default class SubmissionTray extends React.Component<
     }
 
     return (
-      <ApolloProvider client={createClient()}>
-        <Tray
-          contentRef={this.props.contentRef}
-          label={I18n.t('Submission tray')}
-          open={this.props.isOpen}
-          shouldContainFocus={true}
-          placement="end"
-          onDismiss={this.props.onRequestClose}
-          onClose={this.props.onClose}
-        >
-          <CloseButton
-            placement="start"
-            onClick={this.props.onRequestClose}
-            screenReaderLabel={I18n.t('Close submission tray')}
-          />
-          <div className="SubmissionTray__Container">
-            <div id="SubmissionTray__Content" style={{display: 'flex', flexDirection: 'column'}}>
-              <View as="div" padding={carouselContainerStyleOverride}>
-                {avatarUrl && renderAvatar(name, avatarUrl)}
+      <Tray
+        contentRef={this.props.contentRef}
+        label={I18n.t('Submission tray')}
+        open={this.props.isOpen}
+        shouldContainFocus={true}
+        placement="end"
+        onDismiss={this.props.onRequestClose}
+        onClose={this.props.onClose}
+      >
+        <CloseButton
+          placement="start"
+          onClick={this.props.onRequestClose}
+          screenReaderLabel={I18n.t('Close submission tray')}
+        />
+        <div className="SubmissionTray__Container">
+          <div id="SubmissionTray__Content" style={{display: 'flex', flexDirection: 'column'}}>
+            <View as="div" padding={carouselContainerStyleOverride}>
+              {avatarUrl && renderAvatar(name, avatarUrl)}
 
-                <Carousel
-                  id="student-carousel"
-                  disabled={trayIsBusy}
-                  displayLeftArrow={!this.props.isFirstStudent}
-                  displayRightArrow={!this.props.isLastStudent}
-                  leftArrowDescription={I18n.t('Previous student')}
-                  onLeftArrowClick={this.props.selectPreviousStudent}
-                  onRightArrowClick={this.props.selectNextStudent}
-                  rightArrowDescription={I18n.t('Next student')}
-                >
-                  <ApplyTheme theme={{mediumPaddingHorizontal: '0', mediumHeight: 'normal'}}>
-                    <Link href={this.props.student.gradesUrl} isWithinText={false}>
-                      {name}
-                    </Link>
-                  </ApplyTheme>
-                </Carousel>
+              <Carousel
+                id="student-carousel"
+                disabled={trayIsBusy}
+                displayLeftArrow={!this.props.isFirstStudent}
+                displayRightArrow={!this.props.isLastStudent}
+                leftArrowDescription={I18n.t('Previous student')}
+                onLeftArrowClick={this.props.selectPreviousStudent}
+                onRightArrowClick={this.props.selectNextStudent}
+                rightArrowDescription={I18n.t('Next student')}
+              >
+                <ApplyTheme theme={{mediumPaddingHorizontal: '0', mediumHeight: 'normal'}}>
+                  <Link href={this.props.student.gradesUrl} isWithinText={false}>
+                    {name}
+                  </Link>
+                </ApplyTheme>
+              </Carousel>
 
-                <View as="div" margin="small 0" className="hr" />
+              <View as="div" margin="small 0" className="hr" />
 
-                <Carousel
-                  id="assignment-carousel"
-                  disabled={trayIsBusy}
-                  displayLeftArrow={!this.props.isFirstAssignment}
-                  displayRightArrow={!this.props.isLastAssignment}
-                  leftArrowDescription={I18n.t('Previous assignment')}
-                  onLeftArrowClick={this.props.selectPreviousAssignment}
-                  onRightArrowClick={this.props.selectNextAssignment}
-                  rightArrowDescription={I18n.t('Next assignment')}
-                >
-                  <ApplyTheme theme={{mediumPaddingHorizontal: '0', mediumHeight: 'normal'}}>
-                    <Link href={this.props.assignment.htmlUrl} isWithinText={false}>
-                      {this.props.assignment.name}
-                    </Link>
-                  </ApplyTheme>
-                </Carousel>
+              <Carousel
+                id="assignment-carousel"
+                disabled={trayIsBusy}
+                displayLeftArrow={!this.props.isFirstAssignment}
+                displayRightArrow={!this.props.isLastAssignment}
+                leftArrowDescription={I18n.t('Previous assignment')}
+                onLeftArrowClick={this.props.selectPreviousAssignment}
+                onRightArrowClick={this.props.selectNextAssignment}
+                rightArrowDescription={I18n.t('Next assignment')}
+              >
+                <ApplyTheme theme={{mediumPaddingHorizontal: '0', mediumHeight: 'normal'}}>
+                  <Link href={this.props.assignment.htmlUrl} isWithinText={false}>
+                    {this.props.assignment.name}
+                  </Link>
+                </ApplyTheme>
+              </Carousel>
 
-                {this.props.speedGraderEnabled && this.renderSpeedGraderLink(speedGraderProps)}
+              {this.props.speedGraderEnabled && this.renderSpeedGraderLink(speedGraderProps)}
 
-                {this.renderSubmitForStudentLink()}
+              <View as="div" margin="small 0" className="hr" />
+            </View>
 
-                {this.renderProxySubmissionIndicator()}
+            <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
+              {this.props.showSimilarityScore && this.renderSimilarityScore()}
 
-                {this.renderProxyUploadModal()}
+              <SubmissionStatus
+                assignment={this.props.assignment}
+                isConcluded={this.props.student.isConcluded}
+                isInOtherGradingPeriod={this.props.isInOtherGradingPeriod}
+                isInClosedGradingPeriod={this.props.isInClosedGradingPeriod}
+                isInNoGradingPeriod={this.props.isInNoGradingPeriod}
+                isNotCountedForScore={this.props.isNotCountedForScore}
+                submission={this.props.submission}
+              />
 
-                <View as="div" margin="small 0" className="hr" />
+              <GradeInput
+                assignment={this.props.assignment}
+                disabled={this.props.gradingDisabled}
+                enterGradesAs={this.props.enterGradesAs}
+                gradingScheme={this.props.gradingScheme}
+                pendingGradeInfo={this.props.pendingGradeInfo}
+                onSubmissionUpdate={this.props.onGradeSubmission}
+                submission={this.props.submission}
+                submissionUpdating={this.props.submissionUpdating}
+              />
+
+              {!!this.props.submission.pointsDeducted && (
+                <View as="div" margin="small 0 0 0">
+                  <LatePolicyGrade
+                    assignment={this.props.assignment}
+                    enterGradesAs={this.props.enterGradesAs}
+                    gradingScheme={this.props.gradingScheme}
+                    submission={this.props.submission}
+                  />
+                </View>
+              )}
+
+              <View as="div" margin="small 0" className="hr" />
+
+              <View as="div" margin="0 0 small 0">
+                <div id="SubmissionTray__RadioInputGroup">
+                  <SubmissionTrayRadioInputGroup
+                    assignment={this.props.assignment}
+                    colors={this.props.colors}
+                    disabled={this.props.gradingDisabled}
+                    locale={this.props.locale}
+                    latePolicy={this.props.latePolicy}
+                    submission={this.props.submission}
+                    submissionUpdating={this.props.submissionUpdating}
+                    updateSubmission={this.props.updateSubmission}
+                  />
+                </div>
               </View>
 
-              <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
-                {this.props.showSimilarityScore && this.renderSimilarityScore()}
+              <View as="div" margin="small 0" className="hr" />
 
-                <SubmissionStatus
-                  assignment={this.props.assignment}
-                  isConcluded={this.props.student.isConcluded}
-                  isInOtherGradingPeriod={this.props.isInOtherGradingPeriod}
-                  isInClosedGradingPeriod={this.props.isInClosedGradingPeriod}
-                  isInNoGradingPeriod={this.props.isInNoGradingPeriod}
-                  isNotCountedForScore={this.props.isNotCountedForScore}
-                  submission={this.props.submission}
-                />
-
-                <GradeInput
-                  assignment={this.props.assignment}
-                  disabled={this.props.gradingDisabled}
-                  enterGradesAs={this.props.enterGradesAs}
-                  gradingScheme={this.props.gradingScheme}
-                  pendingGradeInfo={this.props.pendingGradeInfo}
-                  onSubmissionUpdate={this.props.onGradeSubmission}
-                  submission={this.props.submission}
-                  submissionUpdating={this.props.submissionUpdating}
-                />
-
-                {!!this.props.submission.pointsDeducted && (
-                  <View as="div" margin="small 0 0 0">
-                    <LatePolicyGrade
-                      assignment={this.props.assignment}
-                      enterGradesAs={this.props.enterGradesAs}
-                      gradingScheme={this.props.gradingScheme}
-                      submission={this.props.submission}
-                    />
-                  </View>
-                )}
-
-                <View as="div" margin="small 0" className="hr" />
-
-                <View as="div" margin="0 0 small 0">
-                  <div id="SubmissionTray__RadioInputGroup">
-                    <SubmissionTrayRadioInputGroup
-                      assignment={this.props.assignment}
-                      colors={this.props.colors}
-                      disabled={this.props.gradingDisabled}
-                      locale={this.props.locale}
-                      latePolicy={this.props.latePolicy}
-                      submission={this.props.submission}
-                      submissionUpdating={this.props.submissionUpdating}
-                      updateSubmission={this.props.updateSubmission}
-                    />
-                  </div>
-                </View>
-
-                <View as="div" margin="small 0" className="hr" />
-
-                <View as="div" padding="xx-small">
-                  <div id="SubmissionTray__Comments">
-                    {this.renderSubmissionComments(submissionCommentsProps)}
-                  </div>
-                </View>
-              </div>
+              <View as="div" padding="xx-small">
+                <div id="SubmissionTray__Comments">
+                  {this.renderSubmissionComments(submissionCommentsProps)}
+                </div>
+              </View>
             </div>
           </div>
-        </Tray>
-      </ApolloProvider>
+        </div>
+      </Tray>
     )
   }
 }

@@ -51,10 +51,6 @@ export const addAccountsToTree = (
           accountName: account.name,
           accountCount: account.sub_account_count + 1, // to include parent account in the count
         }),
-        label: I18n.t('%{accountName}, %{accountCount} accounts', {
-          accountName: account.name,
-          accountCount: account.sub_account_count + 1, // to include parent account in the count
-        }),
       },
     }
 

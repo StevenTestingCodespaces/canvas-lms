@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "securerandom"
+
 class LoginController < ApplicationController
   include Login::Shared
 
@@ -134,7 +136,6 @@ class LoginController < ApplicationController
       return render json: { error: I18n.t("Invalid redirect URL") }, status: :bad_request
     end
     return render_unauthorized_action unless return_to.absolute?
-    return render_unauthorized_action unless return_to.scheme == request.scheme
 
     host = return_to.host
     return render_unauthorized_action unless host.casecmp?(request.host)

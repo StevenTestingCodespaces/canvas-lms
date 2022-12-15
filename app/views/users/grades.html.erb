@@ -27,11 +27,7 @@
       <% if course.hide_final_grades? || (@grading_periods[course.id] && @grading_periods[course.id][:selected_period_id] == 0 && !course.display_totals_for_all_grading_periods?)%>
         --
       <% elsif @grades[:student_enrollments][course.id] %>
-        <% if course.restrict_quantitative_data?(@current_user) %>
-          <%= course.score_to_grade(@grades[:student_enrollments][course.id], user: @current_user) %>
-        <% else %>
-          <%= I18n.n(@grades[:student_enrollments][course.id], percentage: true) %>
-        <% end %>
+        <%= I18n.n(@grades[:student_enrollments][course.id], percentage: true) %>
       <% else %>
         <%= t('no_grade', 'no grade') %>
       <% end %>
@@ -56,11 +52,7 @@
       <% if enrollment.course.hide_final_grades? || (@grading_periods[enrollment.course_id] && @grading_periods[enrollment.course_id][:selected_period_id] == 0) && !enrollment.course.display_totals_for_all_grading_periods?%>
         --
       <% elsif @grades&.dig(:observed_enrollments, enrollment.course_id, enrollment.user_id) %>
-        <% if enrollment.course.restrict_quantitative_data?(@current_user) %>
-          <%= enrollment.course.score_to_grade(@grades[:observed_enrollments][enrollment.course_id][enrollment.user_id], user: @current_user) %>
-        <% else %>
-          <%= @grades[:observed_enrollments][enrollment.course_id][enrollment.user_id] %>%
-        <% end %>
+        <%= @grades[:observed_enrollments][enrollment.course_id][enrollment.user_id] %>%
       <% else %>
         <%= t('no_grade', 'no grade') %>
       <% end %>
@@ -83,11 +75,7 @@
     <td class="course" style="vertical-align: middle;"><a href="<%= course_grades_path(enrollment.course_id) %>"><%= enrollment.course.name %></a></td>
     <td class="percent">
       <% if @presenter.course_grade_summaries[enrollment.course_id][:score] %>
-        <% if enrollment.course.restrict_quantitative_data?(@current_user)%>
-          <%= enrollment.course.score_to_grade(@presenter.course_grade_summaries[enrollment.course_id][:score], user: @current_user)%>
-        <%else%>
-          <%= n(@presenter.course_grade_summaries[enrollment.course_id][:score], percentage: true, precision: 2) %>
-        <%end%>
+        <%= n(@presenter.course_grade_summaries[enrollment.course_id][:score], percentage: true, precision: 2) %>
         <div style="font-size: 0.6em; font-weight: normal;"><%= t('average_grades', {:one => "average for 1 student", :other => "average for %{count} students"}, :count => @presenter.course_grade_summaries[enrollment.course_id][:students]) %></div>
       <% else %>
         <span style="font-weight: normal; font-size: 0.9em;"><%= t('no_grades', 'no grades') %></span>

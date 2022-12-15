@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "importers"
+
 module Importers
   class ContextModuleImporter < Importer
     self.item_class = ContextModule
@@ -98,7 +100,7 @@ module Importers
     def self.flatten_item(item, indent)
       if item["type"] == "submodule"
         sub_items = []
-        sub_items << { type: "heading", title: item["title"], indent:, migration_id: item["migration_id"] }.with_indifferent_access
+        sub_items << { type: "heading", title: item["title"], indent: indent, migration_id: item["migration_id"] }.with_indifferent_access
         sub_items += (item["items"] || []).map { |i| flatten_item(i, indent + 1) }
         sub_items
       else
@@ -113,7 +115,7 @@ module Importers
 
       item ||= ContextModule.where(context_type: context.class.to_s, context_id: context, id: hash[:id]).first
       item ||= ContextModule.where(context_type: context.class.to_s, context_id: context, migration_id: hash[:migration_id]).first if hash[:migration_id]
-      item ||= ContextModule.new(context:)
+      item ||= ContextModule.new(context: context)
       item.migration_id = hash[:migration_id]
       migration.add_imported_item(item)
       item.name = hash[:title] || hash[:description]
@@ -202,7 +204,7 @@ module Importers
       hash[:migration_id] ||= Digest::MD5.hexdigest(hash[:title]) if hash[:title]
       existing_item = context_module.content_tags.where(id: hash[:id]).first if hash[:id].present?
       existing_item ||= context_module.content_tags.where(migration_id: hash[:migration_id]).first if hash[:migration_id]
-      existing_item ||= ContentTag.new(context_module:, context:)
+      existing_item ||= ContentTag.new(context_module: context_module, context: context)
 
       existing_item.mark_as_importing!(migration)
       migration.add_imported_item(existing_item)
@@ -218,24 +220,18 @@ module Importers
                                            type: "wiki_page",
                                            id: wiki.id,
                                            indent: hash[:indent].to_i
-                                         },
-                                         existing_item,
-                                         wiki_page: wiki,
-                                         position: context_module.migration_position)
+                                         }, existing_item, wiki_page: wiki, position: context_module.migration_position)
         end
       elsif resource_class == Attachment
         file = context_module.context.attachments.not_deleted.where(migration_id: hash[:linked_resource_id]).first if hash[:linked_resource_id]
         if file
           title = hash[:title] || hash[:linked_resource_title]
           item = context_module.add_item({
-                                           title:,
+                                           title: title,
                                            type: "attachment",
                                            id: file.id,
                                            indent: hash[:indent].to_i
-                                         },
-                                         existing_item,
-                                         attachment: file,
-                                         position: context_module.migration_position)
+                                         }, existing_item, attachment: file, position: context_module.migration_position)
         end
       elsif resource_class == Assignment
         ass = context_module.context.assignments.where(migration_id: hash[:linked_resource_id]).first if hash[:linked_resource_id]
@@ -245,10 +241,7 @@ module Importers
                                            type: "assignment",
                                            id: ass.id,
                                            indent: hash[:indent].to_i
-                                         },
-                                         existing_item,
-                                         assignment: ass,
-                                         position: context_module.migration_position)
+                                         }, existing_item, assignment: ass, position: context_module.migration_position)
         end
       elsif /folder|heading|contextmodulesubheader/i.match?((hash[:linked_resource_type] || hash[:type]))
         # just a snippet of text
@@ -256,9 +249,7 @@ module Importers
                                          title: hash[:title] || hash[:linked_resource_title],
                                          type: "context_module_sub_header",
                                          indent: hash[:indent].to_i
-                                       },
-                                       existing_item,
-                                       position: context_module.migration_position)
+                                       }, existing_item, position: context_module.migration_position)
       elsif /url/i.match?(hash[:linked_resource_type])
         # external url
         if (url = hash[:url])
@@ -269,10 +260,8 @@ module Importers
                                              title: hash[:title] || hash[:linked_resource_title] || hash["description"],
                                              type: "external_url",
                                              indent: hash[:indent].to_i,
-                                             url:
-                                           },
-                                           existing_item,
-                                           position: context_module.migration_position)
+                                             url: url
+                                           }, existing_item, position: context_module.migration_position)
           else
             migration.add_import_warning(t(:migration_module_item_type, "Module Item"), hash[:title], "#{hash[:url]} is not a valid URL")
           end
@@ -301,19 +290,17 @@ module Importers
           if external_tool_id.nil?
             migration.add_warning(t(:foreign_lti_tool,
                                     'The account External Tool for module item "%{title}" must be configured before the item can be launched',
-                                    title:))
+                                    title: title))
           end
 
           item = context_module.add_item({
-                                           title:,
+                                           title: title,
                                            type: "context_external_tool",
                                            indent: hash[:indent].to_i,
                                            url: external_tool_url,
                                            id: external_tool_id,
                                            lti_resource_link_lookup_uuid: hash[:lti_resource_link_lookup_uuid]
-                                         },
-                                         existing_item,
-                                         position: context_module.migration_position)
+                                         }, existing_item, position: context_module.migration_position)
           if hash[:link_settings_json]
             item.link_settings = JSON.parse(hash[:link_settings_json])
           end
@@ -322,7 +309,7 @@ module Importers
               t(
                 "The External Tool resource link (including any possible custom " \
                 'parameters) could not be set for module item "%{title}"',
-                title:
+                title: title
               )
             )
           end
@@ -335,10 +322,7 @@ module Importers
                                            type: "quiz",
                                            indent: hash[:indent].to_i,
                                            id: quiz.id
-                                         },
-                                         existing_item,
-                                         quiz:,
-                                         position: context_module.migration_position)
+                                         }, existing_item, quiz: quiz, position: context_module.migration_position)
         end
       elsif resource_class == DiscussionTopic
         topic = context_module.context.discussion_topics.where(migration_id: hash[:linked_resource_id]).first if hash[:linked_resource_id]
@@ -350,10 +334,7 @@ module Importers
                                            type: "discussion_topic",
                                            indent: hash[:indent].to_i,
                                            id: topic.id
-                                         },
-                                         existing_item,
-                                         discussion_topic: topic,
-                                         position: context_module.migration_position)
+                                         }, existing_item, discussion_topic: topic, position: context_module.migration_position)
         end
       elsif hash[:linked_resource_type] == "UNSUPPORTED_TYPE"
         # We know what this is and that we don't support it

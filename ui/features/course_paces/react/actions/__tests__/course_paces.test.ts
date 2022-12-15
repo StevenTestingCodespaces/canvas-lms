@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -32,11 +31,8 @@ import {
   PRIMARY_PACE,
   PROGRESS_FAILED,
   PROGRESS_RUNNING,
-  PACE_CONTEXTS_DEFAULT_STATE,
-  DEFAULT_UI_STATE,
 } from '../../__tests__/fixtures'
 import {SyncState} from '../../shared/types'
-import {paceContextsActions} from '../pace_contexts'
 
 const CREATE_API = `/api/v1/courses/${COURSE.id}/course_pacing`
 const UPDATE_API = `/api/v1/courses/${COURSE.id}/course_pacing/${PRIMARY_PACE.id}`
@@ -84,8 +80,10 @@ describe('Course paces actions', () => {
         course_pace: updatedPace,
         progress: PROGRESS_RUNNING,
       })
+
       const thunkedAction = coursePaceActions.publishPace()
       await thunkedAction(dispatch, getState)
+
       expect(dispatch.mock.calls[0]).toEqual([uiActions.startSyncing()])
       expect(dispatch.mock.calls[1]).toEqual([uiActions.clearCategoryError('publish')])
       expect(dispatch.mock.calls[2]).toEqual([coursePaceActions.saveCoursePace(updatedPace)])
@@ -94,14 +92,7 @@ describe('Course paces actions', () => {
       expect(JSON.stringify(dispatch.mock.calls[4])).toEqual(
         JSON.stringify([coursePaceActions.pollForPublishStatus()])
       )
-      expect(dispatch.mock.calls[5]).toEqual([
-        paceContextsActions.addPublishingPace({
-          progress_context_id: PROGRESS_RUNNING.context_id,
-          pace_context: getState().paceContexts.selectedContext!,
-          polling: true,
-        }),
-      ])
-      expect(dispatch.mock.calls[6]).toEqual([uiActions.syncingCompleted()])
+      expect(dispatch.mock.calls[5]).toEqual([uiActions.syncingCompleted()])
       expect(fetchMock.called(UPDATE_API, 'PUT')).toBe(true)
     })
 
@@ -160,19 +151,10 @@ describe('Course paces actions', () => {
     })
 
     it('sets a timeout that updates progress status and clears when a terminal status is reached', async () => {
-      const contextsPublishing = [
-        {
-          progress_context_id: PROGRESS_RUNNING.context_id,
-          pace_context: DEFAULT_STORE_STATE.paceContexts.defaultPaceContext,
-          polling: false,
-        },
-      ]
       const getState = () => ({
         ...DEFAULT_STORE_STATE,
         coursePace: {...DEFAULT_STORE_STATE.coursePace, publishingProgress: {...PROGRESS_RUNNING}},
-        paceContexts: {...DEFAULT_STORE_STATE.paceContexts, contextsPublishing},
       })
-
       const progressUpdated = {...PROGRESS_RUNNING, completion: 60}
       fetchMock.get(PROGRESS_API, progressUpdated)
 
@@ -188,15 +170,13 @@ describe('Course paces actions', () => {
       jest.advanceTimersByTime(PUBLISH_STATUS_POLLING_MS)
 
       await waitFor(() => {
-        expect(dispatch.mock.calls.length).toBe(6)
+        expect(dispatch.mock.calls.length).toBe(5)
         expect(dispatch.mock.calls[1]).toEqual([uiActions.clearCategoryError('checkPublishStatus')])
         expect(dispatch.mock.calls[2]).toEqual([coursePaceActions.setProgress(undefined)])
         expect(dispatch.mock.calls[4]).toEqual([
           coursePaceActions.coursePaceSaved(getState().coursePace),
         ])
-        expect(
-          screen.getAllByText(`${contextsPublishing[0].pace_context?.name} Pace updated`)[0]
-        ).toBeInTheDocument()
+        expect(screen.getAllByText('Neuromancy 300 Pace updated')[0]).toBeInTheDocument()
       })
     })
 
@@ -339,35 +319,10 @@ describe('Course paces actions', () => {
       expect(asyncDispatch.mock.calls[4]).toEqual([uiActions.hideLoadingOverlay()])
     })
 
-    it('fetches the pace context info again with all the previous filters', async () => {
+    it('fetches the pace context info again', async () => {
       const asyncDispatch = jest.fn(() => Promise.resolve())
-      paceContextsActions.fetchPaceContexts = jest.fn().mockReturnValue('fetchPaceContextsThunk')
-      const page = 2
-      const order = 'desc'
-      const contextType = 'student_enrollment'
-      const sortBy = PACE_CONTEXTS_DEFAULT_STATE.sortBy
-      const searchTerm = 'Jo'
-      const getState = () => ({
-        ...DEFAULT_STORE_STATE,
-        ui: {...DEFAULT_UI_STATE, selectedContextType: 'Enrollment'},
-        paceContexts: {
-          ...PACE_CONTEXTS_DEFAULT_STATE,
-          selectedContextType: contextType,
-          page,
-          order,
-          searchTerm,
-        },
-      })
-
+      const getState = mockGetState({...PRIMARY_PACE}, PRIMARY_PACE)
       await coursePaceActions.removePace()(asyncDispatch, getState)
-      expect(paceContextsActions.fetchPaceContexts).toHaveBeenCalledTimes(1)
-      expect(paceContextsActions.fetchPaceContexts).toHaveBeenCalledWith({
-        contextType,
-        searchTerm,
-        sortBy,
-        page,
-        orderType: order,
-      })
       expect(asyncDispatch.mock.calls[3].toString()).toMatch('fetchPaceContextsThunk')
     })
 

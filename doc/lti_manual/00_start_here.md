@@ -32,7 +32,6 @@
 - [Basic Outcomes](./13_basic_outcomes.md)
 - [Placements](./14_placements.md)
 - [Plagiarism](./15_plagiarism.md)
-- [Privacy Level](./16_privacy_level.md)
 
 **Other Docs**
 

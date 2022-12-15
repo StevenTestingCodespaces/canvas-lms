@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2017 - present Instructure, Inc.
  *
@@ -18,7 +17,7 @@
  */
 
 import ScoreToGradeHelper from './shared/helpers/ScoreToGradeHelper'
-import round from '@canvas/round'
+import round from 'round'
 import type {Submission} from '../../../api.d'
 
 const equivalentToNull = [undefined, null, '', 0]

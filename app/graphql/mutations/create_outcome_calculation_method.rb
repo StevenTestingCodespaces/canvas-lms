@@ -34,6 +34,6 @@ class Mutations::CreateOutcomeCalculationMethod < Mutations::OutcomeCalculationM
   def resolve(input:)
     context = context_fetcher(input, VALID_CONTEXTS)
     check_permission(context)
-    upsert(input, context:)
+    upsert(input, context: context)
   end
 end

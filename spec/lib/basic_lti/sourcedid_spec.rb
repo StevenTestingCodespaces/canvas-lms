@@ -35,21 +35,15 @@ describe BasicLTI::Sourcedid do
       }
     )
   end
-  let(:user) { course_with_student(course:).user }
+  let(:user) { course_with_student(course: course).user }
 
   before do
-    fake_lti_secrets = {
-      "lti-signing-secret" => Base64.encode64("signing-secret-vp04BNqApwdwUYPUI"),
-      "lti-encryption-secret" => Base64.encode64("encryption-secret-5T14NjaTbcYjc4")
+    fake_secrets = {
+      "lti-signing-secret" => "signing-secret-vp04BNqApwdwUYPUI",
+      "lti-encryption-secret" => "encryption-secret-5T14NjaTbcYjc4",
     }
 
-    allow(Rails.application.credentials).to receive(:dig)
-      .with(:lti, :signing_secret)
-      .and_return(fake_lti_secrets["lti-signing-secret"])
-
-    allow(Rails.application.credentials).to receive(:dig)
-      .with(:lti, :encryption_secret)
-      .and_return(fake_lti_secrets["lti-encryption-secret"])
+    allow(DynamicSettings).to receive(:find).and_return(fake_secrets)
   end
 
   it "creates a signed and encrypted sourcedid" do

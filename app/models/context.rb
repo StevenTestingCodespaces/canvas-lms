@@ -222,9 +222,9 @@ module Context
     if context && klass == ContextExternalTool
       res = klass.find_external_tool_by_id(id, context)
     elsif context && (klass.column_names & ["context_id", "context_type"]).length == 2
-      res = klass.where(context:, id:).first
+      res = klass.where(context: context, id: id).first
     else
-      res = klass.find_by(id:)
+      res = klass.find_by(id: id)
       res = nil if context && res.respond_to?(:context_id) && res.context_id != context.id
     end
     res
@@ -283,7 +283,7 @@ module Context
                  elsif resource_link_lookup_uuid
                    Lti::ResourceLink.where(
                      lookup_uuid: resource_link_lookup_uuid,
-                     context:
+                     context: context
                    ).active.take&.current_external_tool(context)
                  end
       elsif params[:id]
@@ -305,23 +305,6 @@ module Context
     object
   rescue
     nil
-  end
-
-  def self.api_type_name(klass)
-    case klass.to_s
-    when "Announcement"
-      "announcements"
-    when "Attachment"
-      "files"
-    when "ContextModule"
-      "modules"
-    when "ContentTag"
-      "module_items"
-    when "WikiPage"
-      "pages"
-    else
-      klass.table_name
-    end
   end
 
   def self.asset_name(asset)

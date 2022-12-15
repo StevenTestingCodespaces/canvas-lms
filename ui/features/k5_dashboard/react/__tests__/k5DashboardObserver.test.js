@@ -31,9 +31,6 @@ import {
 import {resetCardCache} from '@canvas/dashboard-card'
 import {MOCK_CARDS, MOCK_CARDS_2} from '@canvas/k5/react/__tests__/fixtures'
 import {fetchShowK5Dashboard} from '@canvas/observer-picker/react/utils'
-import injectGlobalAlertContainers from '@canvas/util/react/testing/injectGlobalAlertContainers'
-
-injectGlobalAlertContainers()
 
 jest.useFakeTimers()
 jest.mock('@canvas/observer-picker/react/utils', () => ({
@@ -49,9 +46,7 @@ describe('K5Dashboard Parent Support', () => {
     document.cookie = `${observedUserCookieName}=4;path=/`
     moxios.install()
     global.ENV = defaultEnv
-    fetchShowK5Dashboard.mockImplementation(() =>
-      Promise.resolve({show_k5_dashboard: true, use_classic_font: false})
-    )
+    fetchShowK5Dashboard.mockImplementation(() => Promise.resolve(true))
   })
 
   afterEach(() => {
@@ -253,10 +248,11 @@ describe('K5Dashboard Parent Support', () => {
     })
 
     beforeEach(() => {
+      fetchShowK5Dashboard.mockImplementationOnce(() => Promise.resolve(false))
       reloadMock.mockClear()
     })
 
-    const switchToStudent2 = async () => {
+    it('reloads the page when a student is selected in the students picker', async () => {
       const {findByRole, getByText} = render(
         <K5Dashboard
           {...defaultProps}
@@ -269,27 +265,7 @@ describe('K5Dashboard Parent Support', () => {
       const select = await findByRole('combobox', {name: 'Select a student to view'})
       act(() => select.click())
       act(() => getByText('Student 2').click())
-    }
-
-    it('does not reload the page if a k5 student with the same font selection is selected in the picker', async () => {
-      await switchToStudent2()
-      expect(reloadMock).not.toHaveBeenCalled()
-    })
-
-    it('reloads the page when a classic student is selected in the students picker', async () => {
-      fetchShowK5Dashboard.mockImplementationOnce(() =>
-        Promise.resolve({show_k5_dashboard: false, use_classic_font: false})
-      )
-      await switchToStudent2()
-      expect(reloadMock).toHaveBeenCalled()
-    })
-
-    it('reloads the page when a k5 student with a different font selection is selected in the picker', async () => {
-      fetchShowK5Dashboard.mockImplementationOnce(() =>
-        Promise.resolve({show_k5_dashboard: true, use_classic_font: true})
-      )
-      await switchToStudent2()
-      expect(reloadMock).toHaveBeenCalled()
+      await waitFor(() => expect(reloadMock).toHaveBeenCalled())
     })
   })
 

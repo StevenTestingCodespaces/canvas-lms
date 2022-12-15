@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useCallback, useState, useEffect, useRef, useMemo} from 'react'
+import React, {useState, useEffect, useRef, useMemo} from 'react'
 import PropTypes from 'prop-types'
 import {CloseButton} from '@instructure/ui-buttons'
 import {Heading} from '@instructure/ui-heading'
@@ -38,7 +38,6 @@ import {validIcon} from '../utils/iconValidation'
 import {IconMakerFormHasChanges} from '../utils/IconMakerFormHasChanges'
 import bridge from '../../../../bridge'
 import {shouldIgnoreClose} from '../utils/IconMakerClose'
-import {instuiPopupMountNode} from '../../../../util/fullscreenHelpers'
 
 const INVALID_MESSAGE = formatMessage(
   'One of the following styles must be added to save an icon: Icon Color, Outline Size, Icon Text, or Image'
@@ -95,6 +94,7 @@ function renderBody(
   editing,
   allowNameChange,
   nameRef,
+  rcsConfig,
   canvasOrigin,
   isLoading
 ) {
@@ -110,6 +110,7 @@ function renderBody(
       editing={editing}
       allowNameChange={allowNameChange}
       nameRef={nameRef}
+      rcsConfig={rcsConfig}
       canvasOrigin={canvasOrigin}
     />
   )
@@ -141,7 +142,7 @@ function renderFooter(
   )
 }
 
-export function IconMakerTray({editor, onUnmount, editing, canvasOrigin}) {
+export function IconMakerTray({editor, onUnmount, editing, rcsConfig, canvasOrigin}) {
   const nameRef = useRef()
   const applyRef = useRef()
 
@@ -156,12 +157,6 @@ export function IconMakerTray({editor, onUnmount, editing, canvasOrigin}) {
   const [initialSettings, setInitialSettings] = useState({...defaultState})
   const isModified = useRef(false)
 
-  const [mountNode, setMountNode] = useState(instuiPopupMountNode())
-
-  const handleFullscreenChange = useCallback(() => {
-    setMountNode(instuiPopupMountNode())
-  }, [])
-
   // These useRef objects are needed because when the tray is closed using the escape key
   // objects created by useState are not available, causing the comparison between
   // initialSettings and settings to behave unexpectedly
@@ -171,19 +166,6 @@ export function IconMakerTray({editor, onUnmount, editing, canvasOrigin}) {
   settingsRef.current = useMemo(() => settings, [settings])
   statusRef.current = useMemo(() => status, [status])
   initialSettingsRef.current = useMemo(() => initialSettings, [initialSettings])
-
-  useEffect(() => {
-    editor?.rceWrapper?._elementRef?.current?.addEventListener(
-      'fullscreenchange',
-      handleFullscreenChange
-    )
-    return () => {
-      editor?.rceWrapper?._elementRef?.current?.removeEventListener(
-        'fullscreenchange',
-        handleFullscreenChange
-      )
-    }
-  }, [editor, handleFullscreenChange])
 
   useEffect(() => {
     const formHasChanges = new IconMakerFormHasChanges(
@@ -229,13 +211,9 @@ export function IconMakerTray({editor, onUnmount, editing, canvasOrigin}) {
     settings.color,
     settings.textColor,
     settings.text,
-    settings.textSize,
-    settings.textBackgroundColor,
-    settings.textPosition,
     settings.imageSettings,
     settings.outlineColor,
     settings.outlineSize,
-    settings.name,
   ])
 
   const handleSubmit = ({replaceFile = false}) => {
@@ -337,7 +315,6 @@ export function IconMakerTray({editor, onUnmount, editing, canvasOrigin}) {
       isOpen={isOpen}
       onDismiss={onClose}
       onUnmount={onUnmount}
-      mountNode={mountNode}
       renderHeader={() => renderHeader(title, settings, onKeyDown, handleAlertDismissal, onClose)}
       renderBody={() =>
         renderBody(
@@ -347,6 +324,7 @@ export function IconMakerTray({editor, onUnmount, editing, canvasOrigin}) {
           editing,
           !replaceAll,
           nameRef,
+          rcsConfig,
           canvasOrigin,
           isLoading
         )
@@ -373,6 +351,7 @@ IconMakerTray.propTypes = {
   editor: PropTypes.object.isRequired,
   onUnmount: PropTypes.func,
   editing: PropTypes.bool,
+  rcsConfig: PropTypes.object.isRequired,
   canvasOrigin: PropTypes.string.isRequired,
 }
 

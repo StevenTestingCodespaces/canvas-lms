@@ -59,7 +59,7 @@ describe "Wiki Pages" do
       f(".pages").click
       expect(driver.current_url).not_to include("/courses/#{@course.id}/pages")
       expect(driver.current_url).to include("/courses/#{@course.id}/wiki")
-      expect(f("div.front-page")).to include_text "FRONT PAGE"
+      expect(f("span.front-page.label")).to include_text "Front Page"
       get "/courses/#{@course.id}/pages"
       expect(driver.current_url).to include("/courses/#{@course.id}/pages")
       expect(driver.current_url).not_to include("/courses/#{@course.id}/wiki")
@@ -97,7 +97,7 @@ describe "Wiki Pages" do
       expect_flash_message :info
     end
 
-    it "updates with changes made in other window", custom_timeout: 40.seconds, priority: "1" do
+    it "updates with changes made in other window", priority: "1", custom_timeout: 40.seconds do
       @course.wiki_pages.create!(title: "Page1")
       edit_page("this is")
       driver.execute_script("window.open()")
@@ -242,7 +242,7 @@ describe "Wiki Pages" do
       @course.save!
 
       title = "foo"
-      @course.wiki_pages.create!(title:, body: "bar")
+      @course.wiki_pages.create!(title: title, body: "bar")
 
       get "/courses/#{@course.id}/pages/#{title}"
       expect(f("#wiki_page_show")).not_to be_nil
@@ -293,7 +293,7 @@ describe "Wiki Pages" do
     it "displays wiki content", priority: "1" do
       @coures = public_course
       title = "foo"
-      public_course.wiki_pages.create!(title:, body: "bar")
+      public_course.wiki_pages.create!(title: title, body: "bar")
 
       get "/courses/#{public_course.id}/wiki/#{title}"
       expect(f(".user_content")).not_to be_nil

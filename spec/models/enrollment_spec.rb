@@ -281,10 +281,6 @@ describe Enrollment do
       score = @enrollment.scores.create!
       @enrollment.destroy
       expect(score.reload).to be_deleted
-
-      # ensure callbacks don't run if enrollment was already deleted
-      expect(Enrollment).not_to receive(:recompute_final_score_in_singleton)
-      @enrollment.destroy
     end
   end
 
@@ -351,7 +347,7 @@ describe Enrollment do
       # Create a new assignment while the student has no enrollment, to prove
       # that scores are being recalculated on enrollment, rather than copied.
       @course.assignments.create!(points_possible: 10)
-      new_enrollment = @course.enroll_student(student, allow_multiple_enrollments: true, section:)
+      new_enrollment = @course.enroll_student(student, allow_multiple_enrollments: true, section: section)
       expect(new_enrollment.scores.find_by!(course_score: true).final_score).to be 50.0
     end
   end
@@ -587,22 +583,22 @@ describe Enrollment do
 
       it "returns nil if final_grades_override is not allowed" do
         @course.update!(allow_final_grade_override: false)
-        expect(@enrollment.override_grade).to be_nil
+        expect(@enrollment.override_grade).to be nil
       end
 
       it "returns nil if final_grades_override is not enabled" do
         @course.disable_feature!(:final_grades_override)
-        expect(@enrollment.override_grade).to be_nil
+        expect(@enrollment.override_grade).to be nil
       end
 
       it "returns nil if there is no override grade" do
         @score.update!(override_score: nil)
-        expect(@enrollment.override_grade).to be_nil
+        expect(@enrollment.override_grade).to be nil
       end
 
       it "returns nil if a grading standard is not enabled" do
         @course.update!(grading_standard_enabled: false)
-        expect(@enrollment.override_grade).to be_nil
+        expect(@enrollment.override_grade).to be nil
       end
 
       it "returns the override grade if an override score exists" do
@@ -637,17 +633,17 @@ describe Enrollment do
 
       it "returns nil if final_grades_override is not allowed" do
         @course.update!(allow_final_grade_override: false)
-        expect(@enrollment.override_score).to be_nil
+        expect(@enrollment.override_score).to be nil
       end
 
       it "returns nil if final_grades_override is not enabled" do
         @course.disable_feature!(:final_grades_override)
-        expect(@enrollment.override_score).to be_nil
+        expect(@enrollment.override_score).to be nil
       end
 
       it "returns nil if there is no override score" do
         @score.update!(override_score: nil)
-        expect(@enrollment.override_score).to be_nil
+        expect(@enrollment.override_score).to be nil
       end
 
       it "returns the override score if one exists" do
@@ -949,15 +945,15 @@ describe Enrollment do
         end
 
         it "returns no score when given an invalid grading period id" do
-          expect(@enrollment.find_score(grading_period_id: 99_999)).to be_nil
+          expect(@enrollment.find_score(grading_period_id: 99_999)).to be nil
         end
 
         it "returns no score when given an invalid assignment group id" do
-          expect(@enrollment.find_score(assignment_group_id: 8_888_888)).to be_nil
+          expect(@enrollment.find_score(assignment_group_id: 8_888_888)).to be nil
         end
 
         it "returns no score when given unrecognized id keys" do
-          expect(@enrollment.find_score(flavor: "Anchovied Caramel")).to be_nil
+          expect(@enrollment.find_score(flavor: "Anchovied Caramel")).to be nil
         end
       end
 
@@ -1083,15 +1079,9 @@ describe Enrollment do
           expect(@enrollment.computed_final_score).to eq 80.3
         end
 
-        it "forgets scores on destroyed enrollments" do
-          @enrollment.scores.create!(final_score: 55.2)
-          @enrollment.destroy
-          expect(@enrollment.computed_final_score).to be_nil
-        end
-
         it "uses the value from the associated score object, even if it is nil" do
           @enrollment.scores.create!(final_score: nil)
-          expect(@enrollment.computed_final_score).to be_nil
+          expect(@enrollment.computed_final_score).to eq nil
         end
 
         it "ignores grading period scores when passed no arguments" do
@@ -1113,7 +1103,7 @@ describe Enrollment do
 
         it "returns nil if a grading period score is requested and does not exist" do
           final_score = @enrollment.computed_final_score(grading_period_id: period.id)
-          expect(final_score).to be_nil
+          expect(final_score).to eq nil
         end
       end
 
@@ -1148,7 +1138,7 @@ describe Enrollment do
 
         it "returns nil if a grading period grade is requested and does not exist" do
           final_grade = @enrollment.computed_final_grade(grading_period_id: period.id)
-          expect(final_grade).to be_nil
+          expect(final_grade).to eq nil
         end
       end
 
@@ -1252,7 +1242,7 @@ describe Enrollment do
       @enrollment.save!
 
       expect(@enrollment.reload.state_based_on_date).to eq :active
-      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to be(true)
+      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to eql(true)
     end
 
     it "does not allow post_to_forum permission on a course if date in future" do
@@ -1262,7 +1252,7 @@ describe Enrollment do
       @enrollment.save!
 
       expect(@enrollment.reload.state_based_on_date).to eq :accepted
-      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to be(false)
+      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to eql(false)
     end
 
     it "does not allow read permission on a course if date inactive" do
@@ -1273,18 +1263,18 @@ describe Enrollment do
 
       @course.restrict_student_future_view = true
       @course.save!
-      expect(@course.grants_right?(@enrollment.user, :read)).to be(false)
+      expect(@course.grants_right?(@enrollment.user, :read)).to eql(false)
 
       # post to forum comes from role_override; inactive enrollments should not
       # get any permissions form role_override
-      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to be(false)
+      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to eql(false)
     end
 
     it "does not allow read permission on a course if explicitly inactive" do
       @enrollment.workflow_state = "inactive"
       @enrollment.save!
-      expect(@course.grants_right?(@enrollment.user, :read)).to be(false)
-      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to be(false)
+      expect(@course.grants_right?(@enrollment.user, :read)).to eql(false)
+      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to eql(false)
     end
 
     it "allows read, but not post_to_forum on a course if date completed" do
@@ -1292,30 +1282,28 @@ describe Enrollment do
       @enrollment.end_at = 2.days.ago
       @enrollment.workflow_state = "active"
       @enrollment.save!
-      expect(@course.grants_right?(@enrollment.user, :read)).to be(true)
+      expect(@course.grants_right?(@enrollment.user, :read)).to eql(true)
       # post to forum comes from role_override; completed enrollments should not
       # get any permissions form role_override
-      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to be(false)
+      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to eql(false)
     end
 
     it "allows read, but not post_to_forum on a course if explicitly completed" do
       @enrollment.workflow_state = "completed"
       @enrollment.save!
-      expect(@course.grants_right?(@enrollment.user, :read)).to be(true)
-      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to be(false)
+      expect(@course.grants_right?(@enrollment.user, :read)).to eql(true)
+      expect(@course.grants_right?(@enrollment.user, :post_to_forum)).to eql(false)
     end
 
     it "grants read rights to account members with the ability to read_roster" do
       role = Role.get_built_in_role("AccountMembership", root_account_id: Account.default.id)
-      user = account_admin_user(role:)
-      RoleOverride.create!(context: Account.default,
-                           permission: :read_roster,
-                           role:,
-                           enabled: true)
+      user = account_admin_user(role: role)
+      RoleOverride.create!(context: Account.default, permission: :read_roster,
+                           role: role, enabled: true)
       @enrollment.save
 
-      expect(@enrollment.user.grants_right?(user, :read)).to be false
-      expect(@enrollment.grants_right?(user, :read)).to be true
+      expect(@enrollment.user.grants_right?(user, :read)).to eq false
+      expect(@enrollment.grants_right?(user, :read)).to eq true
     end
 
     it "is able to read grades if the course grants management rights to the enrollment" do
@@ -1355,7 +1343,7 @@ describe Enrollment do
     end
 
     it "allows not NothingEnrollment" do
-      expect(Enrollment.typed_enrollment("NothingEnrollment")).to be_nil
+      expect(Enrollment.typed_enrollment("NothingEnrollment")).to eql(nil)
     end
   end
 
@@ -1375,38 +1363,38 @@ describe Enrollment do
     it "drops high scores for groups when specified" do
       @enrollment = @user.enrollments.first
       @group.update_attribute(:rules, "drop_highest:1")
-      expect(@enrollment.reload.computed_current_score).to be_nil
+      expect(@enrollment.reload.computed_current_score).to eql(nil)
       @submission = @assignment.grade_student(@user, grade: "9", grader: @teacher)
-      expect(@submission[0].score).to be(9.0)
-      expect(@enrollment.reload.computed_current_score).to be(90.0)
+      expect(@submission[0].score).to eql(9.0)
+      expect(@enrollment.reload.computed_current_score).to eql(90.0)
       @submission2 = @assignment2.grade_student(@user, grade: "20", grader: @teacher)
-      expect(@submission2[0].score).to be(20.0)
-      expect(@enrollment.reload.computed_current_score).to be(50.0)
+      expect(@submission2[0].score).to eql(20.0)
+      expect(@enrollment.reload.computed_current_score).to eql(50.0)
       @group.update_attribute(:rules, nil)
-      expect(@enrollment.reload.computed_current_score).to be(58.0)
+      expect(@enrollment.reload.computed_current_score).to eql(58.0)
     end
 
     it "drops low scores for groups when specified" do
       @enrollment = @user.enrollments.first
-      expect(@enrollment.reload.computed_current_score).to be_nil
+      expect(@enrollment.reload.computed_current_score).to eql(nil)
       @submission = @assignment.grade_student(@user, grade: "9", grader: @teacher)
       @submission2 = @assignment2.grade_student(@user, grade: "20", grader: @teacher)
-      expect(@submission2[0].score).to be(20.0)
-      expect(@enrollment.reload.computed_current_score).to be(90.0)
+      expect(@submission2[0].score).to eql(20.0)
+      expect(@enrollment.reload.computed_current_score).to eql(90.0)
       @group.update_attribute(:rules, "")
-      expect(@enrollment.reload.computed_current_score).to be(58.0)
+      expect(@enrollment.reload.computed_current_score).to eql(58.0)
     end
 
     it "does not drop the last score for a group, even if the settings say it should be dropped" do
       @enrollment = @user.enrollments.first
       @group.update_attribute(:rules, "drop_lowest:2")
-      expect(@enrollment.reload.computed_current_score).to be_nil
+      expect(@enrollment.reload.computed_current_score).to eql(nil)
       @submission = @assignment.grade_student(@user, grade: "9", grader: @teacher)
-      expect(@submission[0].score).to be(9.0)
-      expect(@enrollment.reload.computed_current_score).to be(90.0)
+      expect(@submission[0].score).to eql(9.0)
+      expect(@enrollment.reload.computed_current_score).to eql(90.0)
       @submission2 = @assignment2.grade_student(@user, grade: "20", grader: @teacher)
-      expect(@submission2[0].score).to be(20.0)
-      expect(@enrollment.reload.computed_current_score).to be(90.0)
+      expect(@submission2[0].score).to eql(20.0)
+      expect(@enrollment.reload.computed_current_score).to eql(90.0)
     end
   end
 
@@ -1592,28 +1580,28 @@ describe Enrollment do
         @enrollment.end_at = 2.days.from_now
         @enrollment.workflow_state = "invited"
         @enrollment.save!
-        expect(@enrollment.state).to be(:invited)
-        expect(@enrollment.state_based_on_date).to be(:invited)
+        expect(@enrollment.state).to eql(:invited)
+        expect(@enrollment.state_based_on_date).to eql(:invited)
         @enrollment.accept
-        expect(@enrollment.reload.state).to be(:active)
-        expect(@enrollment.state_based_on_date).to be(:active)
+        expect(@enrollment.reload.state).to eql(:active)
+        expect(@enrollment.state_based_on_date).to eql(:active)
 
         @enrollment.start_at = 4.days.ago
         @enrollment.end_at = 2.days.ago
         @enrollment.workflow_state = "invited"
         @enrollment.save!
-        expect(@enrollment.reload.state).to be(:invited)
-        expect(@enrollment.state_based_on_date).to be(:completed)
+        expect(@enrollment.reload.state).to eql(:invited)
+        expect(@enrollment.state_based_on_date).to eql(:completed)
         expect(@enrollment.accept).to be_falsey
 
         @enrollment.start_at = 2.days.from_now
         @enrollment.end_at = 4.days.from_now
         @enrollment.save!
-        expect(@enrollment.reload.state).to be(:invited)
+        expect(@enrollment.reload.state).to eql(:invited)
         if @enrollment.admin?
           expect(@enrollment.state_based_on_date).to eq(:inactive)
         else
-          expect(@enrollment.state_based_on_date).to be(:invited)
+          expect(@enrollment.state_based_on_date).to eql(:invited)
           expect(@enrollment.accept).to be_truthy
         end
       end
@@ -1628,22 +1616,22 @@ describe Enrollment do
         @section.end_at = 2.days.from_now
         @section.restrict_enrollments_to_section_dates = true
         @section.save!
-        expect(@enrollment.state).to be(:invited)
+        expect(@enrollment.state).to eql(:invited)
         @enrollment.accept
-        expect(@enrollment.reload.state).to be(:active)
-        expect(@enrollment.state_based_on_date).to be(:active)
+        expect(@enrollment.reload.state).to eql(:active)
+        expect(@enrollment.state_based_on_date).to eql(:active)
 
         @section.start_at = 4.days.ago
         @section.end_at = 2.days.ago
         @section.save!
         @enrollment.workflow_state = "invited"
         @enrollment.save!
-        expect(@enrollment.reload.state).to be(:invited)
+        expect(@enrollment.reload.state).to eql(:invited)
         if should_be_invited
-          expect(@enrollment.state_based_on_date).to be(:invited)
+          expect(@enrollment.state_based_on_date).to eql(:invited)
           expect(@enrollment.accept).to be_truthy
         else
-          expect(@enrollment.state_based_on_date).to be(:completed)
+          expect(@enrollment.state_based_on_date).to eql(:completed)
           expect(@enrollment.accept).to be_falsey
         end
 
@@ -1653,11 +1641,11 @@ describe Enrollment do
         @enrollment.save!
         @enrollment.reload
         if should_be_invited
-          expect(@enrollment.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:active)
+          expect(@enrollment.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:active)
         else
-          expect(@enrollment.state).to be(:invited)
-          expect(@enrollment.state_based_on_date).to be(:invited)
+          expect(@enrollment.state).to eql(:invited)
+          expect(@enrollment.state_based_on_date).to eql(:invited)
           expect(@enrollment.accept).to be_truthy
         end
       end
@@ -1669,17 +1657,17 @@ describe Enrollment do
         @course.save!
         @enrollment.workflow_state = "invited"
         @enrollment.save!
-        expect(@enrollment.state).to be(:invited)
+        expect(@enrollment.state).to eql(:invited)
         @enrollment.accept
-        expect(@enrollment.reload.state).to be(:active)
-        expect(@enrollment.state_based_on_date).to be(:active)
+        expect(@enrollment.reload.state).to eql(:active)
+        expect(@enrollment.state_based_on_date).to eql(:active)
 
         @course.start_at = 4.days.ago
         @course.conclude_at = 2.days.ago
         @course.save!
         @enrollment.workflow_state = "invited"
         @enrollment.save!
-        expect(@enrollment.state).to be(:invited)
+        expect(@enrollment.state).to eql(:invited)
         @enrollment.accept if @enrollment.invited?
         expect(@enrollment.state_based_on_date).to eql(state_based_state)
 
@@ -1689,17 +1677,17 @@ describe Enrollment do
         @enrollment.workflow_state = "invited"
         @enrollment.save!
         @enrollment.reload
-        expect(@enrollment.state).to be(:invited)
-        expect(@enrollment.state_based_on_date).to be(:invited)
+        expect(@enrollment.state).to eql(:invited)
+        expect(@enrollment.state_based_on_date).to eql(:invited)
         expect(@enrollment.accept).to be_truthy
 
         @course.complete!
-        expect(@enrollment.reload.state).to be(:completed)
-        expect(@enrollment.state_based_on_date).to be(:completed)
+        expect(@enrollment.reload.state).to eql(:completed)
+        expect(@enrollment.state_based_on_date).to eql(:completed)
 
         @enrollment.workflow_state = "active"
         @enrollment.save!
-        expect(@enrollment.state_based_on_date).to be(:completed)
+        expect(@enrollment.state_based_on_date).to eql(:completed)
       end
 
       def enrollment_term_availability_test
@@ -1710,27 +1698,27 @@ describe Enrollment do
         @term.save!
         @enrollment.workflow_state = "invited"
         @enrollment.save!
-        expect(@enrollment.state).to be(:invited)
-        expect(@enrollment.state_based_on_date).to be(:invited)
+        expect(@enrollment.state).to eql(:invited)
+        expect(@enrollment.state_based_on_date).to eql(:invited)
         @enrollment.accept
-        expect(@enrollment.reload.state).to be(:active)
-        expect(@enrollment.state_based_on_date).to be(:active)
+        expect(@enrollment.reload.state).to eql(:active)
+        expect(@enrollment.state_based_on_date).to eql(:active)
 
         @term.start_at = 4.days.ago
         @term.end_at = 2.days.ago
         @term.save!
         @enrollment.workflow_state = "invited"
         @enrollment.save!
-        expect(@enrollment.state).to be(:invited)
-        expect(@enrollment.state_based_on_date).to be(:completed)
+        expect(@enrollment.state).to eql(:invited)
+        expect(@enrollment.state_based_on_date).to eql(:completed)
         expect(@enrollment.accept).to be_falsey
 
         @term.start_at = 2.days.from_now
         @term.end_at = 4.days.from_now
         @term.save!
         @enrollment.reload
-        expect(@enrollment.state).to be(:invited)
-        expect(@enrollment.state_based_on_date).to be(:invited)
+        expect(@enrollment.state).to eql(:invited)
+        expect(@enrollment.state_based_on_date).to eql(:invited)
         expect(@enrollment.accept).to be_truthy
         expect(@enrollment.reload.state_based_on_date).to eql(@enrollment.admin? ? :active : :accepted)
       end
@@ -1745,18 +1733,18 @@ describe Enrollment do
         @override.save!
         @enrollment.workflow_state = "invited"
         @enrollment.save!
-        expect(@enrollment.state).to be(:invited)
+        expect(@enrollment.state).to eql(:invited)
         @enrollment.accept
-        expect(@enrollment.reload.state).to be(:active)
-        expect(@enrollment.state_based_on_date).to be(:active)
+        expect(@enrollment.reload.state).to eql(:active)
+        expect(@enrollment.state_based_on_date).to eql(:active)
 
         @override.start_at = 4.days.ago
         @override.end_at = 2.days.ago
         @override.save!
         @enrollment.workflow_state = "invited"
         @enrollment.save!
-        expect(@enrollment.state).to be(:invited)
-        expect(@enrollment.state_based_on_date).to be(:completed)
+        expect(@enrollment.state).to eql(:invited)
+        expect(@enrollment.state_based_on_date).to eql(:completed)
 
         @override.start_at = 2.days.from_now
         @override.end_at = 4.days.from_now
@@ -1764,11 +1752,11 @@ describe Enrollment do
         @enrollment.workflow_state = "invited"
         @enrollment.save!
         @enrollment.reload
-        expect(@enrollment.state).to be(:invited)
+        expect(@enrollment.state).to eql(:invited)
         if @enrollment.admin?
-          expect(@enrollment.state_based_on_date).to be(:inactive)
+          expect(@enrollment.state_based_on_date).to eql(:inactive)
         else
-          expect(@enrollment.state_based_on_date).to be(:invited)
+          expect(@enrollment.state_based_on_date).to eql(:invited)
           expect(@enrollment.accept).to be_truthy
         end
         @course.restrict_student_future_view = true
@@ -1871,23 +1859,23 @@ describe Enrollment do
           @enrollment.end_at = 2.days.from_now
           @enrollment.workflow_state = "active"
           @enrollment.save!
-          expect(@enrollment.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:active)
+          expect(@enrollment.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:active)
         end
 
         it "returns completed enrollment" do
           @enrollment.start_at = 4.days.ago
           @enrollment.end_at = 2.days.ago
           @enrollment.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:completed)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:completed)
         end
 
         it "returns accepted if upcoming and available" do
           @enrollment.start_at = 2.days.from_now
           @enrollment.end_at = 4.days.from_now
           @enrollment.save!
-          expect(@enrollment.reload.state).to be(:active)
+          expect(@enrollment.reload.state).to eql(:active)
           expect(@enrollment.state_based_on_date).to eql(@enrollment.admin? ? :inactive : :accepted)
         end
 
@@ -1897,8 +1885,8 @@ describe Enrollment do
           @enrollment.save!
           @course.restrict_student_future_view = true
           @course.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:inactive)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:inactive)
         end
       end
 
@@ -1912,8 +1900,8 @@ describe Enrollment do
           @term.end_at = 2.days.from_now
           @term.save!
           @enrollment.workflow_state = "active"
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:active)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:active)
           expect(Enrollment.where(id: @enrollment).active_by_date.first).to eq @enrollment
         end
 
@@ -1922,8 +1910,8 @@ describe Enrollment do
           @term.end_at = 2.days.ago
           @term.reset_touched_courses_flag
           @term.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:completed)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:completed)
           expect(Enrollment.where(id: @enrollment).active_by_date.first).to be_nil
         end
 
@@ -1932,7 +1920,7 @@ describe Enrollment do
           @term.end_at = 4.days.from_now
           @term.reset_touched_courses_flag
           @term.save!
-          expect(@enrollment.reload.state).to be(:active)
+          expect(@enrollment.reload.state).to eql(:active)
           expect(@enrollment.state_based_on_date).to eql(@enrollment.admin? ? :active : :accepted)
         end
 
@@ -1943,7 +1931,7 @@ describe Enrollment do
           @term.save!
           @course.restrict_student_future_view = true
           @course.save!
-          expect(@enrollment.reload.state).to be(:active)
+          expect(@enrollment.reload.state).to eql(:active)
           expect(@enrollment.state_based_on_date).to eql(@enrollment.admin? ? :active : :inactive)
           if @enrollment.student?
             expect(Enrollment.where(id: @enrollment).active_by_date.first).to be_nil
@@ -1981,8 +1969,8 @@ describe Enrollment do
           @override.save!
           @enrollment.workflow_state = "active"
           @enrollment.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:active)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:active)
         end
 
         it "returns completed" do
@@ -1990,8 +1978,8 @@ describe Enrollment do
           @override.end_at = 2.days.ago
           @term.reset_touched_courses_flag
           @override.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:completed)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:completed)
         end
 
         it "returns accepted if upcoming and available (and inactive for admins)" do
@@ -1999,7 +1987,7 @@ describe Enrollment do
           @override.end_at = 4.days.from_now
           @term.reset_touched_courses_flag
           @override.save!
-          expect(@enrollment.reload.state).to be(:active)
+          expect(@enrollment.reload.state).to eql(:active)
           expect(@enrollment.state_based_on_date).to eql(@enrollment.admin? ? :inactive : :accepted)
         end
 
@@ -2010,8 +1998,8 @@ describe Enrollment do
           @override.save!
           @course.restrict_student_future_view = true
           @course.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:inactive)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:inactive)
         end
       end
     end
@@ -2035,24 +2023,24 @@ describe Enrollment do
           @section.start_at = 2.days.ago
           @section.end_at = 2.days.from_now
           @section.save!
-          expect(@enrollment.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:active)
+          expect(@enrollment.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:active)
         end
 
         it "returns completed" do
           @section.start_at = 4.days.ago
           @section.end_at = 2.days.ago
           @section.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:completed)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:completed)
         end
 
         it "returns accepted if upcoming and available" do
           @section.start_at = 2.days.from_now
           @section.end_at = 4.days.from_now
           @section.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:accepted)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:accepted)
         end
 
         it "returns inactive if upcoming and not available" do
@@ -2061,8 +2049,8 @@ describe Enrollment do
           @section.save!
           @course.restrict_student_future_view = true
           @course.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:inactive)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:inactive)
         end
       end
 
@@ -2077,24 +2065,24 @@ describe Enrollment do
           @course.save!
           @enrollment.workflow_state = "active"
           @enrollment.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:active)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:active)
         end
 
         it "returns completed" do
           @course.start_at = 4.days.ago
           @course.conclude_at = 2.days.ago
           @course.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:completed)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:completed)
         end
 
         it "returns accepted if upcoming and available" do
           @course.start_at = 2.days.from_now
           @course.conclude_at = 4.days.from_now
           @course.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:accepted)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:accepted)
         end
 
         it "returns inactive if upcoming and not available" do
@@ -2102,8 +2090,8 @@ describe Enrollment do
           @course.conclude_at = 4.days.from_now
           @course.restrict_student_future_view = true
           @course.save!
-          expect(@enrollment.reload.state).to be(:active)
-          expect(@enrollment.state_based_on_date).to be(:inactive)
+          expect(@enrollment.reload.state).to eql(:active)
+          expect(@enrollment.state_based_on_date).to eql(:inactive)
         end
       end
     end
@@ -2740,7 +2728,7 @@ describe Enrollment do
         it "uses the right shard to find the enrollments" do
           @shard1.activate do
             account = Account.create!
-            course_with_student(active_all: true, account:)
+            course_with_student(active_all: true, account: account)
           end
 
           @shard2.activate do
@@ -2760,7 +2748,7 @@ describe Enrollment do
           @enrollment1 = @course.enroll_user(@user)
           @shard1.activate do
             account = Account.create!
-            course_factory(active_all: true, account:)
+            course_factory(active_all: true, account: account)
             user_factory
             @user.update_attribute(:workflow_state, "creation_pending")
             communication_channel(@user, { username: "jt@instructure.com" })
@@ -3284,7 +3272,7 @@ describe Enrollment do
     it "returns false if the enrollment is neither a student enrollment nor a fake student enrollment" do
       allow(@enrollment).to receive(:student?).and_return(false)
       allow(@enrollment).to receive(:fake_student?).and_return(false)
-      expect(@enrollment.student_with_conditions?(include_future: true, include_fake_student: true)).to be(false)
+      expect(@enrollment.student_with_conditions?(include_future: true, include_fake_student: true)).to eq(false)
     end
 
     context "the enrollment is a student enrollment" do
@@ -3294,17 +3282,17 @@ describe Enrollment do
       end
 
       it "returns true if include_future is true" do
-        expect(@enrollment.student_with_conditions?(include_future: true, include_fake_student: false)).to be(true)
+        expect(@enrollment.student_with_conditions?(include_future: true, include_fake_student: false)).to eq(true)
       end
 
       it "returns true if include_future is false and the enrollment is active" do
         allow(@enrollment).to receive(:participating?).and_return(true)
-        expect(@enrollment.student_with_conditions?(include_future: false, include_fake_student: false)).to be(true)
+        expect(@enrollment.student_with_conditions?(include_future: false, include_fake_student: false)).to eq(true)
       end
 
       it "returns false if include_future is false and the enrollment is inactive" do
         allow(@enrollment).to receive(:participating?).and_return(false)
-        expect(@enrollment.student_with_conditions?(include_future: false, include_fake_student: false)).to be(false)
+        expect(@enrollment.student_with_conditions?(include_future: false, include_fake_student: false)).to eq(false)
       end
     end
 
@@ -3315,22 +3303,22 @@ describe Enrollment do
       end
 
       it "returns false if include_fake_student is false" do
-        expect(@enrollment.student_with_conditions?(include_future: true, include_fake_student: false)).to be(false)
+        expect(@enrollment.student_with_conditions?(include_future: true, include_fake_student: false)).to eq(false)
       end
 
       context "include_fake_student is passed in as true" do
         it "returns true if include_future is true" do
-          expect(@enrollment.student_with_conditions?(include_future: true, include_fake_student: true)).to be(true)
+          expect(@enrollment.student_with_conditions?(include_future: true, include_fake_student: true)).to eq(true)
         end
 
         it "returns true if include_future is false and the enrollment is active" do
           allow(@enrollment).to receive(:participating?).and_return(true)
-          expect(@enrollment.student_with_conditions?(include_future: false, include_fake_student: true)).to be(true)
+          expect(@enrollment.student_with_conditions?(include_future: false, include_fake_student: true)).to eq(true)
         end
 
         it "returns false if include_future is false and the enrollment is inactive" do
           allow(@enrollment).to receive(:participating?).and_return(false)
-          expect(@enrollment.student_with_conditions?(include_future: false, include_fake_student: true)).to be(false)
+          expect(@enrollment.student_with_conditions?(include_future: false, include_fake_student: true)).to eq(false)
         end
       end
     end
@@ -3392,13 +3380,13 @@ describe Enrollment do
       sub_account = Account.default.sub_accounts.create!
       course = Course.create!(account: sub_account)
       @enrollment = course.enroll_student(user_factory)
-      expect(@user.user_account_associations.where(account: sub_account).exists?).to be true
+      expect(@user.user_account_associations.where(account: sub_account).exists?).to eq true
 
       @enrollment.destroy
-      expect(@user.user_account_associations.where(account: sub_account).exists?).to be false
+      expect(@user.user_account_associations.where(account: sub_account).exists?).to eq false
 
       @enrollment.restore
-      expect(@user.user_account_associations.where(account: sub_account).exists?).to be true
+      expect(@user.user_account_associations.where(account: sub_account).exists?).to eq true
     end
   end
 
@@ -3576,7 +3564,7 @@ describe Enrollment do
     let(:enrollment_type) { "StudentEnrollment" }
 
     before do
-      MicrosoftSync::Group.create!(course:)
+      MicrosoftSync::Group.create!(course: course)
     end
 
     # enroll user without running callbacks like update_user_account_associations,

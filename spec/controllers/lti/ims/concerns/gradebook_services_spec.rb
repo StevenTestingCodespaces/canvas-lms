@@ -18,9 +18,11 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require_dependency "lti/ims/concerns/gradebook_services"
+
 module Lti
   module IMS::Concerns
-    describe GradebookServices do
+    describe GradebookServices, type: :controller do
       controller(ApplicationController) do
         include Lti::IMS::Concerns::GradebookServices
         before_action :prepare_line_item_for_ags!, :verify_user_in_context, :verify_line_item_in_context
@@ -64,18 +66,18 @@ module Lti
       let_once(:developer_key) { DeveloperKey.create! }
       let_once(:tool) do
         ContextExternalTool.create!(
-          context:,
+          context: context,
           consumer_key: "key",
           shared_secret: "secret",
           name: "test tool",
           url: "http://www.tool.com/launch",
-          developer_key:,
+          developer_key: developer_key,
           lti_version: "1.3",
           workflow_state: "public"
         )
       end
       let_once(:line_item) { assignment.line_items.first }
-      let(:parsed_response_body) { response.parsed_body }
+      let(:parsed_response_body) { JSON.parse(response.body) }
       let(:valid_params) { { course_id: context.id, userId: user.id, line_item_id: line_item.id } }
 
       describe "#before_actions" do
@@ -91,7 +93,7 @@ module Lti
         context "with user not active in context" do
           it "fails to process the request" do
             get :index, params: valid_params
-            expect(response).to have_http_status :unprocessable_entity
+            expect(response.code).to eq "422"
           end
         end
 
@@ -141,7 +143,7 @@ module Lti
 
           it "fails to process the request" do
             get :index, params: valid_params
-            expect(response).to have_http_status :unprocessable_entity
+            expect(response.code).to eq "422"
           end
         end
 
@@ -155,15 +157,15 @@ module Lti
 
           it "fails to find user" do
             get :index, params: valid_params
-            expect(response).to have_http_status :unprocessable_entity
-            expect(response.parsed_body["errors"]["message"]).to eq("User not found in course or is not a student")
+            expect(response.code).to eq "422"
+            expect(JSON.parse(response.body)["errors"]["message"]).to eq("User not found in course or is not a student")
           end
 
           it "still uses such a user_id to look up by lti_id" do
             User.where(id: user.id).update_all lti_id: some_lti_id
             get :index, params: valid_params
 
-            expect(response).to have_http_status :ok
+            expect(response.code).to eq "200"
             expect(parsed_response_body["user_id"]).to eq user.id
           end
         end
@@ -187,7 +189,7 @@ module Lti
             it "successfuly finds the active user using the user past lti id" do
               get :index, params: valid_params
 
-              expect(response).to have_http_status :ok
+              expect(response.code).to eq "200"
               expect(parsed_response_body["user_id"]).to eq user.id
             end
           end
@@ -200,7 +202,7 @@ module Lti
             it "successfuly finds the active user using the user past lti id" do
               get :index, params: valid_params
 
-              expect(response).to have_http_status :ok
+              expect(response.code).to eq "200"
               expect(parsed_response_body["user_id"]).to eq user.id
             end
           end
@@ -218,8 +220,8 @@ module Lti
 
           it "fails to find user" do
             get :index, params: valid_params
-            expect(response).to have_http_status :unprocessable_entity
-            expect(response.parsed_body["errors"]["message"]).to eq("User not found in course or is not a student")
+            expect(response.code).to eq "422"
+            expect(JSON.parse(response.body)["errors"]["message"]).to eq("User not found in course or is not a student")
           end
         end
 
@@ -257,7 +259,7 @@ module Lti
 
           it "fails to match assignment tool" do
             get :index, params: valid_params
-            expect(response).to have_http_status :unprocessable_entity
+            expect(response.code).to eq "422"
             expect(parsed_response_body["errors"]["message"]).to eq("Resource link id points to Tool not associated with this Context")
           end
         end

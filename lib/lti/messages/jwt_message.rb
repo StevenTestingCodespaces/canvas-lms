@@ -174,10 +174,6 @@ module Lti::Messages
 
     def add_lti1p1_claims!
       @message.lti1p1.user_id = @user&.lti_context_id
-      if (associated_tool = @tool&.associated_1_1_tool(@context, @launch_url).presence) && Account.site_admin.feature_enabled?(:include_oauth_consumer_key_in_lti_launch)
-        @message.lti1p1.oauth_consumer_key = associated_tool.consumer_key
-        @message.lti1p1.oauth_consumer_key_sign = Lti::Helpers::JwtMessageHelper.generate_oauth_consumer_key_sign(associated_tool, @message)
-      end
     end
 
     # Following the spec https://www.imsglobal.org/spec/lti/v1p3/migr#remapping-parameters
@@ -185,9 +181,7 @@ module Lti::Messages
     # platform MUST include the parameter and its LTI 1.1 value. Otherwise the
     # platform MAY omit that attribute.
     def include_lti1p1_claims?
-      user_ids_differ = @user&.lti_context_id && @user.lti_context_id != @user.lti_id
-
-      user_ids_differ || @tool&.associated_1_1_tool(@context, @launch_url).present?
+      @user&.lti_context_id && @user.lti_context_id != @user.lti_id
     end
 
     # Follows the spec at https://www.imsglobal.org/spec/lti-ags/v2p0/#assignment-and-grade-service-claim
@@ -195,22 +189,14 @@ module Lti::Messages
     def include_assignment_and_grade_service_claims?
       include_claims?(:assignment_and_grade_service) &&
         (@context.is_a?(Course) || @context.is_a?(Group)) &&
-        @tool.developer_key.scopes.intersect?(TokenScopes::LTI_AGS_SCOPES)
+        (@tool.developer_key.scopes & TokenScopes::LTI_AGS_SCOPES).present?
     end
 
     # Follows the spec at https://www.imsglobal.org/spec/lti-ags/v2p0/#assignment-and-grade-service-claim
     # see ResourceLinkRequest#add_line_item_url_to_ags_claim! for adding the 'lineitem' propertys
     def add_assignment_and_grade_service_claims!
       @message.assignment_and_grade_service.scope = @tool.developer_key.scopes & TokenScopes::LTI_AGS_SCOPES
-
-      @message.assignment_and_grade_service.lineitems =
-        if @context.root_account.feature_enabled?(:consistent_ags_ids_based_on_account_principal_domain)
-          @expander.controller.lti_line_item_index_url(
-            host: @context.root_account.domain, course_id: course_id_for_ags_url
-          )
-        else
-          @expander.controller.lti_line_item_index_url(course_id: course_id_for_ags_url)
-        end
+      @message.assignment_and_grade_service.lineitems = @expander.controller.lti_line_item_index_url(course_id: course_id_for_ags_url)
     end
 
     # Used to construct URLs for AGS endpoints like line item index, or line item show
@@ -227,14 +213,7 @@ module Lti::Messages
 
     def add_names_and_roles_service_claims!
       @message.names_and_roles_service.context_memberships_url =
-        if @context.root_account.feature_enabled?(:consistent_ags_ids_based_on_account_principal_domain)
-          @expander.controller.polymorphic_url(
-            [@context, :names_and_roles],
-            host: @context.root_account.domain
-          )
-        else
-          @expander.controller.polymorphic_url([@context, :names_and_roles])
-        end
+        @expander.controller.polymorphic_url([@context, :names_and_roles])
       @message.names_and_roles_service.service_versions = ["2.0"]
     end
 

@@ -39,7 +39,7 @@ export default {
     }
   },
 
-  UNSAFE_componentWillReceiveProps(newProps) {
+  componentWillReceiveProps(newProps) {
     this.setState({fileOptions: newProps.fileOptions, isEditing: false})
   },
 

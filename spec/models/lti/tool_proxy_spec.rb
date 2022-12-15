@@ -19,6 +19,7 @@
 #
 
 require "lti2_spec_helper"
+require_dependency "lti/tool_proxy"
 
 module Lti
   describe ToolProxy do
@@ -46,14 +47,14 @@ module Lti
         subject.shared_secret = nil
         subject.save
         error = subject.errors.find { |e| e == [:shared_secret, "can't be blank"] }
-        expect(error).not_to be_nil
+        expect(error).not_to eq nil
       end
 
       it "requires a guid" do
         subject.guid = nil
         subject.save
         error = subject.errors.find { |e| e == [:guid, "can't be blank"] }
-        expect(error).not_to be_nil
+        expect(error).not_to eq nil
       end
 
       it "must have a unique guid" do
@@ -350,7 +351,7 @@ module Lti
         guid: SecureRandom.uuid,
         product_version: "1.0beta",
         lti_version: "LTI-2p0",
-        product_family:,
+        product_family: product_family,
         workflow_state: "active",
         raw_data: "some raw data"
       }
@@ -364,7 +365,7 @@ module Lti
       return unless tool_proxy.persisted?
 
       Lti::ResourceHandler.create!(
-        tool_proxy:,
+        tool_proxy: tool_proxy,
         name: "resource_handler",
         resource_type_code: "resource-type-code"
       )
@@ -377,7 +378,7 @@ module Lti
           guid: "guid",
           product_version: "1.0beta",
           lti_version: "LTI-2p0",
-          product_family:,
+          product_family: product_family,
           context: account,
           workflow_state: "active",
           raw_data: "some raw data"
@@ -490,7 +491,7 @@ module Lti
                                                        }
                                                      }
                                                    ]
-                                                 })).to be(true)
+                                                 })).to eq(true)
       end
 
       it "returns false when the vendor_code doesn't match" do
@@ -512,7 +513,7 @@ module Lti
                                                        }
                                                      }
                                                    ]
-                                                 })).to be(false)
+                                                 })).to eq(false)
       end
 
       it "returns false when the product_code doesn't match" do
@@ -534,7 +535,7 @@ module Lti
                                                        }
                                                      }
                                                    ]
-                                                 })).to be(false)
+                                                 })).to eq(false)
       end
 
       it "returns false when the resource type codes do not match" do
@@ -556,7 +557,7 @@ module Lti
                                                        }
                                                      }
                                                    ]
-                                                 })).to be(false)
+                                                 })).to eq(false)
       end
 
       it "returns false when the resource handlers differ in number" do
@@ -583,7 +584,7 @@ module Lti
                                                        }
                                                      }
                                                    ]
-                                                 })).to be(false)
+                                                 })).to eq(false)
       end
     end
 
@@ -599,19 +600,19 @@ module Lti
       end
 
       it "matches" do
-        expect(tool_proxy.matches?(**fields)).to be(true)
+        expect(tool_proxy.matches?(**fields)).to eq(true)
       end
 
       it "does not match when vendor code is wrong" do
-        expect(tool_proxy.matches?(**fields.merge(vendor_code: ""))).to be(false)
+        expect(tool_proxy.matches?(**fields.merge(vendor_code: ""))).to eq(false)
       end
 
       it "does not match when product_code is wrong" do
-        expect(tool_proxy.matches?(**fields.merge(product_code: ""))).to be(false)
+        expect(tool_proxy.matches?(**fields.merge(product_code: ""))).to eq(false)
       end
 
       it "does not match when resource_type_code is wrong" do
-        expect(tool_proxy.matches?(**fields.merge(resource_type_code: ""))).to be(false)
+        expect(tool_proxy.matches?(**fields.merge(resource_type_code: ""))).to eq(false)
       end
     end
 
@@ -689,8 +690,7 @@ module Lti
                                 }
                               ]
                             }
-                          },
-                          context: account_model)
+                          }, context: account_model)
       end
 
       it "creates subscriptions for Plagiarism ToolProxies" do
@@ -715,19 +715,19 @@ module Lti
             "tool_profile" => { "service_offered" => [{ "endpoint" => "endpoint", "@id" => "#vnd.Canvas.SubmissionEvent" }] },
           },
           subscription_id: "id",
-          context: course_factory(account:),
+          context: course_factory(account: account),
           shared_secret: "shared_secret",
           guid: "guid",
           product_version: "1.0beta",
           lti_version: "LTI-2p0",
-          product_family:,
+          product_family: product_family,
           workflow_state: "active"
         )
 
         psh = double("PlagiarismSubscriptionsHelper")
         expect(Lti::PlagiarismSubscriptionsHelper).to receive(:new).and_return(psh)
         expect(psh).to receive(:create_subscription).and_return("subscription_id2")
-        tool_proxy.context = course_factory(account:)
+        tool_proxy.context = course_factory(account: account)
         tool_proxy.raw_data["enabled_capability"] = [placement]
         tool_proxy.save!
         expect(tool_proxy.subscription_id).to eq "subscription_id2"
@@ -737,7 +737,7 @@ module Lti
         expect_any_instance_of(Lti::PlagiarismSubscriptionsHelper).not_to receive(:create_subscription)
         tool_proxy.raw_data["enabled_capability"] = []
         tool_proxy.save!
-        expect(tool_proxy.subscription_id).to be_nil
+        expect(tool_proxy.subscription_id).to be nil
       end
 
       it "deletes subscriptions for tools that are soft-deleted" do
@@ -746,7 +746,7 @@ module Lti
         expect_any_instance_of(Lti::PlagiarismSubscriptionsHelper).to receive(:destroy_subscription)
         tool_proxy.workflow_state = "deleted"
         tool_proxy.save!
-        expect(tool_proxy.subscription_id).to be_nil
+        expect(tool_proxy.subscription_id).to be nil
       end
     end
 
@@ -765,8 +765,7 @@ module Lti
                                 }
                               ]
                             }
-                          },
-                          context: account_model)
+                          }, context: account_model)
       end
 
       it "deletes subscriptions" do

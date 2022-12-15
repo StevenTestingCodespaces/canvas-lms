@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -20,9 +19,6 @@
 import React from 'react'
 import {render, fireEvent} from '@testing-library/react'
 import MultiSelectSearchInput from '../MultiSelectSearchInput'
-import injectGlobalAlertContainers from '@canvas/util/react/testing/injectGlobalAlertContainers'
-
-injectGlobalAlertContainers()
 
 describe('MultiSelectSearchInput', () => {
   let props

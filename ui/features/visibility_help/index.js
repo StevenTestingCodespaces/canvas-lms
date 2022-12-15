@@ -21,7 +21,7 @@ import 'jqueryui/dialog'
 import '@canvas/jquery/jquery.instructure_misc_plugins'
 import '@canvas/loading-image'
 
-$(document).on('click', '.visibility_help_link', event => {
+$('.visibility_help_link').live('click', event => {
   event.preventDefault()
   let $dialog = $('#visibility_help_dialog')
   if ($dialog.length === 0) {

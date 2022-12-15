@@ -161,7 +161,9 @@ class AssetUserAccessLog
       # us to a state where we can make claims about how far into the postgres partitions
       # we've advanced, and so is allowed to zero this state out after it updates the
       # global postgres state above for this shard "max_log_ids".
-      temp_root_account_max_log_ids: {}
+      temp_root_account_max_log_ids: {
+
+      }
     }
     output_metadatum = CanvasMetadatum.get(METADATUM_KEY, default_metadatum)
     # make sure if we have prior storage without this key that
@@ -343,13 +345,11 @@ class AssetUserAccessLog
           # of all ids because we constrained the aggregation to a range of ids,
           # taking the full set of logs in that range)
           update_query = compaction_sql(log_segment_aggregation)
-          new_iterator_pos = log_segment_aggregation.pluck("max_id").max
+          new_iterator_pos = log_segment_aggregation.map { |r| r["max_id"] }.max
           GuardRail.activate(:primary) do
             partition_model.transaction do
               log_message("batch updating (sometimes these queries don't get logged)...")
-              partition_model.connection.with_max_update_limit(log_batch_size) do
-                partition_model.connection.execute(update_query)
-              end
+              partition_model.connection.execute(update_query)
               log_message("...batch update complete")
               # Here we want to write the iteration state into the database
               # so that we don't double count rows later.  The next time the job
@@ -450,7 +450,7 @@ class AssetUserAccessLog
   def self.compaction_sql(aggregation_results)
     values_list = aggregation_results.map do |row|
       max_updated_at = row["max_updated_at"]
-      max_updated_at = max_updated_at.to_fs(:db)
+      max_updated_at = max_updated_at.to_s(:db)
       "(#{row["aua_id"]}, #{row["view_count"]}, '#{max_updated_at}')"
     end.join(", ")
 

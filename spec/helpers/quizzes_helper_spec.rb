@@ -75,7 +75,7 @@ describe QuizzesHelper do
       question = { id: 1 }
       @stored_params = {}
       @attachments = {}
-      expect(attachment_id_for(question)).to be_nil
+      expect(attachment_id_for(question)).to eq nil
     end
   end
 
@@ -172,12 +172,15 @@ describe QuizzesHelper do
     end
 
     it "is wrapped by a span when a CSS class, id, or style is given" do
-      expect(score_out_of_points_possible(1.5, 3, class: "score_value"))
-        .to eq('<span class="score_value">1.5</span> out of 3')
-      expect(score_out_of_points_possible(1.5, 3, id: "score"))
-        .to eq('<span id="score">1.5</span> out of 3')
-      expect(score_out_of_points_possible(1.5, 3, style: "width:100%"))
-        .to eq('<span style="width:100%">1.5</span> out of 3')
+      expect(score_out_of_points_possible(1.5, 3, class: "score_value")).to eq( \
+        '<span class="score_value">1.5</span> out of 3'
+      )
+      expect(score_out_of_points_possible(1.5, 3, id: "score")).to eq( \
+        '<span id="score">1.5</span> out of 3'
+      )
+      expect(score_out_of_points_possible(1.5, 3, style: "width:100%")).to eq( \
+        '<span style="width:100%">1.5</span> out of 3'
+      )
     end
   end
 
@@ -255,8 +258,7 @@ describe QuizzesHelper do
         answer_list: [
           { blank_id: "color1", answer: "red" },
           { blank_id: "color2", answer: "black" }
-        ],
-        answers: @answers
+        ], answers: @answers
       )
       expect(html).not_to match "{{"
     end
@@ -467,7 +469,7 @@ describe QuizzesHelper do
       quiz_submission = double(last_attempt_completed?: false)
 
       message = render_correct_answer_protection(quiz, quiz_submission)
-      expect(message).to be_nil
+      expect(message).to eq nil
     end
 
     it 'provides a useful message, and an availability date, when "show at" is set' do
@@ -545,8 +547,7 @@ describe QuizzesHelper do
     it "adds MathML if appropriate" do
       comment = comment_get({
                               foo_html: '<img class="equation_image" data-equation-content="\coprod"></img>'
-                            },
-                            "foo")
+                            }, "foo")
       expect(comment).to match(/MathML/)
       expect(comment).to match(/∐/)
     end
@@ -557,8 +558,7 @@ describe QuizzesHelper do
       end
       comment = comment_get({
                               foo_html: '<img class="equation_image" data-equation-content="\coprod"></img>'
-                            },
-                            "foo")
+                            }, "foo")
       expect(comment).to eq('<img class="equation_image" data-equation-content="\\coprod">')
     end
   end

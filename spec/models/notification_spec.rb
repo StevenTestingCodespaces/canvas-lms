@@ -45,11 +45,11 @@ describe Notification do
 
   it "has a decent state machine" do
     notification_model
-    expect(@notification.state).to be(:active)
+    expect(@notification.state).to eql(:active)
     @notification.deactivate
-    expect(@notification.state).to be(:inactive)
+    expect(@notification.state).to eql(:inactive)
     @notification.reactivate
-    expect(@notification.state).to be(:active)
+    expect(@notification.state).to eql(:active)
   end
 
   it "always has some subject" do

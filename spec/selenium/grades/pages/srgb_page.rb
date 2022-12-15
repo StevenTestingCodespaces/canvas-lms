@@ -34,9 +34,9 @@ class SRGB
     end
 
     def switch_to_default_gradebook
-      f('[data-component="GradebookSelector"]').click
+      f('[data-component="GradebookSelector"] input').click
       wait_for_animations
-      fj("[role=\"menuitemradio\"]:contains(\"Gradebook\")").click
+      fj("[role=\"option\"]:contains(\"Gradebook…\")").click
     end
 
     def assignment_sorting_dropdown
@@ -55,20 +55,12 @@ class SRGB
       f("label[for='student_and_assignment_grade']")
     end
 
-    def proxy_submitter_label
-      f("label[for='proxy_submitter']")
-    end
-
     def next_assignment_button
       fj("button:contains('Next Assignment')")
     end
 
     def submission_details_button
       f("#submission_details")
-    end
-
-    def submit_for_student_button
-      f("#proxy_upload_trigger")
     end
 
     def notes_field

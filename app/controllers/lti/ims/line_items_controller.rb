@@ -147,7 +147,7 @@ module Lti
           assignment,
           context,
           tool,
-          line_item_params.merge(resource_link:)
+          line_item_params.merge(resource_link: resource_link)
         )
 
         render json: LineItemsSerializer.new(new_line_item, line_item_id(new_line_item)),
@@ -264,18 +264,10 @@ module Lti
       end
 
       def line_item_id(line_item)
-        if line_item.root_account.feature_enabled?(:consistent_ags_ids_based_on_account_principal_domain)
-          lti_line_item_show_url(
-            host: line_item.root_account.domain,
-            course_id: params[:course_id],
-            id: line_item.id
-          )
-        else
-          lti_line_item_show_url(
-            course_id: params[:course_id],
-            id: line_item.id
-          )
-        end
+        lti_line_item_show_url(
+          course_id: params[:course_id],
+          id: line_item.id
+        )
       end
 
       def update_assignment!
@@ -310,7 +302,7 @@ module Lti
                       .joins(rlid.present? ? { line_items: :resource_link } : :line_items)
                       .where(
                         {
-                          context:,
+                          context: context,
                           lti_line_items: { client_id: developer_key.global_id }
                         }.merge!(rlid.present? ? { lti_resource_links: { resource_link_uuid: rlid } } : {})
                       )

@@ -109,8 +109,6 @@ module AccountReports
   def self.generate_report(account_report)
     account_report.update(workflow_state: "running", start_at: Time.zone.now)
     begin
-      locale = account_report.parameters["locale"]
-      I18n.locale = locale if locale
       REPORTS[account_report.report_type].proc.call(account_report)
     rescue => e
       error_report_id = report_on_exception(e, { user: account_report.user })
@@ -166,7 +164,7 @@ module AccountReports
       end
       filetype = "application/zip"
     elsif csv
-      ext = !csv.include?("\n") && File.extname(csv)
+      ext = csv !~ /\n/ && File.extname(csv)
       case ext
       when ".csv"
         filename = File.basename(csv)
@@ -197,15 +195,7 @@ module AccountReports
 
       if InstFS.enabled?
         attachment = account_report.account.attachments.new
-        begin
-          retries ||= 0
-          Attachments::Storage.store_for_attachment(attachment, data)
-        rescue Timeout::Error
-          retries += 1
-          sleep 3 * retries
-          retry if retries < 3
-          raise
-        end
+        Attachments::Storage.store_for_attachment(attachment, data)
         attachment.display_name = filename
         attachment.filename = filename
         attachment.user = account_report.user
@@ -214,7 +204,7 @@ module AccountReports
         attachment = account_report.account.attachments.create!(
           uploaded_data: data,
           display_name: filename,
-          filename:,
+          filename: filename,
           user: account_report.user
         )
       end

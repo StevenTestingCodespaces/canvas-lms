@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {camelizeProperties} from '@canvas/convert-case'
+import {camelize} from 'convert-case'
 import {createClient, gql} from '@canvas/apollo'
 import resolveProgress from '@canvas/progress/resolve_progress'
 
@@ -70,5 +70,5 @@ export function resolveHideAssignmentGradesStatus(progress) {
   return resolveProgress({
     url: `/api/v1/progress/${progress.id}`,
     workflow_state: progress.workflowState,
-  }).then(results => camelizeProperties(results))
+  }).then(results => camelize(results))
 }

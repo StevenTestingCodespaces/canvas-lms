@@ -67,7 +67,10 @@ module FeatureFlags
     end
 
     def self.docviewer_enable_iwork_visible_on_hook(context)
-      DocviewerIworkPredicate.new(context, Shard.current.database_server.config[:region]).call
+      root_account = context.root_account
+
+      # Right now Apple only has a server in the US, to comply with GDPR, we'll only turn this on for folks in the US.
+      root_account.external_integration_keys.find_by(key_type: "salesforce_billing_country_code")&.key_value == "US"
     end
 
     def self.usage_metrics_allowed_hook(context)
@@ -84,7 +87,7 @@ module FeatureFlags
     def self.k6_theme_hook(_user, _context, _from_state, transitions)
       transitions["on"] ||= {}
       transitions["on"]["message"] =
-        I18n.t("Enabling the Elementary Theme will change the font in the Canvas interface and simplify " \
+        I18n.t("Enabling the Elementary Theme will change the font in the Canvas interface and simplify "\
                "the Course Navigation Menu for all users in your course.")
       transitions["on"]["reload_page"] = true
       transitions["off"] ||= {}

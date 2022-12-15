@@ -30,6 +30,7 @@ unless defined? BASE_FIXTURE_DIR
   D2L_FIXTURE_DIR = BASE_FIXTURE_DIR + "d2l/"
   HTML_SANITIZATION_FIXTURE_DIR = BASE_FIXTURE_DIR + "html_sanitization/"
 end
+require "pp"
 
 def get_question_hash(dir, name, delete_answer_ids: true, **opts)
   hash = get_quiz_data(dir, name, **opts).first.first
@@ -62,7 +63,7 @@ def get_manifest_node(question, opts = {})
     it = Object.new
     allow(it).to receive(:text).and_return(opts[:interaction_type])
   end
-  allow(manifest_node).to receive(:at_css).with("interactionType").and_return(it)
+  allow(manifest_node).to receive(:at_css).with(("interactionType")).and_return(it)
 
   bbqt = nil
   if opts[:bb_question_type]
@@ -70,7 +71,7 @@ def get_manifest_node(question, opts = {})
     allow(bbqt).to receive(:text).and_return(opts[:bb_question_type])
     bbqt["value"] = opts[:bb_question_type]
   end
-  allow(manifest_node).to receive(:at_css).with("instructureMetadata instructureField[name=bb_question_type]").and_return(bbqt)
+  allow(manifest_node).to receive(:at_css).with(("instructureMetadata instructureField[name=bb_question_type]")).and_return(bbqt)
 
   qt = nil
   if opts[:question_type]
@@ -78,7 +79,7 @@ def get_manifest_node(question, opts = {})
     allow(qt).to receive(:text).and_return(opts[:question_type])
     qt["value"] = opts[:question_type]
   end
-  allow(manifest_node).to receive(:at_css).with("instructureMetadata instructureField[name=question_type]").and_return(qt)
+  allow(manifest_node).to receive(:at_css).with(("instructureMetadata instructureField[name=question_type]")).and_return(qt)
 
   bb8a = nil
   if opts[:quiz_type]
@@ -86,7 +87,7 @@ def get_manifest_node(question, opts = {})
     allow(bb8a).to receive(:text).and_return(opts[:quiz_type])
     bb8a["value"] = opts[:quiz_type]
   end
-  allow(manifest_node).to receive(:at_css).with("instructureField[name=bb8_assessment_type]").and_return(bb8a)
+  allow(manifest_node).to receive(:at_css).with(("instructureField[name=bb8_assessment_type]")).and_return(bb8a)
 
   manifest_node
 end

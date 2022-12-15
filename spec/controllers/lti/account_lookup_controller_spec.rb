@@ -20,6 +20,7 @@
 
 require_relative "ims/concerns/advantage_services_shared_context"
 require_relative "ims/concerns/lti_services_shared_examples"
+require_dependency "lti/public_jwk_controller"
 
 describe Lti::AccountLookupController do
   include WebMock::API
@@ -46,7 +47,7 @@ describe Lti::AccountLookupController do
       it "returns id, uuid, and other fields on account" do
         send_request
         acct = Account.root_accounts.first
-        body = response.parsed_body
+        body = JSON.parse(response.body)
         expect(body).to include(
           "id" => acct.id,
           "uuid" => acct.uuid,
@@ -67,7 +68,7 @@ describe Lti::AccountLookupController do
 
       it "returns a 404" do
         send_request
-        expect(response).to have_http_status(:not_found)
+        expect(response.code).to eq("404")
       end
     end
 
@@ -77,9 +78,9 @@ describe Lti::AccountLookupController do
       end
 
       it "returns a 404" do
-        expect(Shard.find_by(id: 198_765)).to be_nil
+        expect(Shard.find_by(id: 198_765)).to eq(nil)
         send_request
-        expect(response).to have_http_status(:not_found)
+        expect(response.code).to eq("404")
       end
     end
 
@@ -91,7 +92,7 @@ describe Lti::AccountLookupController do
       it "returns id, uuid, and other fields on account" do
         send_request
         acct = Account.root_accounts.first
-        body = response.parsed_body
+        body = JSON.parse(response.body)
         expect(body).to include(
           "id" => acct.id,
           "uuid" => acct.uuid,

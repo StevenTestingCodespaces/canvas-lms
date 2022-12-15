@@ -19,19 +19,14 @@ import Backbone from '@canvas/backbone'
 import _ from 'underscore'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import $ from 'jquery'
-import Entry from './models/Entry'
+import Entry from './models/Entry.coffee'
 import htmlEscape from 'html-escape'
 import replyAttachmentTemplate from '../jst/_reply_attachment.handlebars'
-import preventDefault from '@canvas/util/preventDefault'
+import preventDefault from 'prevent-default'
+import stripTags from 'strip-tags'
 import RichContentEditor from '@canvas/rce/RichContentEditor'
 import {send} from '@canvas/rce/RceCommandShim'
 import '@canvas/forms/jquery/jquery.instructure_forms'
-
-const stripTags = str => {
-  const div = document.createElement('div')
-  div.innerHTML = str
-  return div.textContent || div.innerText || ''
-}
 
 const I18n = useI18nScope('discussions.reply')
 

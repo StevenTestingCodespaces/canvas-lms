@@ -21,7 +21,7 @@
 /* eslint-disable eqeqeq,@typescript-eslint/no-redeclare,@typescript-eslint/no-shadow */
 /* eslint-disable block-scoped-var,no-var,prefer-const,no-restricted-globals,vars-on-top */
 /* eslint-disable promise/catch-or-return,@typescript-eslint/no-unused-vars,no-empty */
-/* eslint-disable no-loop-func,no-constant-condition,no-alert */
+/* eslint-disable no-loop-func,no-constant-condition,no-alert,no-console */
 // xsslint jqueryObject.function makeFormAnswer makeDisplayAnswer
 // xsslint jqueryObject.property sortable placeholder
 // xsslint safeString.property question_text
@@ -33,17 +33,18 @@ import calcCmd from './calcCmd'
 import htmlEscape from 'html-escape'
 import numberHelper from '@canvas/i18n/numberHelper'
 import ready from '@instructure/ready'
-import pluralize from '@canvas/util/stringPluralize'
+import pluralize from 'str-pluralize'
 import Handlebars from '@canvas/handlebars-helpers'
 import DueDateOverrideView from '@canvas/due-dates'
 import Quiz from '@canvas/quizzes/backbone/models/Quiz'
 import DueDateList from '@canvas/due-dates/backbone/models/DueDateList'
 import QuizRegradeView from '../backbone/views/QuizRegradeView'
 import SectionList from '@canvas/sections/backbone/collections/SectionCollection'
-import MissingDateDialog from '@canvas/due-dates/backbone/views/MissingDateDialogView'
+import MissingDateDialog from '@canvas/due-dates/backbone/views/MissingDateDialogView.coffee'
 import MultipleChoiceToggle from './MultipleChoiceToggle'
 import EditorToggle from '@canvas/editor-toggle'
 import * as TextHelper from '@canvas/util/TextHelper'
+import INST from 'browser-sniffer' // safari sniffing for VO workarounds
 import QuizFormulaSolution from '../quiz_formula_solution'
 import addAriaDescription from './quiz_labels'
 import RichContentEditor from '@canvas/rce/RichContentEditor'
@@ -66,7 +67,6 @@ import 'jquery-scroll-to-visible/jquery.scrollTo'
 import 'jqueryui/sortable'
 import 'jqueryui/tabs'
 import AssignmentExternalTools from '@canvas/assignments/react/AssignmentExternalTools'
-import {underscoreString} from '@canvas/convert-case'
 
 const I18n = useI18nScope('quizzes_public')
 
@@ -2761,6 +2761,8 @@ ready(function () {
 
   // attach HTML answers but only when they click the button
   $('#questions').delegate('.edit_html', 'click', function (event) {
+    console.log('HERE!!')
+
     event.preventDefault()
     const $this = $(this)
     let toggler = $this.data('editorToggle')
@@ -3942,7 +3944,7 @@ ready(function () {
           questionData.id
         quiz.updateDisplayQuestion($displayQuestion, questionData, true)
         // Trigger a custom 'saved' event for catching and responding to change
-        // after save process completed. Used in quizzes_bundle.js
+        // after save process completed. Used in quizzes_bundle.coffee
         $displayQuestion.trigger('saved')
         $('#unpublished_changes_message').slideDown()
         if (question && questionData && questionData.id) {
@@ -4123,7 +4125,7 @@ ready(function () {
       } else if ($bank.data('bank_data')) {
         const bank = $bank.data('bank_data')
         bank.bank_id = bank.id
-        bank.context_type_string = pluralize(underscoreString(bank.context_type))
+        bank.context_type_string = pluralize($.underscore(bank.context_type))
         $group.data('bank_question_count', bank.assessment_question_count)
         $group
           .next('.assessment_question_bank')

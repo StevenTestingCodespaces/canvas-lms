@@ -17,7 +17,7 @@
  */
 
 import $ from 'jquery'
-import MissingDateDialogView from '@canvas/due-dates/backbone/views/MissingDateDialogView'
+import MissingDateDialogView from '@canvas/due-dates/backbone/views/MissingDateDialogView.coffee'
 
 QUnit.module('MissingDateDialogView', {
   setup() {

@@ -24,14 +24,14 @@ describe QuizzesNext::ExportService do
     context "service enabled for context" do
       it "returns true" do
         allow(QuizzesNext::Service).to receive(:enabled_in_context?).and_return(true)
-        expect(described_class.applies_to_course?(course)).to be(true)
+        expect(described_class.applies_to_course?(course)).to eq(true)
       end
     end
 
     context "service not enabled for context" do
       it "returns false" do
         allow(QuizzesNext::Service).to receive(:enabled_in_context?).and_return(false)
-        expect(described_class.applies_to_course?(course)).to be(false)
+        expect(described_class.applies_to_course?(course)).to eq(false)
       end
     end
   end
@@ -93,7 +93,7 @@ describe QuizzesNext::ExportService do
   describe ".send_imported_content" do
     let(:new_course) { course_model }
     let(:root_account) { double("account") }
-    let(:content_migration) { double(started_at: 1.hour.ago, migration_type: "some_type", asset_map_url: "http://example.com/resource_map.json") }
+    let(:content_migration) { double(started_at: 1.hour.ago, migration_type: "some_type") }
     let(:new_assignment1) { assignment_model(id: 1) }
     let(:new_assignment2) { assignment_model(id: 2) }
     let(:old_assignment1) { assignment_model(id: 3) }
@@ -127,8 +127,7 @@ describe QuizzesNext::ExportService do
         new_course_resource_link_id: "ctx-1234",
         domain: "canvas.instructure.com",
         new_course_name: "Course Name",
-        created_on_blueprint_sync: false,
-        resource_map_url: "http://example.com/resource_map.json"
+        created_on_blueprint_sync: false
       }
 
       basic_import_content[:assignments] << {
@@ -192,14 +191,13 @@ describe QuizzesNext::ExportService do
     end
 
     context "when the assignment is created as part of a blueprint sync" do
-      let(:content_migration) { double(started_at: 1.hour.ago, migration_type: "master_course_import", asset_map_url: "http://example.com/resource_map.json") }
+      let(:content_migration) { double(started_at: 1.hour.ago, migration_type: "master_course_import") }
 
       before do
         course = course_model
-        @master_template = MasterCourses::MasterTemplate.create!(course:)
+        master_template = MasterCourses::MasterTemplate.create!(course: course)
         @child_course = course_model
-        @child_subscription = MasterCourses::ChildSubscription.create!(master_template: @master_template, child_course: @child_course)
-
+        MasterCourses::ChildSubscription.create!(master_template: master_template, child_course: @child_course)
         allow(@child_course).to receive(:root_account).and_return(root_account)
       end
 
@@ -215,38 +213,16 @@ describe QuizzesNext::ExportService do
         ).once
         described_class.send_imported_content(@child_course, content_migration, basic_import_content)
       end
-
-      it "doesn't mark downstream changes when updating duplicating assignments" do
-        tag = @master_template.create_content_tag_for!(old_assignment2)
-        new_assignment2.migration_id = tag.migration_id
-        new_assignment2.save!
-
-        child_content_tag = MasterCourses::ChildContentTag.create!(
-          child_subscription: @child_subscription,
-          content: new_assignment2
-        )
-
-        basic_import_content[:assignments] << {
-          original_resource_link_id: "link-5678",
-          "$canvas_assignment_id": new_assignment2.id,
-          original_assignment_id: old_assignment2.id
-        }
-
-        allow(Canvas::LiveEvents).to receive(:quizzes_next_quiz_duplicated)
-
-        described_class.send_imported_content(new_course, content_migration, basic_import_content)
-        expect(child_content_tag.reload.downstream_changes).to be_empty
-      end
     end
 
     context "when an assignment is imported into a blueprint child course" do
-      let(:content_migration) { double(started_at: 1.hour.ago, migration_type: "common_cartridge_importer", asset_map_url: "http://example.com/resource_map.json") }
+      let(:content_migration) { double(started_at: 1.hour.ago, migration_type: "common_cartridge_importer") }
 
       before do
         course = course_model
-        master_template = MasterCourses::MasterTemplate.create!(course:)
+        master_template = MasterCourses::MasterTemplate.create!(course: course)
         @child_course = course_model
-        MasterCourses::ChildSubscription.create!(master_template:, child_course: @child_course)
+        MasterCourses::ChildSubscription.create!(master_template: master_template, child_course: @child_course)
         allow(@child_course).to receive(:root_account).and_return(root_account)
       end
 
@@ -265,7 +241,7 @@ describe QuizzesNext::ExportService do
     end
 
     context "when an assignment is imported into a non-blueprint course" do
-      let(:content_migration) { double(started_at: 1.hour.ago, migration_type: "common_cartridge_importer", asset_map_url: "http://example.com/resource_map.json") }
+      let(:content_migration) { double(started_at: 1.hour.ago, migration_type: "common_cartridge_importer") }
 
       it "emits a live event with the field created_on_blueprint_sync set as false" do
         basic_import_content[:assignments] << {

@@ -1,5 +1,3 @@
-/* eslint-disable import/no-unresolved */
-/* eslint-disable import/no-extraneous-dependencies */
 /*
  * Copyright (C) 2015 - present Instructure, Inc.
  *
@@ -24,14 +22,14 @@
 // template in an AMD module, giving it dependencies on handlebars, it's scoped
 // i18n object if it needs one.
 const Handlebars = require('handlebars')
+const {pick} = require('lodash')
 const {EmberHandlebars} = require('ember-template-compiler')
 const ScopedHbsExtractor = require('@instructure/i18nliner-canvas/scoped_hbs_extractor')
 const ScopedHbsPreProcessor = require('@instructure/i18nliner-canvas/scoped_hbs_pre_processor')
 const {readI18nScopeFromJSONFile} = require('@instructure/i18nliner-canvas/scoped_hbs_resolver')
 const nodePath = require('path')
 const loaderUtils = require('loader-utils')
-const {canvasDir} = require('../params')
-
+const {canvasDir} = require('#params')
 const {contriveId, config: brandableCSSConfig} = requireBrandableCSS()
 
 const compileHandlebars = data => {
@@ -76,13 +74,19 @@ const resourceName = path =>
     .replace(/\.handlebars$/, '')
     .replace(/_/g, '-')
 
+// given an object, returns a new object with just the 'combinedChecksum' property of each item
+const getCombinedChecksums = obj =>
+  Object.keys(obj).reduce((accumulator, key) => {
+    accumulator[key] = pick(obj[key], 'combinedChecksum')
+    return accumulator
+  }, {})
+
 // inject the template with the css file specified in the "brandableCSSBundle"
 // property of the accompanying .json metadata file, if any
-const buildCssReference = (path, _name) => {
+const buildCssReference = (path, name) => {
   let bundle
 
   try {
-    // eslint-disable-next-line import/no-dynamic-require
     bundle = require(`${path}.json`).brandableCSSBundle
   } catch (_) {
     bundle = null
@@ -152,7 +156,7 @@ function i18nLinerHandlebarsLoader(source) {
   }
 
   // make sure the template has access to all our handlebars helpers
-  dependencies.push('@canvas/handlebars-helpers/index.js')
+  dependencies.push('@canvas/handlebars-helpers/index.coffee')
 
   return emitTemplate({
     name,
@@ -164,7 +168,7 @@ function i18nLinerHandlebarsLoader(source) {
 }
 
 function requireBrandableCSS() {
-  const {cwd} = require('process')
+  const {cwd, chdir} = require('process')
   const oldCWD = cwd()
 
   // it looks for "config/brandable_css.yml" from cwd

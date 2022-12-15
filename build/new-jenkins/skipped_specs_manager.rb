@@ -18,6 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 require "nokogiri"
+require "json"
 
 class SkippedSpecsManager
   FILENAME = "skipped_specs.json"
@@ -82,7 +83,7 @@ class SkippedSpecsManager
   end
 
   def write_to_file
-    path = (@mode == "ruby") ? "/usr/src/app/out/" : "/tmp/"
+    path = @mode == "ruby" ? "/usr/src/app/out/" : "/tmp/"
     full_path = "#{path}/#{FILENAME}"
 
     puts "writing #{@updated_map.keys.count} spec(s) to '#{full_path}'"

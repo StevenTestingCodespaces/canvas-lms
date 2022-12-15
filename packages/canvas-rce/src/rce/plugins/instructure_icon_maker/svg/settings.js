@@ -21,8 +21,8 @@ import {svgSettings as svgSettingsReducer, defaultState} from '../reducers/svgSe
 import {ICON_MAKER_ATTRIBUTE, ICON_MAKER_DOWNLOAD_URL_ATTR} from './constants'
 import {modes} from '../reducers/imageSection'
 import iconsLabels from '../utils/iconsLabels'
-import {createCroppedImageSvg} from '../../shared/ImageCropper/imageCropUtils'
-import {convertFileToBase64} from '../../shared/fileUtils'
+import {createCroppedImageSvg} from '../components/CreateIconMakerForm/ImageCropper/imageCropUtils'
+import {convertFileToBase64} from './utils'
 
 export const statuses = {
   ERROR: 'error',

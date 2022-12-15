@@ -75,10 +75,10 @@ class MasterCourses::MasterMigration < ActiveRecord::Base
           raise MigrationRunningError, "cannot start new migration while another one is running"
         end
       else
-        new_migration = master_template.master_migrations.create!({ user: }.merge(opts.except(:retry_later, :priority)))
+        new_migration = master_template.master_migrations.create!({ user: user }.merge(opts.except(:retry_later)))
         master_template.active_migration = new_migration
         master_template.save!
-        new_migration.queue_export_job(priority: opts[:priority] || Delayed::LOW_PRIORITY)
+        new_migration.queue_export_job
         new_migration
       end
     end
@@ -112,19 +112,17 @@ class MasterCourses::MasterMigration < ActiveRecord::Base
     end
   end
 
-  def queue_export_job(priority: Delayed::LOW_PRIORITY)
+  def queue_export_job
     expires_at = hours_until_expire.hours.from_now
     queue_opts = {
-      priority:,
-      max_attempts: 1,
-      expires_at:,
-      on_permanent_failure: :fail_export_with_error!,
+      priority: Delayed::LOW_PRIORITY, max_attempts: 1,
+      expires_at: expires_at, on_permanent_failure: :fail_export_with_error!,
       n_strand: ["master_course_exports", master_template.course.global_root_account_id]
       # we may need to raise the n_strand limit (in the settings) for this key since it'll default to 1 at a time
     }
 
     update_attribute(:workflow_state, "queued")
-    delay(**queue_opts).perform_exports(priority:)
+    delay(**queue_opts).perform_exports
   end
 
   def fail_export_with_error!(exception_or_info)
@@ -138,7 +136,7 @@ class MasterCourses::MasterMigration < ActiveRecord::Base
     save
   end
 
-  def perform_exports(priority: Delayed::LOW_PRIORITY)
+  def perform_exports
     self.workflow_state = "exporting"
     self.exports_started_at = Time.now
     save!
@@ -167,7 +165,7 @@ class MasterCourses::MasterMigration < ActiveRecord::Base
       self.workflow_state = "imports_queued"
       self.imports_queued_at = Time.now
       save!
-      queue_imports(cms, priority:)
+      queue_imports(cms)
     end
   rescue => e
     fail_export_with_error!(e)
@@ -307,9 +305,9 @@ class MasterCourses::MasterMigration < ActiveRecord::Base
     cms
   end
 
-  def queue_imports(cms, priority: Delayed::LOW_PRIORITY)
+  def queue_imports(cms)
     imports_expire_at = created_at + hours_until_expire.hours # tighten the limit until the import jobs expire
-    cms.each { |cm| cm.queue_migration(MigrationPluginStub, expires_at: imports_expire_at, priority:) }
+    cms.each { |cm| cm.queue_migration(MigrationPluginStub, expires_at: imports_expire_at) }
     # this job is finished now but we won't mark ourselves as "completed" until all the import migrations are finished
   end
 

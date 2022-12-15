@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import fcUtil from './jquery/fcUtil'
+import fcUtil from './jquery/fcUtil.coffee'
 
 export default class TimeBlockListManager {
   // takes an optional array of Date pairs

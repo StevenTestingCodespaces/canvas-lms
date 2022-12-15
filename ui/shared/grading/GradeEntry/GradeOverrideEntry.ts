@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2018 - present Instructure, Inc.
  *
@@ -19,14 +18,13 @@
 
 import I18n from '@canvas/i18n'
 
-import round from '@canvas/round'
+import round from 'round'
 import GradeFormatHelper from '../GradeFormatHelper'
 import {gradeToScoreLowerBound, scoreToGrade} from '../GradingSchemeHelper'
 import GradeOverride from '../GradeOverride'
 import {parseEntryValue} from '../GradeInputHelper'
 import GradeOverrideInfo from './GradeOverrideInfo'
 import GradeEntry, {EnterGradesAs} from './index'
-import type {GradeType, GradingScheme, GradeEntryMode} from '../grading.d'
 
 function schemeKeyForPercentage(percentage, gradingScheme) {
   if (gradingScheme) {
@@ -36,7 +34,7 @@ function schemeKeyForPercentage(percentage, gradingScheme) {
 }
 
 export default class GradeOverrideEntry extends GradeEntry {
-  get enterGradesAs(): GradeEntryMode {
+  get enterGradesAs() {
     // TODO: GRADE-1926 Return `EnterGradesAs.GRADING_SCHEME` when a grading scheme is used
     return EnterGradesAs.PERCENTAGE
   }
@@ -91,11 +89,7 @@ export default class GradeOverrideEntry extends GradeEntry {
     return this.parseValue(parseValue)
   }
 
-  hasGradeChanged(
-    assignedGradeInfo,
-    currentGradeInfo,
-    previousGradeInfo: null | GradeOverrideInfo = null
-  ) {
+  hasGradeChanged(assignedGradeInfo, currentGradeInfo, previousGradeInfo = null) {
     const effectiveGradeInfo = previousGradeInfo || assignedGradeInfo
 
     if (currentGradeInfo.grade == null && effectiveGradeInfo.grade == null) {
@@ -113,22 +107,19 @@ export default class GradeOverrideEntry extends GradeEntry {
     return currentGradeInfo.grade.percentage !== effectiveGradeInfo.grade.percentage
   }
 
-  parseValue(value): GradeOverrideInfo {
-    const gradingScheme: string | {data: GradingScheme[]} = this.options.gradingScheme
+  parseValue(value) {
+    const {gradingScheme} = this.options
     const parseResult = parseEntryValue(value, gradingScheme)
 
-    let enteredAs: null | GradeType = null
-    let grade: null | {
-      percentage: null | number
-      schemeKey: null | string
-    } = null
+    let enteredAs = null
+    let grade = null
     let valid = parseResult.isCleared
 
-    if (parseResult.isSchemeKey && typeof gradingScheme === 'object') {
+    if (parseResult.isSchemeKey) {
       enteredAs = EnterGradesAs.GRADING_SCHEME
       grade = {
         percentage: gradeToScoreLowerBound(parseResult.value, gradingScheme.data),
-        schemeKey: String(parseResult.value),
+        schemeKey: parseResult.value,
       }
       valid = true
     } else if (parseResult.isPercentage || parseResult.isPoints) {

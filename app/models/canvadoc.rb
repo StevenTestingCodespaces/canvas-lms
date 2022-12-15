@@ -31,9 +31,7 @@ class Canvadoc < ActiveRecord::Base
   def upload(opts = {})
     return if document_id.present?
 
-    # Internal because canvadocs does not directly serve this URL to users but only
-    # uses it for its internal conversion and then serves the converted result
-    url = attachment.public_url(expires_in: 7.days, internal: true)
+    url = attachment.public_url(expires_in: 7.days)
 
     opts.delete(:annotatable) unless Canvadocs.annotations_supported?
 
@@ -76,9 +74,6 @@ class Canvadoc < ActiveRecord::Base
     application/vnd.apple.pages
     application/vnd.apple.keynote
     application/vnd.apple.numbers
-    application/x-iwork-keynote-sffkey
-    application/x-iwork-pages-sffpages
-    application/x-iwork-numbers-sffnumbers
   ].freeze
 
   DEFAULT_MIME_TYPES = %w[

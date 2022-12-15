@@ -34,7 +34,5 @@ module IncomingMail
     class BlankMessage < ReplyFrom; end
 
     class MessageTooLong < ReplyFrom; end
-
-    class UserSuspended < ReplyFrom; end
   end
 end

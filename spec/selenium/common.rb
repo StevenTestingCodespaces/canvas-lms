@@ -19,6 +19,8 @@
 #
 require "nokogiri"
 require "selenium-webdriver"
+require "socket"
+require "timeout"
 require "sauce_whisk"
 require_relative "test_setup/custom_selenium_rspec_matchers"
 require_relative "test_setup/selenium_driver_setup"
@@ -36,7 +38,7 @@ elsif ENV["TESTRAIL_ENTRY_RUN_ID"]
   end
 end
 
-Dir[File.dirname(__FILE__) + "/test_setup/common_helper_methods/*.rb"].each { |file| require file }
+Dir[File.dirname(__FILE__) + "/test_setup/common_helper_methods/*.rb"].sort.each { |file| require file }
 
 RSpec.configure do |config|
   config.before :suite do

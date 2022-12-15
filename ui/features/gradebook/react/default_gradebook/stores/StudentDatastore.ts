@@ -34,11 +34,9 @@ function createStudentPlaceholder(id: string) {
 export default class StudentDatastore {
   studentIds: string[] = []
 
-  userStudentMap: {[studentId: string]: GradebookStudent}
+  userStudentMap: {[id: string]: GradebookStudent}
 
-  testStudentMap: {[studentId: string]: GradebookStudent}
-
-  preloadedStudentData: {[studentId: string]: GradebookStudent} = {}
+  testStudentMap: {[id: string]: GradebookStudent}
 
   constructor(userStudentMap: GradebookStudentMap, testStudentMap: GradebookStudentMap) {
     this.userStudentMap = userStudentMap
@@ -59,17 +57,6 @@ export default class StudentDatastore {
     _.difference(idsOfStoredTestStudents, studentIds).forEach(removedStudentId => {
       delete this.testStudentMap[removedStudentId]
     })
-  }
-
-  preloadStudentData(studentId: string, studentData: GradebookStudent) {
-    if (!this.preloadedStudentData[studentId]) {
-      this.preloadedStudentData[studentId] = studentData
-    } else {
-      this.preloadedStudentData[studentId] = {
-        ...this.preloadedStudentData[studentId],
-        ...studentData,
-      }
-    }
   }
 
   addUserStudents(students: GradebookStudent[]) {
@@ -93,7 +80,7 @@ export default class StudentDatastore {
     return user
   }
 
-  listStudents({includePlaceholders = true} = {}): GradebookStudent[] {
+  listStudents({includePlaceholders = true} = {}) {
     return this.studentIds.reduce((students: GradebookStudent[], id: string) => {
       const student =
         this.userStudentMap[id] || this.testStudentMap[id] || createStudentPlaceholder(id)

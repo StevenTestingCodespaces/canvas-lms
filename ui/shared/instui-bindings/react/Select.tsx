@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2019 - present Instructure, Inc.
  *
@@ -56,13 +55,12 @@ const {Option: SelectOption, Group: SelectGroup} = Select as any
 const noOptionsOptionId = '_noOptionsOption'
 
 type Props = {
-  children: ReactElement | ReactElement[]
-  disabled?: boolean
+  value: string
   id: string
   label?: ReactElement | string
-  noOptionsLabel?: string
   onChange: (event: ChangeEvent, value: string) => void
-  value: string
+  children: ReactElement | ReactElement[]
+  noOptionsLabel?: string
 }
 
 type State = {
@@ -115,6 +113,7 @@ class CanvasSelect extends React.Component<Props, State> {
   componentDidUpdate(prevProps) {
     if (this.props.value !== prevProps.value || !isEqual(this.props.children, prevProps.children)) {
       const option = this.getOptionByFieldValue('value', this.props.value)
+      // eslint-disable-next-line react/no-did-update-set-state
       this.setState({
         inputValue: option ? option.props.children : '',
         selectedOptionId: option ? option.props.id : '',

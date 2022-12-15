@@ -17,8 +17,6 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-Rails.application.config.active_support.use_sha1_digests = true
-
 ActiveSupport::TimeWithZone.delegate :to_yaml, to: :utc
 ActiveSupport::SafeBuffer.class_eval do
   def encode_with(coder)

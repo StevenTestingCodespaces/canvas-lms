@@ -61,11 +61,8 @@ describe DataFixup::UpdateDeveloperKeyScopes do
       "url:GET|/api/v1/courses" => "url:GET|/api/v1/courses_changed",
       "url:GET|/api/v1/users" => "url:GET|/api/v1/users_changed",
     }
-    expect(DataFixup::UpdateDeveloperKeyScopes).to receive(:scope_changes)
-      .at_least(:once)
-      .and_return(scopes_to_change)
 
-    DataFixup::UpdateDeveloperKeyScopes.run
+    DataFixup::UpdateDeveloperKeyScopes.run(0, dk.id + 1, scopes_to_change)
     expect(dk.reload.scopes).to eq(
       [
         "url:GET|/api/v1/courses_changed",
@@ -87,12 +84,9 @@ describe DataFixup::UpdateDeveloperKeyScopes do
     scopes_to_change = {
       "url:GET|/api/v1/courses" => "url:GET|/api/v1/courses_changed"
     }
-    expect(DataFixup::UpdateDeveloperKeyScopes).to receive(:scope_changes)
-      .at_least(:once)
-      .and_return(scopes_to_change)
 
     expect do
-      DataFixup::UpdateDeveloperKeyScopes.run
+      DataFixup::UpdateDeveloperKeyScopes.run(0, dk.id + 1, scopes_to_change)
     end.not_to raise_error
 
     # We should have just skipped over this one, leaving the original scopes unchanged.

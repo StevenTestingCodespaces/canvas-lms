@@ -55,3 +55,9 @@ export default function (ed, document, _trayProps) {
     )
   })
 }
+
+export function oldClickCallback(ed, document) {
+  const ev = document.createEvent('CustomEvent')
+  ev.initCustomEvent('tinyRCE/initEquation', true, true, {ed})
+  document.dispatchEvent(ev)
+}

@@ -45,18 +45,15 @@ class Mutations::CreateSubmission < Mutations::BaseMutation
            prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Attachment")
   argument :assignment_id,
            ID,
-           required: true,
-           prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Assignment")
+           required: true, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Assignment")
   argument :body, String, required: false
   argument :file_ids,
            [ID],
-           required: false,
-           prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("Attachment")
+           required: false, prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("Attachment")
   argument :media_id, ID, required: false
   argument :resource_link_lookup_uuid, String, required: false
   argument :submission_type, Types::OnlineSubmissionType, required: true
   argument :url, String, required: false
-  argument :student_id, ID, required: false
 
   field :submission, Types::SubmissionType, null: true
 
@@ -64,38 +61,29 @@ class Mutations::CreateSubmission < Mutations::BaseMutation
     assignment = Assignment.active.find(input[:assignment_id])
     assignment = assignment.overridden_for(current_user)
     context = assignment.context
-    submission_type = input[:submission_type]
 
     verify_authorized_action!(assignment, :read)
-    if input[:student_id]
-      verify_authorized_action!(assignment.course, :proxy_assignment_submission)
-    else
-      verify_authorized_action!(assignment, :submit)
-    end
+    verify_authorized_action!(assignment, :submit)
 
+    submission_type = input[:submission_type]
     submission_params = {
       annotatable_attachment_id: assignment.annotatable_attachment_id,
       attachments: [],
       body: "",
       require_submission_type_is_valid: true,
-      submission_type:,
+      submission_type: submission_type,
       url: nil
     }
+
     case submission_type
     when "basic_lti_launch"
-      if input[:url].blank?
-        return validation_error(I18n.t("LTI submissions require a URL to submit"))
-      end
+      return validation_error(I18n.t("LTI submissions require a URL to submit")) if input[:url].blank?
 
       submission_params[:url] = input[:url]
       submission_params[:resource_link_lookup_uuid] = input[:resource_link_lookup_uuid]
     when "student_annotation"
       if assignment.annotatable_attachment_id.blank?
-        return(
-          validation_error(
-            I18n.t("Student Annotation submissions require an annotatable_attachment_id to submit")
-          )
-        )
+        return validation_error(I18n.t("Student Annotation submissions require an annotatable_attachment_id to submit"))
       end
     when "media_recording"
       unless input[:media_id]
@@ -124,20 +112,9 @@ class Mutations::CreateSubmission < Mutations::BaseMutation
     when "online_text_entry"
       submission_params[:body] = input[:body]
     when "online_upload"
-      owning_user = nil
-      if input[:student_id]
-        owning_user =
-          User
-          .joins(:submissions)
-          .where(submissions: { assignment: })
-          .find(input[:student_id])
-        submission_params[:proxied_student] = owning_user
-      else
-        owning_user = current_user
-      end
       file_ids = (input[:file_ids] || []).compact.uniq
 
-      attachments = owning_user&.submittable_attachments&.active&.where(id: file_ids) || []
+      attachments = current_user.submittable_attachments.active.where(id: file_ids)
       unless file_ids.size == attachments.size
         attachment_ids = attachments.map(&:id)
         return(
@@ -151,8 +128,7 @@ class Mutations::CreateSubmission < Mutations::BaseMutation
         )
       end
 
-      upload_errors =
-        validate_online_upload(assignment, attachments, is_proxy: !!input[:student_id])
+      upload_errors = validate_online_upload(assignment, attachments)
       return upload_errors if upload_errors
 
       submission_params[:attachments] =
@@ -162,7 +138,7 @@ class Mutations::CreateSubmission < Mutations::BaseMutation
     end
 
     submission = assignment.submit_homework(current_user, submission_params)
-    { submission: }
+    { submission: submission }
   rescue ActiveRecord::RecordNotFound
     raise GraphQL::ExecutionError, "not found"
   rescue ActiveRecord::RecordInvalid => e
@@ -172,7 +148,7 @@ class Mutations::CreateSubmission < Mutations::BaseMutation
   private
 
   # TODO: move file validation to the model
-  def validate_online_upload(assignment, attachments, is_proxy: false)
+  def validate_online_upload(assignment, attachments)
     if attachments.blank?
       return(
         validation_error(
@@ -183,7 +159,7 @@ class Mutations::CreateSubmission < Mutations::BaseMutation
     end
 
     # Probably a superfluous check considering how we retrieve the attachments
-    attachments.each { |attachment| verify_authorized_action!(attachment, :read) } unless is_proxy
+    attachments.each { |attachment| verify_authorized_action!(attachment, :read) }
 
     unless extensions_allowed?(assignment, attachments)
       validation_error(I18n.t("Invalid file type"), attribute: "file_ids")

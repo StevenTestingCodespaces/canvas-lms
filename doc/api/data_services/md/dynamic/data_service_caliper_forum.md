@@ -8,18 +8,6 @@ Forum
 **Trigger:** Triggered when a user replies to the discussion topic or thread.
 
 
-### Event Body Schema
-
-| Field | Description |
-|-|-|
-| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
-| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
-| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.type** | Message |
-
-
-
-
 
 ### Payload Example:
 
@@ -115,13 +103,6 @@ Forum
 
 
 
-<h2 id="discussion_topic_created">discussion_topic_created</h2>
-
-**Definition:** The event is emitted anytime an new discussion topic is created by an end user or API request.
-
-**Trigger:** Triggered when a new discussion topic is created in a course. Also triggered when a new course announcement is created with `is_announcement` set to TRUE.
-
-
 ### Event Body Schema
 
 | Field | Description |
@@ -129,10 +110,14 @@ Forum
 | **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
 | **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
 | **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
-| **data[0].object.extensions["com.instructure.canvas"].is_announcement** | true if this topic was posted as an announcement, false otherwise |
-| **data[0].object.type** | Thread |
 
 
+
+<h2 id="discussion_topic_created">discussion_topic_created</h2>
+
+**Definition:** The event is emitted anytime an new discussion topic is created by an end user or API request.
+
+**Trigger:** Triggered when a new discussion topic is created in a course. Also triggered when a new course announcement is created with `is_announcement` set to TRUE.
 
 
 
@@ -224,6 +209,17 @@ Forum
 }
 ```
 
+
+
+
+### Event Body Schema
+
+| Field | Description |
+|-|-|
+| **data[0].group.extensions["com.instructure.canvas"].context_type** | Canvas context type where the action took place e.g context_type = Course. |
+| **data[0].group.extensions["com.instructure.canvas"].entity_id** | Canvas context ID |
+| **data[0].object.extensions["com.instructure.canvas"].entity_id** | Canvas global ID of the object affected by the event |
+| **data[0].object.extensions["com.instructure.canvas"].is_announcement** | true if this topic was posted as an announcement, false otherwise |
 
 
 

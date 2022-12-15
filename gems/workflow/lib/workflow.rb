@@ -52,8 +52,8 @@ module Workflow
       @states = {}
     end
 
-    def add(&)
-      instance_eval(&)
+    def add(&specification)
+      instance_eval(&specification)
     end
 
     private
@@ -67,9 +67,9 @@ module Workflow
     end
     alias_method :workflow_state, :state
 
-    def event(name, args = {}, &)
+    def event(name, args = {}, &action)
       @scoped_state.events[name.to_sym] =
-        Event.new(name, args[:transitions_to], &)
+        Event.new(name, args[:transitions_to], &action)
     end
 
     def on_entry(&proc)
@@ -103,9 +103,13 @@ module Workflow
       @name, @events = name, {}
     end
 
-    delegate :to_s, to: :name
+    def to_s
+      name.to_s
+    end
 
-    delegate :to_sym, to: :name
+    def to_sym
+      name.to_sym
+    end
   end
 
   class Event
@@ -125,13 +129,13 @@ module Workflow
       @workflow_states ||= OpenStruct.new(workflow_spec.states.transform_values { |val| val.name.to_s })
     end
 
-    def workflow(&)
+    def workflow(&specification)
       unless const_defined?(:WorkflowMethods, false)
         const_set(:WorkflowMethods, Module.new)
       end
       workflow_methods = const_get(:WorkflowMethods, false)
       self.workflow_spec ||= Specification.new
-      self.workflow_spec.add(&)
+      self.workflow_spec.add(&specification)
       self.workflow_spec.states.each_value do |state|
         state_name = state.name
         workflow_methods.module_eval do
@@ -295,10 +299,10 @@ module Workflow
   end
 
   def self.included(klass)
-    klass.include WorkflowInstanceMethods
+    klass.send :include, WorkflowInstanceMethods
     klass.extend WorkflowClassMethods
     if klass < ActiveRecord::Base
-      klass.include ActiveRecordInstanceMethods
+      klass.send :include, ActiveRecordInstanceMethods
       klass.before_validation :write_initial_state
     end
   end

@@ -16,38 +16,13 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import type {
-  GradebookStudent,
-  SubmissionFilterValue,
-  SerializedComment,
-  SortRowsSettingKey,
-} from './gradebook.d'
-import type {GradeEntryMode} from '@canvas/grading/grading.d'
+import type {GradebookStudent} from './gradebook.d'
+import type {SubmissionComment} from '@canvas/grading.grading.d'
 import type {StatusColors} from './constants/colors'
 import type LongTextEditor from '../../jquery/slickgrid.long_text_editor'
 
-export type GridColumnObject = Partial<{
-  id: string
-  due_at: string | null
-  name: string
-  position: number
-  points_possible: number
-  module_ids: string[]
-  module_positions: number[]
-  assignment_group: {
-    position: number
-  }
-}>
-
-export type GridColumn = {
-  id: string
-  cssClass: string
-  headerCssClass: string
-  object: GridColumnObject
-  width: number
-} & Partial<{
+export type GridColumn = {id: string; cssClass: string; headerCssClass: string} & Partial<{
   assignmentGroupId: string
-  assignmentId: string
   autoEdit: boolean
   customColumnId: string
   editor: LongTextEditor
@@ -56,41 +31,36 @@ export type GridColumn = {
   maxLength: number
   maxWidth: number
   minWidth: number
-  postAssignmentGradesTrayOpenForAssignmentId: boolean
+  postAssignmentGradesTrayOpenForAssignmentId: string
   resizable: boolean
   teacher_notes: string
   toolTip: string
   type: string
+  width: number
+  object: Partial<{
+    id: string
+    due_at: string | null
+    name: string
+    position: number
+    points_possible: number
+    module_ids: string[]
+    module_positions: number[]
+    assignment_group: {
+      position: number
+    }
+  }>
 }>
 
-export type GridDataColumns = {
-  definitions: {
-    // Add later: total_grade?: GridColumn
-    // Add later: total_grade_override?: GridColumn
-    [key: string]: GridColumn
-  }
-  frozen: string[]
-  scrollable: string[]
-}
-
-export type GridDataColumnsWithObjects = {
-  definitions: {
-    [key: string]: GridColumn
-  }
-  frozen: {
-    id: string
-    customColumnId: string
-    type: 'custom_column'
-  }[]
-  scrollable: {
-    id: string
-    customColumnId: string
-    type: 'custom_column'
-  }[]
-}
-
 export type GridData = {
-  columns: GridDataColumns
+  columns: {
+    definitions: {
+      // Add later: total_grade?: GridColumn
+      // Add later: total_grade_override?: GridColumn
+      [key: string]: GridColumn
+    }
+    frozen: string[]
+    scrollable: string[]
+  }
   rows: GradebookStudent[]
 }
 
@@ -108,16 +78,14 @@ export type FilterColumnsOptions = {
   assignmentGroupId: null | string
   contextModuleId: null | string
   gradingPeriodId: null | string
-  submissions: null | SubmissionFilterValue
+  submissions: null | 'has-ungraded-submissions' | 'has-submissions'
   startDate: null | string
   endDate: null | string
 }
 
 export type GridDisplaySettings = {
   colors: StatusColors
-  enterGradesAs: {
-    [assignmentId: string]: GradeEntryMode
-  }
+  enterGradesAs: string
   filterColumnsBy: FilterColumnsOptions
   filterRowsBy: {sectionId: string | null; studentGroupId: string | null}
   hideTotal: boolean
@@ -127,14 +95,14 @@ export type GridDisplaySettings = {
   showEnrollments: {concluded: boolean; inactive: boolean}
   sortRowsBy: {
     columnId: string // the column controlling the sort
-    settingKey: SortRowsSettingKey // the key describing the sort criteria
+    settingKey: string // the key describing the sort criteria
     direction: 'ascending' | 'descending' // the direction of the sort
   }
   submissionTray: {
     open: boolean
     studentId: string
     assignmentId: string
-    comments: SerializedComment[]
+    comments: SubmissionComment[]
     commentsLoaded: boolean
     commentsUpdating: boolean
     editedCommentId: string | null
@@ -145,13 +113,4 @@ export type GridDisplaySettings = {
   hideAssignmentGroupTotals: boolean
   hideAssignmentGroupTotals: boolean
   hideTotal: boolean
-}
-
-export type GridLocation = {
-  columnId: string
-  region: 'body' | 'header' | 'footer'
-}
-
-export type SlickGridKeyboardEvent = KeyboardEvent & {
-  originalEvent: {skipSlickGridDefaults?: boolean | undefined}
 }

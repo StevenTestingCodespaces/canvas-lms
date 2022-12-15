@@ -65,7 +65,7 @@ class UserNote < ActiveRecord::Base
   end
 
   def creator_name
-    creator&.name
+    creator ? creator.name : nil
   end
 
   def update_last_user_note

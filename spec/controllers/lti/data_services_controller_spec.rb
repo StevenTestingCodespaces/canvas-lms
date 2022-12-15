@@ -20,6 +20,7 @@
 
 require_relative "ims/concerns/advantage_services_shared_context"
 require_relative "ims/concerns/lti_services_shared_examples"
+require_dependency "lti/public_jwk_controller"
 
 describe Lti::DataServicesController do
   include WebMock::API
@@ -56,7 +57,7 @@ describe Lti::DataServicesController do
       let(:expected_mime_type) { described_class::MIME_TYPE }
       let(:scope_to_remove) { "https://canvas.instructure.com/lti/data_services/scope/create" }
       let(:params_overrides) do
-        { subscription:, account_id: root_account.lti_context_id }
+        { subscription: subscription, account_id: root_account.lti_context_id }
       end
     end
 
@@ -64,7 +65,7 @@ describe Lti::DataServicesController do
 
     context do
       let(:params_overrides) do
-        { subscription:, account_id: root_account.lti_context_id }
+        { subscription: subscription, account_id: root_account.lti_context_id }
       end
 
       it "adds OwnerId and OwnerType if passed in for a tool" do
@@ -123,7 +124,7 @@ describe Lti::DataServicesController do
       let(:expected_mime_type) { described_class::MIME_TYPE }
       let(:scope_to_remove) { "https://canvas.instructure.com/lti/data_services/scope/update" }
       let(:params_overrides) do
-        { subscription:, account_id: root_account.lti_context_id, id: "testid" }
+        { subscription: subscription, account_id: root_account.lti_context_id, id: "testid" }
       end
     end
 
@@ -132,7 +133,7 @@ describe Lti::DataServicesController do
 
     context do
       let(:params_overrides) do
-        { subscription:, account_id: root_account.lti_context_id, id: subId }
+        { subscription: subscription, account_id: root_account.lti_context_id, id: subId }
       end
 
       it "adds UpdatedBy and UpdatedByType if passed in for a tool" do

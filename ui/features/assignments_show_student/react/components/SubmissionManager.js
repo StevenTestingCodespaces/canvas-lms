@@ -33,13 +33,6 @@ import {
   multipleTypesDrafted,
   totalAllowedAttempts,
 } from '../helpers/SubmissionHelpers'
-import {
-  availableAndUnavailableCounts,
-  getRedirectUrlToFirstPeerReview,
-  getPeerReviewHeaderText,
-  getPeerReviewSubHeaderText,
-  getPeerReviewButtonText,
-} from '../helpers/PeerReviewHelpers'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import {IconCheckSolid, IconEndSolid, IconRefreshSolid} from '@instructure/ui-icons'
 import LoadingIndicator from '@canvas/loading-indicator'
@@ -50,7 +43,7 @@ import React, {useState, useEffect, useContext} from 'react'
 import {showConfirmationDialog} from '@canvas/feature-flags/react/ConfirmationDialog'
 import SimilarityPledge from './SimilarityPledge'
 import StudentFooter from './StudentFooter'
-import PeerReviewPromptModal from './PeerReviewPromptModal'
+import SubmissionCompletedModal from './SubmissionCompletedModal'
 import {
   STUDENT_VIEW_QUERY,
   SUBMISSION_HISTORIES_QUERY,
@@ -167,7 +160,7 @@ CancelAttemptButton.propTypes = {
   submission: PropTypes.object.isRequired,
 }
 
-const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
+const SubmissionManager = ({assignment, submission}) => {
   const [draftStatus, setDraftStatus] = useState(null)
   const [editingDraft, setEditingDraft] = useState(false)
   const [focusAttemptOnInit, setFocusAttemptOnInit] = useState(false)
@@ -175,16 +168,10 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
   const [showConfetti, setShowConfetti] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState(false)
-  const [peerReviewPromptModalOpen, setPeerReviewPromptModalOpen] = useState(false)
+  const [submissionCompletedModalOpen, setSubmissionCompletedModalOpen] = useState(false)
   const [activeSubmissionType, setActiveSubmissionType] = useState(null)
   const [selectedExternalTool, setSelectedExternalTool] = useState(null)
   const [rubricData, setRubricData] = useState(null)
-  const [peerReviewHeaderText, setPeerReviewHeaderText] = useState([])
-  const [peerReviewSubHeaderText, setPeerReviewSubHeaderText] = useState([])
-  const [peerReviewButtonText, setPeerReviewButtonText] = useState('')
-  const [peerReviewButtonDisabled, setPeerReviewButtonDisabled] = useState(false)
-  const [peerReviewShowSubHeaderBorder, setPeerReviewShowSubHeaderBorder] = useState(false)
-  const [peerReviewHeaderMargin, setPeerReviewHeaderMargin] = useState(null)
 
   const displayedAssessment = useStore(state => state.displayedAssessment)
 
@@ -246,9 +233,6 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
     })
     setRubricData(data)
   }
-  const assignedAssessments = assignment.env.peerReviewModeEnabled
-    ? reviewerSubmission?.assignedAssessments
-    : submission.assignedAssessments
 
   useEffect(() => {
     // use the draft's active type if one exists
@@ -416,7 +400,7 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
   }
 
   const shouldRenderNewAttempt = () => {
-    const allowedAttempts = totalAllowedAttempts(assignment, latestSubmission)
+    const allowedAttempts = totalAllowedAttempts({assignment, submission})
     return (
       !assignment.env.peerReviewModeEnabled &&
       allowChangesToSubmission &&
@@ -424,7 +408,7 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
       isSubmitted(submission) &&
       submission.gradingStatus !== 'excused' &&
       latestSubmission.state !== 'unsubmitted' &&
-      (allowedAttempts == null || latestSubmission.attempt < allowedAttempts)
+      (allowedAttempts == null || submission.attempt < allowedAttempts)
     )
   }
 
@@ -508,9 +492,7 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
     const criterion = assignment.rubric.criteria.find(
       criterion => criterion.id === data.criterion_id
     )
-    const rating = criterion.ratings.find(
-      criterionRatings => criterionRatings.points === data.points?.value
-    )
+    const rating = criterion.ratings.find(rating => rating.points == data.points?.value)
 
     return {
       [key]: {
@@ -551,7 +533,7 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
 
       handleSuccess(I18n.t('Rubric was successfully submitted'))
       fetchRubricData({fromCache: false})
-    } catch {
+    } catch (err) {
       setOnFailure(I18n.t('Error submitting rubric'))
     }
     setIsSubmitting(false)
@@ -566,71 +548,32 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
       // Need to reset state after that in case they submit another attempt.
       setShowConfetti(false)
     }, 4000)
-    if (assignedAssessments.length > 0) {
-      if (assignment.env.peerReviewModeEnabled) {
-        const matchingAssessment = assignedAssessments.find(x => x.assetId === submission._id)
-        if (matchingAssessment) matchingAssessment.workflowState = 'completed'
-      }
-      const {availableCount, unavailableCount} = availableAndUnavailableCounts(assignedAssessments)
-      handlePeerReviewPromptSettings(availableCount, unavailableCount)
-      handleOpenPeerReviewPromptModal()
+    if (!assignment.env.peerReviewModeEnabled && submission.assignedAssessments.length > 0) {
+      handleOpenSubmissionCompletedModal()
     }
   }
 
-  const handlePeerReviewPromptSettings = (availableCount, unavailableCount) => {
-    setPeerReviewButtonDisabled(availableCount === 0)
-    if (assignment.env.peerReviewModeEnabled) {
-      setPeerReviewPromptOptions(availableCount, unavailableCount)
-      return
-    }
-    setSelfSubmitPeerReviewPromptOptions(availableCount, unavailableCount)
+  const handleOpenSubmissionCompletedModal = () => {
+    setSubmissionCompletedModalOpen(true)
   }
 
-  const setPeerReviewPromptOptions = (availableCount, unavailableCount) => {
-    setPeerReviewHeaderText(getPeerReviewHeaderText(availableCount, unavailableCount))
-    setPeerReviewSubHeaderText(getPeerReviewSubHeaderText(availableCount, unavailableCount))
-    setPeerReviewShowSubHeaderBorder(false)
-    setPeerReviewButtonText(getPeerReviewButtonText(availableCount, unavailableCount))
-    setPeerReviewHeaderMargin(
-      availableCount === 0 && unavailableCount === 0 ? 'small 0 x-large' : 'small 0 0'
-    )
-  }
-
-  const setSelfSubmitPeerReviewPromptOptions = (availableCount, unavailableCount) => {
-    setPeerReviewHeaderText([
-      I18n.t('Your work has been submitted.'),
-      I18n.t('Check back later to view feedback.'),
-    ])
-    setPeerReviewSubHeaderText([
-      {
-        props: {size: 'large', weight: 'bold'},
-        text: I18n.t(
-          {
-            one: 'You have 1 Peer Review to complete.',
-            other: 'You have %{count} Peer Reviews to complete.',
-          },
-          {count: availableCount + unavailableCount}
-        ),
-      },
-      {
-        props: {size: 'medium'},
-        text: I18n.t('Peer submissions ready for review: %{availableCount}', {availableCount}),
-      },
-    ])
-    setPeerReviewShowSubHeaderBorder(true)
-    setPeerReviewButtonText('Peer Review')
-  }
-
-  const handleOpenPeerReviewPromptModal = () => {
-    setPeerReviewPromptModalOpen(true)
-  }
-
-  const handleClosePeerReviewPromptModal = () => {
-    setPeerReviewPromptModalOpen(false)
+  const handleCloseSubmissionCompletedModal = () => {
+    setSubmissionCompletedModalOpen(false)
   }
 
   const handleRedirectToFirstPeerReview = () => {
-    const url = getRedirectUrlToFirstPeerReview(assignedAssessments)
+    const assessment = submission.assignedAssessments.find(assessment =>
+      isAvailableToReview(assessment)
+    )
+    if (assessment === null) {
+      return
+    }
+    let url = `/courses/${ENV.COURSE_ID}/assignments/${ENV.ASSIGNMENT_ID}`
+    if (assessment.anonymizedUser) {
+      url += `?reviewee_id=${assessment.anonymizedUser._id}`
+    } else {
+      url += `?anonymous_asset_id=${assessment.anonymousId}`
+    }
     window.location.assign(url)
   }
 
@@ -837,6 +780,10 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
     )
   }
 
+  const isAvailableToReview = (assessment) => {
+    return assessment.assetSubmissionType !== null && assessment.workflowState === 'assigned'
+  }
+
   return (
     <>
       {isSubmitting ? <LoadingIndicator /> : renderAttemptTab()}
@@ -845,15 +792,15 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
         {renderFooter()}
       </>
       {showConfetti ? <Confetti /> : null}
-      <PeerReviewPromptModal
-        headerText={peerReviewHeaderText}
-        headerMargin={peerReviewHeaderMargin}
-        subHeaderText={peerReviewSubHeaderText}
-        showSubHeaderBorder={peerReviewShowSubHeaderBorder}
-        peerReviewButtonText={peerReviewButtonText}
-        peerReviewButtonDisabled={peerReviewButtonDisabled}
-        open={peerReviewPromptModalOpen}
-        onClose={() => handleClosePeerReviewPromptModal()}
+      <SubmissionCompletedModal
+        totalCount={submission.assignedAssessments.length}
+        availableCount={
+          submission.assignedAssessments.filter(assessment =>
+            isAvailableToReview(assessment)
+          ).length
+        }
+        open={submissionCompletedModalOpen}
+        onClose={() => handleCloseSubmissionCompletedModal()}
         onRedirect={() => handleRedirectToFirstPeerReview()}
       />
     </>
@@ -863,7 +810,6 @@ const SubmissionManager = ({assignment, submission, reviewerSubmission}) => {
 SubmissionManager.propTypes = {
   assignment: Assignment.shape,
   submission: Submission.shape,
-  reviewerSubmission: Submission.shape,
 }
 
 export default SubmissionManager

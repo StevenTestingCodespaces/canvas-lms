@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -25,17 +24,17 @@ import {Text} from '@instructure/ui-text'
 import {View} from '@instructure/ui-view'
 import {
   IconArrowEndLine,
-  IconAssignmentLine,
   IconCalendarClockLine,
   IconClockLine,
+  IconAssignmentLine,
 } from '@instructure/ui-icons'
 
 import {
+  coursePaceTimezone,
   coursePaceDateFormatter,
   coursePaceDateShortFormatter,
-  coursePaceTimezone,
 } from '../../shared/api/backend_serializer'
-import {CoursePace, OptionalDate, Pace, PaceDuration, ResponsiveSizes} from '../../types'
+import {CoursePace, OptionalDate, PaceDuration, ResponsiveSizes} from '../../types'
 import {coursePaceActions} from '../../actions/course_paces'
 
 const {Item: FlexItem} = Flex as any
@@ -44,17 +43,23 @@ const I18n = useI18nScope('course_paces_projected_dates')
 const DASH = String.fromCharCode(0x2013)
 
 const START_DATE_CAPTIONS = {
-  enrollment: I18n.t('Student enrollment date'),
+  user: I18n.t('Student enrollment date'),
   course: I18n.t('Determined by course start date'),
+  // always refer to the start and end dates as "course"
+  // because the course does whether it's bounded
+  // by the term or course dates
+  term: I18n.t('Determined by course start date'),
   section: I18n.t('Determined by section start date'),
-  empty: I18n.t("Determined by today's date"),
+  hypothetical: I18n.t("Determined by today's date"),
 }
 
 const END_DATE_CAPTIONS = {
-  default: I18n.t('Determined by course pace'),
+  hard: I18n.t('Required end date'),
+  user: I18n.t('Determined by course pace'),
   course: I18n.t('Determined by course end date'),
+  term: I18n.t('Determined by course end date'),
   section: I18n.t('Determined by section end date'),
-  empty: I18n.t('Determined by course pace'),
+  hypothetical: I18n.t('Determined by course pace'),
 }
 
 interface PassedProps {
@@ -66,10 +71,9 @@ interface PassedProps {
   readonly uncompressDates: typeof coursePaceActions.uncompressDates
   readonly compression: number
   readonly responsiveSize: ResponsiveSizes
-  readonly appliedPace: Pace
 }
 
-export const PaceModalStats = ({
+export const PaceModalStats: React.FC<PassedProps> = ({
   coursePace,
   assignments,
   paceDuration,
@@ -78,58 +82,29 @@ export const PaceModalStats = ({
   uncompressDates,
   compression,
   responsiveSize,
-  appliedPace,
-}: PassedProps) => {
+}) => {
   const [dateFormatter, setDateFormat] = useState(coursePaceDateFormatter)
   const [shrink, setShrink] = useState(responsiveSize !== 'large')
   const enrollmentType = coursePace.context_type === 'Enrollment'
   const startDateValue = coursePace.start_date
-  let endDateValue
+  const startHelpText = START_DATE_CAPTIONS[coursePace.start_date_context]
+  let endDateValue, endHelpText
   if (enrollmentType) {
     if (window.ENV.FEATURES.course_paces_for_students) {
       endDateValue = coursePace.end_date || plannedEndDate
     } else {
       endDateValue = plannedEndDate
     }
+    endHelpText = END_DATE_CAPTIONS.user
   } else {
     endDateValue =
       coursePace.end_date_context === 'hypothetical' ? plannedEndDate : coursePace.end_date
-  }
-
-  const getStartDateCaption = contextType => {
-    if (startDateValue && coursePace.start_date_context !== 'hypothetical') {
-      return START_DATE_CAPTIONS[contextType]
-    }
-    return START_DATE_CAPTIONS.empty
-  }
-  const getEndDateCaption = contextType => {
-    if (endDateValue && coursePace.end_date_context !== 'hypothetical') {
-      return END_DATE_CAPTIONS[contextType]
-    }
-    return END_DATE_CAPTIONS.empty
-  }
-
-  const generateDatesCaptions = () => {
-    const contextType = coursePace.context_type.toLocaleLowerCase()
-    const captions = {startDate: START_DATE_CAPTIONS.empty, endDate: END_DATE_CAPTIONS.empty}
-    captions.startDate = getStartDateCaption(contextType)
-
-    if (contextType === 'enrollment') {
-      const appliedPaceContextType = appliedPace.type.toLocaleLowerCase()
-      const paceType = ['course', 'section'].includes(appliedPaceContextType)
-        ? appliedPaceContextType
-        : 'default'
-      captions.endDate = getEndDateCaption(paceType)
-      return captions
-    }
-    captions.endDate = getEndDateCaption(contextType)
-    return captions
+    endHelpText = END_DATE_CAPTIONS[coursePace.end_date_context]
   }
 
   useEffect(() => {
     const isSmallScreen = responsiveSize !== 'large'
     const dateFormat = isSmallScreen ? coursePaceDateShortFormatter : coursePaceDateFormatter
-    // @ts-expect-error
     setDateFormat(dateFormat)
     setShrink(isSmallScreen)
   }, [responsiveSize])
@@ -180,7 +155,6 @@ export const PaceModalStats = ({
   }
 
   const renderDates = () => {
-    const captions = generateDatesCaptions()
     return (
       <View
         as="div"
@@ -206,7 +180,7 @@ export const PaceModalStats = ({
           {renderColoredDate(
             I18n.t('Start Date'),
             startDateValue,
-            captions.startDate,
+            startHelpText,
             'coursepace-start-date'
           )}
         </FlexItem>
@@ -214,12 +188,7 @@ export const PaceModalStats = ({
           <View margin="none small none none">
             <IconArrowEndLine color="alert" size="x-small" theme={{alertColor: '#66189D'}} />
           </View>
-          {renderColoredDate(
-            I18n.t('End Date'),
-            endDateValue,
-            captions.endDate,
-            'coursepace-end-date'
-          )}
+          {renderColoredDate(I18n.t('End Date'), endDateValue, endHelpText, 'coursepace-end-date')}
         </FlexItem>
       </View>
     )
@@ -305,7 +274,7 @@ export const PaceModalStats = ({
           display="inline-block"
           margin="small none none none"
         >
-          {getColoredText('#30203A', I18n.t('Time to complete'))}
+          {getColoredText('#30203A', I18n.t('Duration'))}
           {getColoredText('#068447', duration, {as: 'div', weight: 'bold'})}
         </View>
       </View>

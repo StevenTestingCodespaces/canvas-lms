@@ -19,9 +19,6 @@ import React from 'react'
 import {DiscussionEdit} from '../DiscussionEdit'
 import {render, fireEvent, waitFor} from '@testing-library/react'
 import $ from '@canvas/rails-flash-notifications'
-import injectGlobalAlertContainers from '@canvas/util/react/testing/injectGlobalAlertContainers'
-
-injectGlobalAlertContainers()
 
 const setup = props => {
   return render(<DiscussionEdit {...props} />)

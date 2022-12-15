@@ -1,9 +1,5 @@
 <% define_content :link do %>
-  <% if user&.account&.primary_domain&.host %>
-    <%= url_for({ controller: :profile, action: :settings, host: user.account.primary_domain.host }) %>
-  <% else %>
-    <%= settings_profile_url %>
-  <% end %>
+  <%= settings_profile_url %>
 <% end %>
 
 <% define_content :subject do %>

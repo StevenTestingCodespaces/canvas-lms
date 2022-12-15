@@ -58,13 +58,9 @@ describe "User Profile API", type: :request do
   end
 
   it "returns another user's avatars, if allowed" do
-    json = api_call(:get,
-                    "/api/v1/users/#{@student.id}/avatars",
-                    controller: "profile",
-                    action: "profile_pics",
-                    user_id: @student.to_param,
-                    format: "json")
-    expect(json.pluck("type").sort).to eql ["gravatar", "no_pic"]
+    json = api_call(:get, "/api/v1/users/#{@student.id}/avatars",
+                    controller: "profile", action: "profile_pics", user_id: @student.to_param, format: "json")
+    expect(json.map { |j| j["type"] }.sort).to eql ["gravatar", "no_pic"]
   end
 
   it "returns user info for users with no pseudonym" do
@@ -73,12 +69,8 @@ describe "User Profile API", type: :request do
     @user = @me
     @course.enroll_user(new_user, "ObserverEnrollment")
     Account.site_admin.account_users.create!(user: @user)
-    json = api_call(:get,
-                    "/api/v1/users/#{new_user.id}/profile",
-                    controller: "profile",
-                    action: "settings",
-                    user_id: new_user.to_param,
-                    format: "json")
+    json = api_call(:get, "/api/v1/users/#{new_user.id}/profile",
+                    controller: "profile", action: "settings", user_id: new_user.to_param, format: "json")
     expect(json).to eq({
                          "id" => new_user.id,
                          "name" => "new guy",
@@ -99,12 +91,8 @@ describe "User Profile API", type: :request do
   end
 
   it "returns this user's profile" do
-    json = api_call(:get,
-                    "/api/v1/users/self/profile",
-                    controller: "profile",
-                    action: "settings",
-                    user_id: "self",
-                    format: "json")
+    json = api_call(:get, "/api/v1/users/self/profile",
+                    controller: "profile", action: "settings", user_id: "self", format: "json")
     expect(json).to eq({
                          "id" => @admin.id,
                          "name" => "User",
@@ -122,8 +110,7 @@ describe "User Profile API", type: :request do
                          "time_zone" => "Etc/UTC",
                          "locale" => nil,
                          "effective_locale" => "en",
-                         "k5_user" => false,
-                         "use_classic_font_in_k5" => false
+                         "k5_user" => false
                        })
   end
 
@@ -131,12 +118,8 @@ describe "User Profile API", type: :request do
     @user = @student
     @student.locale = "es"
     @student.save!
-    json = api_call(:get,
-                    "/api/v1/users/#{@student.id}/profile",
-                    controller: "profile",
-                    action: "settings",
-                    user_id: @student.to_param,
-                    format: "json")
+    json = api_call(:get, "/api/v1/users/#{@student.id}/profile",
+                    controller: "profile", action: "settings", user_id: @student.to_param, format: "json")
     expect(json).to eq({
                          "id" => @student.id,
                          "name" => "Student",
@@ -153,19 +136,14 @@ describe "User Profile API", type: :request do
                          "time_zone" => "Etc/UTC",
                          "locale" => "es",
                          "effective_locale" => "es",
-                         "k5_user" => false,
-                         "use_classic_font_in_k5" => false
+                         "k5_user" => false
                        })
   end
 
   it "returns this user's profile (non-admin)" do
     @user = @student
-    json = api_call(:get,
-                    "/api/v1/users/#{@student.id}/profile",
-                    controller: "profile",
-                    action: "settings",
-                    user_id: @student.to_param,
-                    format: "json")
+    json = api_call(:get, "/api/v1/users/#{@student.id}/profile",
+                    controller: "profile", action: "settings", user_id: @student.to_param, format: "json")
     expect(json).to eq({
                          "id" => @student.id,
                          "name" => "Student",
@@ -182,22 +160,15 @@ describe "User Profile API", type: :request do
                          "time_zone" => "Etc/UTC",
                          "locale" => nil,
                          "effective_locale" => "en",
-                         "k5_user" => false,
-                         "use_classic_font_in_k5" => false
+                         "k5_user" => false
                        })
   end
 
   it "respects :read_email_addresses permission" do
-    RoleOverride.create!(context: Account.default,
-                         permission: "read_email_addresses",
-                         role: admin_role,
-                         enabled: false)
-    json = api_call(:get,
-                    "/api/v1/users/#{@student.id}/profile",
-                    controller: "profile",
-                    action: "settings",
-                    user_id: @student.to_param,
-                    format: "json")
+    RoleOverride.create!(context: Account.default, permission: "read_email_addresses",
+                         role: admin_role, enabled: false)
+    json = api_call(:get, "/api/v1/users/#{@student.id}/profile",
+                    controller: "profile", action: "settings", user_id: @student.to_param, format: "json")
     expect(json["id"]).to eq @student.id
     expect(json["primary_email"]).to be_nil
   end
@@ -205,23 +176,15 @@ describe "User Profile API", type: :request do
   it "returns this user's avatars, if allowed" do
     @user = @student
     @student.register
-    json = api_call(:get,
-                    "/api/v1/users/#{@student.id}/avatars",
-                    controller: "profile",
-                    action: "profile_pics",
-                    user_id: @student.to_param,
-                    format: "json")
-    expect(json.pluck("type").sort).to eql ["gravatar", "no_pic"]
+    json = api_call(:get, "/api/v1/users/#{@student.id}/avatars",
+                    controller: "profile", action: "profile_pics", user_id: @student.to_param, format: "json")
+    expect(json.map { |j| j["type"] }.sort).to eql ["gravatar", "no_pic"]
   end
 
   it "does not return disallowed profiles" do
     @user = @student
-    raw_api_call(:get,
-                 "/api/v1/users/#{@admin.id}/profile",
-                 controller: "profile",
-                 action: "settings",
-                 user_id: @admin.to_param,
-                 format: "json")
+    raw_api_call(:get, "/api/v1/users/#{@admin.id}/profile",
+                 controller: "profile", action: "settings", user_id: @admin.to_param, format: "json")
     assert_status(401)
   end
 
@@ -237,12 +200,9 @@ describe "User Profile API", type: :request do
 
     it "returns user_services, if requested" do
       @user = @student
-      json = api_call(:get,
-                      "/api/v1/users/#{@student.id}/profile?include[]=user_services",
-                      controller: "profile",
-                      action: "settings",
-                      user_id: @student.to_param,
-                      format: "json",
+      json = api_call(:get, "/api/v1/users/#{@student.id}/profile?include[]=user_services",
+                      controller: "profile", action: "settings",
+                      user_id: @student.to_param, format: "json",
                       include: ["user_services"])
       expect(json["user_services"]).to eq [
         { "service" => "skype", "visible" => false, "service_user_link" => "skype:user?add" }
@@ -254,12 +214,9 @@ describe "User Profile API", type: :request do
       @student.profile.links.create! url: "http://instructure.com",
                                      title: "Instructure"
 
-      json = api_call(:get,
-                      "/api/v1/users/#{@student.id}/profile?include[]=links",
-                      controller: "profile",
-                      action: "settings",
-                      user_id: @student.to_param,
-                      format: "json",
+      json = api_call(:get, "/api/v1/users/#{@student.id}/profile?include[]=links",
+                      controller: "profile", action: "settings",
+                      user_id: @student.to_param, format: "json",
                       include: %w[links])
       expect(json["links"]).to eq [
         { "url" => "http://instructure.com", "title" => "Instructure" }
@@ -272,14 +229,11 @@ describe "User Profile API", type: :request do
       toggle_k5_setting(@course.account, false)
 
       @user = @student
-      json = api_call(:get,
-                      "/api/v1/users/#{@student.id}/profile",
-                      controller: "profile",
-                      action: "settings",
-                      user_id: @student.to_param,
-                      format: "json")
+      json = api_call(:get, "/api/v1/users/#{@student.id}/profile",
+                      controller: "profile", action: "settings",
+                      user_id: @student.to_param, format: "json")
 
-      expect(json["k5_user"]).to be(false)
+      expect(json["k5_user"]).to eq(false)
     end
 
     context "k5 mode on" do
@@ -289,24 +243,18 @@ describe "User Profile API", type: :request do
 
       it "returns k5_user true for current_user" do
         @user = @student
-        json = api_call(:get,
-                        "/api/v1/users/#{@student.id}/profile",
-                        controller: "profile",
-                        action: "settings",
-                        user_id: @student.to_param,
-                        format: "json")
-        expect(json["k5_user"]).to be(true)
+        json = api_call(:get, "/api/v1/users/#{@student.id}/profile",
+                        controller: "profile", action: "settings",
+                        user_id: @student.to_param, format: "json")
+        expect(json["k5_user"]).to eq(true)
       end
 
       it "returns k5_user nil for other users" do
         course_with_teacher(active_all: true, course: @course)
         @user = @teacher
-        json = api_call(:get,
-                        "/api/v1/users/#{@student.id}/profile",
-                        controller: "profile",
-                        action: "settings",
-                        user_id: @student.to_param,
-                        format: "json")
+        json = api_call(:get, "/api/v1/users/#{@student.id}/profile",
+                        controller: "profile", action: "settings",
+                        user_id: @student.to_param, format: "json")
         expect(json["k5_user"]).to be_nil
       end
     end

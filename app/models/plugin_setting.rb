@@ -152,7 +152,7 @@ class PluginSetting < ActiveRecord::Base
   end
 
   def self.find_by_name(name)
-    where(name:).first
+    where(name: name).first
   end
 
   # stub for plugins who want to do something fancy

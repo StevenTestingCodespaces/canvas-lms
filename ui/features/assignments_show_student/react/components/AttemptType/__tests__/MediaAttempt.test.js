@@ -57,7 +57,6 @@ const makeProps = async overrides => {
 
 // LS-1339  created to figure out why these are failing
 describe('MediaAttempt', () => {
-  global.ENV = {current_user: {id: '1'}}
   describe('unsubmitted', () => {
     it('renders record and upload buttons', async () => {
       const props = await makeProps()
@@ -179,7 +178,7 @@ describe('MediaAttempt', () => {
           state: 'submitted',
         },
       })
-      global.ENV = {auto_show_cc: true, current_user: {id: '1'}}
+      global.ENV = {auto_show_cc: true}
       const wrapper = mount(<MediaAttempt {...props} uploadingFiles={false} />)
       const mediaplayer = wrapper.find(MediaPlayer)
       expect(mediaplayer.props().autoShowCaption).toBe('en')

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -75,7 +74,7 @@ type ResponsiveComponentProps = ComponentProps & {
   readonly responsiveSize: ResponsiveSizes
 }
 
-export const App = ({
+export const App: React.FC<ResponsiveComponentProps> = ({
   loadingMessage,
   setResponsiveSize,
   setBlueprintLocked,
@@ -86,7 +85,9 @@ export const App = ({
   pollForPublishStatus,
   unpublishedChanges,
   coursePace,
-}: ResponsiveComponentProps) => {
+  isSyncing,
+  isPacePublishing,
+}) => {
   const [trayOpen, setTrayOpen] = useState(false)
 
   // Start polling for publish status on mount if applicable
@@ -126,7 +127,7 @@ export const App = ({
                 <CoursePaceEmpty responsiveSize={responsiveSize} />
               ) : (
                 // Make sure changes have finished before updating contexts
-                <PaceContent />
+                !isPacePublishing && !isSyncing && <PaceContent />
               )}
             </FlexItem>
           </Flex>
@@ -180,7 +181,7 @@ export const App = ({
   )
 }
 
-export const ResponsiveApp = (props: ComponentProps) => (
+export const ResponsiveApp: React.FC<ComponentProps> = props => (
   <Responsive
     query={{
       small: {maxWidth: '40rem'},

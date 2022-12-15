@@ -16,15 +16,14 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import initializeExternalTools from '@canvas/tinymce-external-tools'
+import INST from 'browser-sniffer'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import {showFlashError} from '@canvas/alerts/react/FlashAlert'
-
-if (!('INST' in window)) window.INST = {}
 
 const I18n = useI18nScope('loadEventListeners')
 
 export default function loadEventListeners(callbacks = {}) {
-  const validCallbacks = ['equellaCB', 'externalToolCB']
+  const validCallbacks = ['equationCB', 'equellaCB', 'externalToolCB']
 
   validCallbacks.forEach(cbName => {
     if (callbacks[cbName] === undefined) {
@@ -32,6 +31,15 @@ export default function loadEventListeners(callbacks = {}) {
         /* no-op */
       }
     }
+  })
+
+  document.addEventListener('tinyRCE/initEquation', ({detail}) => {
+    import('./backbone/views/EquationEditorView')
+      .then(({default: EquationEditorView}) => {
+        const view = new EquationEditorView(detail.ed)
+        callbacks.equationCB(view)
+      })
+      .catch(showFlashError(I18n.t('Something went wrong loading the equation editor')))
   })
 
   document.addEventListener('tinyRCE/initEquella', e => {

@@ -222,6 +222,7 @@ describe "RCE next tests", ignore_js_errors: true do
 
         select_all_in_tiny(f("#wiki_page_body"))
 
+        f("##{rce_page_body_ifr_id}").click
         f("##{rce_page_body_ifr_id}").send_keys(:backspace)
 
         in_frame rce_page_body_ifr_id do
@@ -319,7 +320,7 @@ describe "RCE next tests", ignore_js_errors: true do
 
       it "clicks on sidebar quizzes page to create link in body" do
         title = "Quiz-Title"
-        @quiz = @course.quizzes.create!(workflow_state: "available", title:)
+        @quiz = @course.quizzes.create!(workflow_state: "available", title: title)
 
         visit_front_page_edit(@course)
 
@@ -336,7 +337,7 @@ describe "RCE next tests", ignore_js_errors: true do
       it "clicks on sidebar announcements page to create link in body" do
         title = "Announcement-Title"
         message = "Announcement 1 detail"
-        @announcement = @course.announcements.create!(title:, message:)
+        @announcement = @course.announcements.create!(title: title, message: message)
 
         visit_front_page_edit(@course)
 
@@ -355,7 +356,7 @@ describe "RCE next tests", ignore_js_errors: true do
 
       it "clicks on sidebar discussions page to create link in body" do
         title = "Discussion-Title"
-        @discussion = @course.discussion_topics.create!(title:)
+        @discussion = @course.discussion_topics.create!(title: title)
 
         visit_front_page_edit(@course)
 
@@ -557,14 +558,14 @@ describe "RCE next tests", ignore_js_errors: true do
         title = "Assignment-Title"
         due_at = 3.days.from_now
         @assignment =
-          @course.assignments.create!(name: title, workflow_state: "published", due_at:)
+          @course.assignments.create!(name: title, workflow_state: "published", due_at: due_at)
 
         visit_new_announcement_page(@course)
 
         click_course_links_toolbar_menuitem
         click_assignments_accordion
         wait_for_ajaximations
-        expect(assignment_due_date_exists?(due_at)).to be true
+        expect(assignment_due_date_exists?(due_at)).to eq true
       end
 
       context "without manage files permissions" do
@@ -579,7 +580,7 @@ describe "RCE next tests", ignore_js_errors: true do
 
         it "still allows inserting course links" do
           title = "Discussion-Title"
-          @discussion = @course.discussion_topics.create!(title:)
+          @discussion = @course.discussion_topics.create!(title: title)
 
           visit_front_page_edit(@course)
 
@@ -950,7 +951,7 @@ describe "RCE next tests", ignore_js_errors: true do
 
         exit_full_screen_button.click
         fs_elem = driver.execute_script("return document.fullscreenElement")
-        expect(fs_elem).to be_nil
+        expect(fs_elem).to eq nil
       end
     end
 
@@ -959,7 +960,7 @@ describe "RCE next tests", ignore_js_errors: true do
 
       click_course_links_toolbar_menuitem
 
-      expect(tray_container_exists?).to be true
+      expect(tray_container_exists?).to eq true
 
       driver.action.send_keys(:escape).perform
 
@@ -967,7 +968,7 @@ describe "RCE next tests", ignore_js_errors: true do
       # and because we're waiting for something to _disappear_
       # we can't use implicit waits, so just keep trying for a bit
       keep_trying_until do
-        expect(tray_container_exists?).to be false # Press esc key
+        expect(tray_container_exists?).to eq false # Press esc key
       end
     end
 
@@ -975,12 +976,12 @@ describe "RCE next tests", ignore_js_errors: true do
       visit_front_page_edit(@course)
 
       click_course_images_toolbar_menuitem
-      expect(tray_container_exists?).to be true
+      expect(tray_container_exists?).to eq true
 
       driver.action.send_keys(:escape).perform
 
       keep_trying_until do
-        expect(tray_container_exists?).to be false # Press esc key
+        expect(tray_container_exists?).to eq false # Press esc key
       end
     end
 
@@ -1281,8 +1282,8 @@ describe "RCE next tests", ignore_js_errors: true do
             .and_return(DynamicSettings::FallbackProxy.new)
           rce_wysiwyg_state_setup(@course)
           plugins = driver.execute_script("return Object.keys(tinymce.activeEditor.plugins)") # rubocop:disable Specs/NoExecuteScript
-          expect(plugins.include?("instructure_paste")).to be(false)
-          expect(plugins.include?("paste")).to be(true)
+          expect(plugins.include?("instructure_paste")).to eql(false)
+          expect(plugins.include?("paste")).to eql(true)
         end
       end
 
@@ -1378,13 +1379,12 @@ describe "RCE next tests", ignore_js_errors: true do
       after { driver.local_storage.clear }
 
       it "shows course links after user files" do
-        get "/"
-        driver.session_storage["canvas_rce_links_accordion_index"] = "assignments"
-
         title = "Assignment-Title"
         @assignment = @course.assignments.create!(name: title)
 
         rce_wysiwyg_state_setup(@course)
+
+        driver.session_storage["canvas_rce_links_accordion_index"] = "assignments"
 
         click_course_links_toolbar_menuitem
         wait_for_ajaximations
@@ -1589,135 +1589,8 @@ describe "RCE next tests", ignore_js_errors: true do
           expect((orig_height - new_height).abs).to be < 3
         end
       end
-
-      it "stil shows tinymce menus when in fullscreen" do
-        # ideally we'd do this test with multiple RCEs on the page
-        # but the setup effort isn't worth it.
-        visit_front_page_edit(@course)
-        full_screen_button.click
-        doc_btn = document_toolbar_menubutton
-        doc_btn.click
-        menu_id = doc_btn.attribute("aria-owns")
-        expect(f("##{menu_id}")).to be_displayed
-      end
-
-      it "traps focus in fullscreen" do
-        visit_front_page_edit(@course)
-        full_screen_button.click
-        active_elem = driver.execute_script("return document.activeElement") # content area
-        active_elem.send_keys(:tab)
-        driver.execute_script("return document.activeElement").send_keys(:tab) # status bar button
-        driver.execute_script("return document.activeElement").send_keys(:tab) # kb shortcut button
-        new_active_elem = driver.execute_script("return document.activeElement") # content area
-        expect(new_active_elem).to eq(active_elem)
-        exit_full_screen_button.click
-      end
     end
     # rubocop:enable Specs/NoSeleniumWebDriverWait
-
-    describe "CanvasContentTray" do
-      it "displays all its dropdowns" do
-        visit_front_page_edit(@course)
-
-        document_toolbar_menubutton.click
-        course_documents_toolbar_menuitem.click
-        expect(tray_container).to be_displayed
-
-        content_tray_content_type.click
-        expect(content_tray_content_type_links).to be_displayed
-        content_tray_content_type.click # close the dropdown
-
-        content_tray_content_subtype.click
-        expect(content_tray_content_subtype_images).to be_displayed
-        content_tray_content_subtype.click
-
-        content_tray_sort_by.click
-        expect(content_tray_sort_by_date_added).to be_displayed
-        content_tray_sort_by.click
-
-        exit_full_screen_menu_item.click
-      end
-
-      it "displays all its dropdowns in fullscreen" do
-        visit_front_page_edit(@course)
-
-        document_toolbar_menubutton.click
-        course_documents_toolbar_menuitem.click
-        expect(tray_container).to be_displayed
-        full_screen_button.click
-        wait_for_animations
-        expect(tray_container).to be_displayed
-
-        content_tray_content_type.click
-        expect(content_tray_content_type_links).to be_displayed
-        content_tray_content_type.click # close the dropdown
-
-        content_tray_content_subtype.click
-        expect(content_tray_content_subtype_images).to be_displayed
-        content_tray_content_subtype.click
-
-        content_tray_sort_by.click
-        expect(content_tray_sort_by_date_added).to be_displayed
-        content_tray_sort_by.click
-
-        exit_full_screen_menu_item.click
-      end
-    end
-
-    describe "selection management" do
-      it "restores selection on focus after being reset while blurred" do
-        visit_front_page_edit(@course)
-        insert_tiny_text("select me")
-
-        select_all_in_tiny(f("#wiki_page_body"))
-
-        expect(rce_selection_focus_offset).to be > 0
-
-        # Click outside the RCE and clear selection (simulate Cmd+F)
-        f("#wiki_page_body_statusbar").click
-        clear_rce_selection
-        expect(rce_selection_focus_offset).to be 0
-
-        # Click back into the iframe
-        f("#wiki_page_body_ifr").click
-
-        # Ensure the selection has been restored
-        expect(rce_selection_focus_offset).to be > 0
-      end
-
-      it "restores selection before creating a link", ignore_js_errors: true do
-        title = "test_page"
-        unpublished = false
-        edit_roles = "public"
-
-        create_wiki_page(title, unpublished, edit_roles)
-
-        visit_front_page_edit(@course)
-        insert_tiny_text("select me")
-
-        select_all_in_tiny(f("#wiki_page_body"))
-
-        expect(rce_selection_focus_offset).to be > 0
-
-        external_link_toolbar_menuitem.click
-        expect(insert_link_modal).to be_displayed
-
-        clear_rce_selection
-        expect(rce_selection_focus_offset).to be 0
-
-        f('input[name="linklink"]').send_keys("http://example.com/")
-        fj('[role="dialog"] button:contains("Done")').click
-
-        in_frame rce_page_body_ifr_id do
-          expect(wiki_body_anchor.attribute("href")).to eq "http://example.com/"
-          expect(wiki_body_anchor.text).to eq "select me"
-
-          # If the selection was restored, there will only be one paragraph
-          # If the selection wasn't restored, an additional paragraph will have been created.
-          expect(ff("#tinymce p").size).to be 1
-        end
-      end
-    end
   end
 end
 

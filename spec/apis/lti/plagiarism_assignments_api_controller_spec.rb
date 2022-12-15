@@ -21,6 +21,8 @@
 require_relative "lti2_api_spec_helper"
 require_relative "../api_spec_helper"
 
+require_dependency "lti/ims/access_token_helper"
+require_dependency "lti/plagiarism_assignments_api_controller"
 module Lti
   describe PlagiarismAssignmentsApiController, type: :request do
     include_context "lti2_api_spec_helper"
@@ -129,7 +131,7 @@ module Lti
       it "returns an assignment that is differentiated by user" do
         due_at = CanvasTime.fancy_midnight(3.days.from_now.midnight)
 
-        create_adhoc_override_for_assignment(assignment, student, due_at:)
+        create_adhoc_override_for_assignment(assignment, student, due_at: due_at)
 
         get "#{endpoint}/#{assignment.id}", params: { user_id: student.id }, headers: request_headers
         parsed_body = JSON.parse(response.body)

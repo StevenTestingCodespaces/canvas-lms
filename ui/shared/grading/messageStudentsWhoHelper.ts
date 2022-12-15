@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2015 - present Instructure, Inc.
  *
@@ -20,7 +19,6 @@
 import axios from '@canvas/axios'
 import _ from 'underscore'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import type {Student} from '../../api.d'
 
 const I18n = useI18nScope('gradebooksharedMessageStudentsWhoHelper')
 
@@ -67,16 +65,7 @@ function getCourseId(assignment) {
 
 const MessageStudentsWhoHelper = {
   settings(assignment, students) {
-    const settings: {
-      title: string
-      points_possible: number
-      students: Student[]
-      context_code: string
-      callback: (selected: any, cutoff: any, students: any) => any
-      subjectCallback: (selected: any, cutoff: any) => any
-      options: any[]
-      onClose?: () => void
-    } = {
+    return {
       options: this.options(assignment),
       title: assignment.name,
       points_possible: assignment.points_possible,
@@ -85,8 +74,6 @@ const MessageStudentsWhoHelper = {
       callback: this.callbackFn.bind(this),
       subjectCallback: this.generateSubjectCallbackFn(assignment),
     }
-
-    return settings
   },
 
   sendMessageStudentsWho(
@@ -94,8 +81,8 @@ const MessageStudentsWhoHelper = {
     subject: string,
     body: string,
     contextCode: string,
-    mediaFile?: {id: string; type: string},
-    attachmentIds: null | string[] = null
+    mediaFile: {id: string; type: string},
+    attachmentIds: string[]
   ) {
     const params: MessageStudentParams = {
       recipients: recipientsIds,
@@ -145,7 +132,7 @@ const MessageStudentsWhoHelper = {
       {
         text: I18n.t('Scored less than'),
         cutoff: true,
-        subjectFn: (assignment, cutoff: number) =>
+        subjectFn: (assignment, cutoff) =>
           I18n.t('Scored less than %{cutoff} on %{assignment}', {
             assignment: assignment.name,
             cutoff: I18n.n(cutoff),
@@ -156,7 +143,7 @@ const MessageStudentsWhoHelper = {
       {
         text: I18n.t('Scored more than'),
         cutoff: true,
-        subjectFn: (assignment, cutoff: number) =>
+        subjectFn: (assignment, cutoff) =>
           I18n.t('Scored more than %{cutoff} on %{assignment}', {
             assignment: assignment.name,
             cutoff: I18n.n(cutoff),

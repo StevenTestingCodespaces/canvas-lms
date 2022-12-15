@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2022 - present Instructure, Inc.
  *
@@ -59,8 +58,9 @@ afterEach(() => {
 
 describe('PaceModal', () => {
   it('calls onClose and clears publishing errors when dismiss button is clicked', () => {
-    const {getByTestId} = renderConnected(<PaceModal {...defaultProps} />)
-    const closeButton = getByTestId('course-pace-edit-close-x')
+    const {getByRole} = renderConnected(<PaceModal {...defaultProps} />)
+
+    const closeButton = getByRole('button', {name: 'Close'})
     expect(closeButton).toBeInTheDocument()
     act(() => closeButton.click())
     expect(onClose).toHaveBeenCalled()

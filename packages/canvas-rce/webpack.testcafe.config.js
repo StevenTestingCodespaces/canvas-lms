@@ -27,11 +27,7 @@ module.exports = {
         exclude: /node_modules/,
         loader: 'babel-loader',
         options: {
-          plugins: [
-            '@babel/plugin-proposal-class-properties',
-            '@babel/plugin-proposal-optional-chaining',
-            '@babel/plugin-proposal-nullish-coalescing-operator',
-          ],
+          plugins: ['@babel/plugin-proposal-class-properties'],
           presets: [['@babel/preset-react'], ['@babel/preset-typescript']],
         },
       },

@@ -190,7 +190,7 @@ describe Loaders::OutcomeFriendlyDescriptionLoader do
         @course.id, "Course"
       )
       fd_loader.load(@outcome.id).then do |fd|
-        expect(fd).to be_nil
+        expect(fd).to eq nil
       end
     end
   end
@@ -207,7 +207,7 @@ describe Loaders::OutcomeFriendlyDescriptionLoader do
         @course.id, "Course"
       )
       fd_loader.load(@outcome.id).then do |fd|
-        expect(fd).to be_nil
+        expect(fd).to eq nil
       end
     end
   end

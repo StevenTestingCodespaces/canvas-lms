@@ -40,14 +40,10 @@ class NotificationEndpoint < ActiveRecord::Base
 
   private
 
-  DIFFERENT_ATTRIBUTES_ERROR_REGEX = /^Invalid parameter: Token Reason: Endpoint (.*) already exists with the same Token, but different attributes.$/
-
-  def region
-    Aws::ARNParser.parse(access_token.developer_key.sns_arn).region
-  end
+  DIFFERENT_ATTRIBUTES_ERROR_REGEX = /^Invalid parameter: Token Reason: Endpoint (.*) already exists with the same Token, but different attributes.$/.freeze
 
   def sns_client
-    DeveloperKey.sns(region:)
+    DeveloperKey.sns
   end
 
   def endpoint_attributes
@@ -79,7 +75,7 @@ class NotificationEndpoint < ActiveRecord::Base
     begin
       response = sns_client.create_platform_endpoint(
         platform_application_arn: access_token.developer_key.sns_arn,
-        token:,
+        token: token,
         custom_user_data: access_token.global_id.to_s
       )
       self.arn = response[:endpoint_arn]

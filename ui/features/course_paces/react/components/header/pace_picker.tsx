@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -72,7 +71,7 @@ const createContextKey = (contextType: PaceContextTypes, contextId: string): str
 
 const parseContextKey = (key: string): ContextArgs => key.split(':') as ContextArgs
 
-export const PacePicker = ({
+export const PacePicker: React.FC<ComponentProps> = ({
   course,
   enrollments,
   sections,
@@ -81,7 +80,7 @@ export const PacePicker = ({
   setSelectedPaceContext,
   responsiveSize,
   unappliedChangesExist,
-}: ComponentProps) => {
+}) => {
   const [open, setOpen] = useState(false)
   const [pendingContext, setPendingContext] = useState('')
 

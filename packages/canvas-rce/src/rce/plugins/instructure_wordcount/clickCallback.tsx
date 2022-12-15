@@ -23,11 +23,7 @@ import {generateRows, HEADERS} from './utils/tableContent'
 
 const MODAL_ID = 'canvas-rce-wordcount-container'
 
-interface WordCountOptions {
-  readonly skipEditorFocus: boolean
-}
-
-export default function (ed: Editor, document: Document, options: WordCountOptions) {
+export default function (ed: Editor, document) {
   return import('./components/WordCountModal').then(({WordCountModal}) => {
     let container = document.querySelector(`#${MODAL_ID}`)
 
@@ -38,10 +34,8 @@ export default function (ed: Editor, document: Document, options: WordCountOptio
     }
 
     const handleDismiss = () => {
-      if (container) {
-        ReactDOM.unmountComponentAtNode(container)
-      }
-      ed.focus(options.skipEditorFocus)
+      ReactDOM.unmountComponentAtNode(container)
+      ed.focus(false)
     }
 
     ReactDOM.render(

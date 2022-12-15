@@ -19,23 +19,32 @@
 
 require "active_support"
 
+# this is a weird thing we have to do to avoid a weird circular
+# require problem
+_x = ActiveSupport::Deprecation
+ActiveSupport::Dependencies.autoload_paths << File.expand_path("autoload", __dir__)
+ActiveSupport::Dependencies.hook!
+
 require "autoextend"
 
-require "zeitwerk"
-require "rails"
-Rails.application = Class.new do
-  def self.autoloaders
-    @autoloaders ||= Rails::Autoloaders.new
+# CANVAS_RAILS="6.1" this pattern will need reworking in a rails >= 7.0 world
+if ENV["WITH_ZEITWERK"]
+  require "zeitwerk"
+  require "rails"
+  Rails.application = Class.new do
+    def self.config
+      Class.new do
+        def self.autoloader
+          :zeitwerk
+        end
+      end
+    end
   end
+  require "active_support/dependencies/zeitwerk_integration"
+  ActiveSupport::Dependencies::ZeitwerkIntegration.take_over(enable_reloading: true)
+  # In an actual rails app this is handled by an initializer through railties
+  Autoextend.inject_into_zetwerk
 end
-main_autoloader = Rails.application.autoloaders.main
-main_autoloader.push_dir(File.expand_path("autoload", __dir__))
-main_autoloader.do_not_eager_load(File.expand_path("autoload", __dir__))
-main_autoloader.enable_reloading
-ActiveSupport::Dependencies.autoloader = main_autoloader
-main_autoloader.setup
-# In an actual rails app this is handled by an initializer through railties
-Autoextend.inject_into_zetwerk
 
 # rubocop:disable Lint/ConstantDefinitionInBlock, RSpec/LeakyConstantDeclaration, Lint/EmptyClass
 # these specs needs to work with real constants, because we're testing the hooking
@@ -90,7 +99,7 @@ describe Autoextend do
   it "autoextends a class afterwards" do
     module AutoextendSpec::MyExtension; end
     Autoextend.hook(:"AutoextendSpec::Class", :"AutoextendSpec::MyExtension")
-    expect(defined?(AutoextendSpec::Class)).to be_nil
+    expect(defined?(AutoextendSpec::Class)).to eq nil
     class AutoextendSpec::Class; end
     expect(AutoextendSpec::Class.ancestors).to include AutoextendSpec::MyExtension
   end
@@ -199,18 +208,26 @@ describe Autoextend do
       Autoextend.hook(:"AutoextendSpec::TestModule::Nested") do
         hooked += 1
       end
-      expect(AutoextendSpec.autoload?(:TestModule)).not_to be_nil
+      if ENV["WITH_ZEITWERK"]
+        expect(AutoextendSpec.autoload?(:TestModule)).not_to be_nil
+      else
+        expect(defined?(AutoextendSpec::TestModule)).to be_nil
+      end
       expect(hooked).to equal(0)
       _x = AutoextendSpec::TestModule
       # this could have only been detected by Rails' autoloading
-      expect(AutoextendSpec.autoload?(:TestModule)).to be_nil
+      if ENV["WITH_ZEITWERK"]
+        expect(AutoextendSpec.autoload?(:TestModule)).to be_nil
+      else
+        expect(defined?(AutoextendSpec::TestModule)).to eq("constant")
+      end
       expect(hooked).to equal(2)
     end
 
     it "hooks an autoloaded module after_load" do
       # This method will call an existing method on load
       Autoextend.hook(:"AutoextendSpec::TestLaterMethod", :"AutoextendSpec::PrependExistingMethod", method: :prepend, after_load: true)
-      expect(AutoextendSpec::TestLaterMethod.new.b_method).to be(true)
+      expect(AutoextendSpec::TestLaterMethod.new.b_method).to eq(true)
     end
   end
 end

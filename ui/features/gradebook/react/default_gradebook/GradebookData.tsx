@@ -18,8 +18,7 @@
 
 import React, {useRef, useEffect, useCallback} from 'react'
 import shallow from 'zustand/shallow'
-import {camelizeProperties} from '@canvas/convert-case'
-import PostGradesStore from '../SISGradePassback/PostGradesStore'
+import {camelize} from 'convert-case'
 import Gradebook from './Gradebook'
 import {findFilterValuesOfType} from './Gradebook.utils'
 import type {GradebookOptions} from './gradebook.d'
@@ -28,17 +27,16 @@ import {RequestDispatch} from '@canvas/network'
 import useStore from './stores/index'
 
 type Props = {
-  actionMenuNode: HTMLSpanElement
-  anonymousSpeedGraderAlertNode: HTMLSpanElement
   applyScoreToUngradedModalNode: HTMLElement
   currentUserId: string
-  enhancedActionMenuNode: HTMLSpanElement
+  filterNavNode: HTMLElement
   flashMessageContainer: HTMLElement
   gradebookEnv: GradebookOptions
   gradebookGridNode: HTMLElement
   gradebookMenuNode: HTMLElement
-  gradebookSettingsModalContainer: HTMLSpanElement
+  gradingPeriodsFilterContainer: HTMLElement
   gridColorNode: HTMLElement
+  hideGrid?: false
   locale: string
   settingsModalButtonContainer: HTMLElement
   viewOptionsMenuNode: HTMLElement
@@ -46,16 +44,11 @@ type Props = {
 
 export default function GradebookData(props: Props) {
   const performanceControls = useRef(
-    new PerformanceControls(camelizeProperties(props.gradebookEnv.performance_controls))
+    new PerformanceControls(camelize(props.gradebookEnv.performance_controls))
   )
   const dispatch = useRef(
     new RequestDispatch({
       activeRequestLimit: performanceControls.current.activeRequestLimit,
-    })
-  )
-  const postGradesStore = useRef(
-    PostGradesStore({
-      course: {id: props.gradebookEnv.context_id, sis_id: props.gradebookEnv.context_sis_id},
     })
   )
   const courseId = props.gradebookEnv.context_id
@@ -72,12 +65,8 @@ export default function GradebookData(props: Props) {
   const fetchModules = useStore(state => state.fetchModules)
 
   const customColumns = useStore(state => state.customColumns, shallow)
-  const isCustomColumnsLoaded = useStore(state => state.isCustomColumnsLoaded)
+  const isCustomColumnsLoading = useStore(state => state.isCustomColumnsLoading)
   const fetchCustomColumns = useStore(state => state.fetchCustomColumns)
-  const loadDataForCustomColumn = useStore(state => state.loadDataForCustomColumn)
-  const recentlyLoadedCustomColumnData = useStore(state => state.recentlyLoadedCustomColumnData)
-  const reorderCustomColumns = useStore(state => state.reorderCustomColumns)
-  const updateColumnOrder = useStore(state => state.updateColumnOrder)
 
   const finalGradeOverrides = useStore(state => state.finalGradeOverrides)
   const fetchFinalGradeOverrides = useStore(state => state.fetchFinalGradeOverrides)
@@ -86,20 +75,21 @@ export default function GradebookData(props: Props) {
   const isStudentIdsLoading = useStore(state => state.isStudentIdsLoading)
   const recentlyLoadedStudents = useStore(state => state.recentlyLoadedStudents)
   const recentlyLoadedSubmissions = useStore(state => state.recentlyLoadedSubmissions)
+  const fetchStudentIds = useStore(state => state.fetchStudentIds)
   const loadStudentData = useStore(state => state.loadStudentData)
   const isStudentDataLoaded = useStore(state => state.isStudentDataLoaded)
   const isSubmissionDataLoaded = useStore(state => state.isSubmissionDataLoaded)
-  const totalSubmissionsLoaded = useStore(state => state.totalSubmissionsLoaded)
-  const totalStudentsToLoad = useStore(state => state.totalStudentsToLoad)
 
   const sisOverrides = useStore(state => state.sisOverrides)
   const fetchSisOverrides = useStore(state => state.fetchSisOverrides)
 
   const gradingPeriodAssignments = useStore(state => state.gradingPeriodAssignments)
+  const isGradingPeriodAssignmentsLoading = useStore(
+    state => state.isGradingPeriodAssignmentsLoading
+  )
   const fetchGradingPeriodAssignments = useStore(state => state.fetchGradingPeriodAssignments)
   const loadAssignmentGroups = useStore(state => state.loadAssignmentGroups)
   const recentlyLoadedAssignmentGroups = useStore(state => state.recentlyLoadedAssignmentGroups)
-  const assignmentMap = useStore(state => state.assignmentMap)
 
   const currentGradingPeriodId = findFilterValuesOfType('grading-period', appliedFilters)[0]
   const gradingPeriodSet = props.gradebookEnv.grading_period_set
@@ -112,7 +102,6 @@ export default function GradebookData(props: Props) {
       performanceControls: performanceControls.current,
       hasModules: props.gradebookEnv.has_modules,
       allowFinalGradeOverride: props.gradebookEnv.course_settings.allow_final_grade_override,
-      reorderCustomColumnsUrl: props.gradebookEnv.reorder_custom_columns_url,
     })
     initializeAppliedFilters(
       props.gradebookEnv.settings.filter_rows_by || {},
@@ -125,7 +114,6 @@ export default function GradebookData(props: Props) {
     props.gradebookEnv.settings.filter_columns_by,
     props.gradebookEnv.has_modules,
     props.gradebookEnv.course_settings.allow_final_grade_override,
-    props.gradebookEnv.reorder_custom_columns_url,
     initializeAppliedFilters,
   ])
 
@@ -163,21 +151,25 @@ export default function GradebookData(props: Props) {
 
   useEffect(() => {
     if (gradingPeriodSet) {
-      // eslint-disable-next-line promise/catch-or-return
-      fetchGradingPeriodAssignments().then(() => {
-        if (currentGradingPeriodId !== '0') {
-          loadAssignmentGroups(props.gradebookEnv.hide_zero_point_quizzes, currentGradingPeriodId)
-        }
-      })
+      fetchGradingPeriodAssignments()
+        .then(() => {
+          if (currentGradingPeriodId !== '0') {
+            loadAssignmentGroups(currentGradingPeriodId)
+          }
+        })
+        .catch(error => {
+          throw new Error('Failed to load grading period assignments', error)
+        })
     } else {
-      loadAssignmentGroups(props.gradebookEnv.hide_zero_point_quizzes)
+      loadAssignmentGroups().catch(error => {
+        throw new Error('Failed to load assignment groups', error)
+      })
     }
   }, [
     gradingPeriodSet,
     currentGradingPeriodId,
     fetchGradingPeriodAssignments,
     loadAssignmentGroups,
-    props.gradebookEnv.hide_zero_point_quizzes,
   ])
 
   const reloadStudentData = useCallback(() => {
@@ -188,34 +180,31 @@ export default function GradebookData(props: Props) {
     <Gradebook
       {...props}
       appliedFilters={appliedFilters}
-      assignmentMap={assignmentMap}
       customColumns={customColumns}
       fetchFinalGradeOverrides={fetchFinalGradeOverrides}
       fetchGradingPeriodAssignments={fetchGradingPeriodAssignments}
-      finalGradeOverrides={finalGradeOverrides}
+      fetchStudentIds={fetchStudentIds}
       flashAlerts={flashMessages}
       gradingPeriodAssignments={gradingPeriodAssignments}
-      isCustomColumnsLoaded={isCustomColumnsLoaded}
+      hideGrid={false}
+      isCustomColumnsLoading={isCustomColumnsLoading}
       isFiltersLoading={isFiltersLoading}
-      isGridLoaded={false}
+      isGradingPeriodAssignmentsLoading={isGradingPeriodAssignmentsLoading}
       isModulesLoading={isModulesLoading}
-      isStudentDataLoaded={isStudentDataLoaded}
       isStudentIdsLoading={isStudentIdsLoading}
-      loadDataForCustomColumn={loadDataForCustomColumn}
+      isStudentDataLoaded={isStudentDataLoaded}
       isSubmissionDataLoaded={isSubmissionDataLoaded}
+      finalGradeOverrides={finalGradeOverrides}
       modules={modules}
-      postGradesStore={postGradesStore.current}
       recentlyLoadedAssignmentGroups={recentlyLoadedAssignmentGroups}
-      recentlyLoadedCustomColumnData={recentlyLoadedCustomColumnData}
+      sisOverrides={sisOverrides}
       recentlyLoadedStudents={recentlyLoadedStudents}
       recentlyLoadedSubmissions={recentlyLoadedSubmissions}
       reloadStudentData={reloadStudentData}
-      reorderCustomColumns={reorderCustomColumns}
-      sisOverrides={sisOverrides}
-      totalSubmissionsLoaded={totalSubmissionsLoaded}
       studentIds={studentIds}
-      totalStudentsToLoad={totalStudentsToLoad}
-      updateColumnOrder={updateColumnOrder}
+      // when the rest of DataLoader is moved we can remove these
+      performanceControls={performanceControls.current}
+      dispatch={dispatch.current}
     />
   )
 }

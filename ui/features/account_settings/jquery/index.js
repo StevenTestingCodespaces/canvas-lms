@@ -150,6 +150,7 @@ $(document).ready(function () {
     addHiddenInput: true,
   })
 
+  globalAnnouncements.augmentView()
   globalAnnouncements.bindDomEvents()
 
   $('#account_settings_tabs').on('tabsactivate', (event, ui) => {
@@ -304,13 +305,6 @@ $(document).ready(function () {
     event.preventDefault()
     $('#ip_filters_dialog').dialog({
       title: I18n.t('titles.what_are_quiz_ip_filters', 'What are Quiz IP Filters?'),
-      width: 400,
-    })
-  })
-  $('.rqd_help_btn').click(event => {
-    event.preventDefault()
-    $('#rqd_dialog').dialog({
-      title: I18n.t('titles.rqd_help', 'Restrict Quantitative Data'),
       width: 400,
     })
   })

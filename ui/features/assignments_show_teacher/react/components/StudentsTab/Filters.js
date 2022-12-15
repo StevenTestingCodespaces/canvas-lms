@@ -71,18 +71,18 @@ export default class Filters extends React.Component {
 
   renderAssignToFilterOptions() {
     const everyone = [
-      <Select.Option id="all" key="all" value="all">
+      <option key="all" value="all">
         {I18n.t('Everyone')}
-      </Select.Option>,
+      </option>,
     ]
     const others = this.props.overrides.map(override => {
       const pieces =
         override.set.__typename === 'AdhocStudents' ? override.set.students : [override.set]
       const display = pieces.map(this.overrideName).join(', ')
       return (
-        <Select.Option id={override.lid} key={override.lid} value={override.lid}>
+        <option key={override.lid} value={override.lid}>
           {display}
-        </Select.Option>
+        </option>
       )
     })
     return everyone.concat(others)
@@ -90,15 +90,15 @@ export default class Filters extends React.Component {
 
   renderAttemptFilterOptions() {
     const options = [
-      <Select.Option id="all" key="all" value="all">
+      <option key="all" value="all">
         {I18n.t('All')}
-      </Select.Option>,
+      </option>,
     ]
     for (let i = 1; i <= this.props.numAttempts; i++) {
       options.push(
-        <Select.Option id={i} key={i} value={i.toString()}>
+        <option key={i} value={i.toString()}>
           {I18n.t('Attempt %{count}', {count: i})}
-        </Select.Option>
+        </option>
       )
     }
     return options
@@ -106,18 +106,18 @@ export default class Filters extends React.Component {
 
   renderStatusFilterOptions() {
     return [
-      <Select.Option id="all" key="all" value="all">
+      <option key="all" value="all">
         {I18n.t('All')}
-      </Select.Option>,
-      <Select.Option id="excused" key="excused" value="excused">
+      </option>,
+      <option key="excused" value="excused">
         {I18n.t('Excused')}
-      </Select.Option>,
-      <Select.Option id="late" key="late" value="late">
+      </option>,
+      <option key="late" value="late">
         {I18n.t('Late')}
-      </Select.Option>,
-      <Select.Option id="missing" key="missing" value="missing">
+      </option>,
+      <option key="missing" value="missing">
         {I18n.t('Missing')}
-      </Select.Option>,
+      </option>,
     ]
   }
 
@@ -126,7 +126,7 @@ export default class Filters extends React.Component {
       <Flex as="div" margin="medium 0 0 0" wrap="wrap">
         <Flex.Item>
           <Select
-            renderLabel={I18n.t('Assign To')}
+            label={I18n.t('Assign To')}
             onChange={this.onChangeAssignTo}
             data-testid="assignToFilter"
           >
@@ -135,7 +135,7 @@ export default class Filters extends React.Component {
         </Flex.Item>
         <Flex.Item margin="0 0 0 small">
           <Select
-            renderLabel={I18n.t('attempts.filter', 'Attempts')}
+            label={I18n.t('attempts.filter', 'Attempts')}
             onChange={this.onChangeAttempt}
             data-testid="attemptFilter"
           >
@@ -144,7 +144,7 @@ export default class Filters extends React.Component {
         </Flex.Item>
         <Flex.Item margin="0 0 0 small">
           <Select
-            renderLabel={I18n.t('Status')}
+            label={I18n.t('Status')}
             onChange={this.onChangeStatus}
             data-testid="statusFilter"
           >

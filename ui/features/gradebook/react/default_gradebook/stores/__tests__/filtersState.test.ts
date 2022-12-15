@@ -31,14 +31,7 @@ const mockResponse: GradebookFilterApiResponse[] = [
       user_id: '1',
       name: 'filter 1',
       payload: {
-        conditions: [
-          {
-            id: '234',
-            type: 'student-group',
-            value: '2',
-            created_at: '2022-01-01T00:00:00Z',
-          },
-        ],
+        conditions: [],
       },
       created_at: '2020-01-01T00:00:00Z',
       updated_at: '2020-01-01T00:00:00Z',
@@ -51,14 +44,7 @@ const mockResponse: GradebookFilterApiResponse[] = [
       user_id: '1',
       name: 'filter 2',
       payload: {
-        conditions: [
-          {
-            id: '234',
-            type: 'student-group',
-            value: '3',
-            created_at: '2022-01-01T00:00:00Z',
-          },
-        ],
+        conditions: [],
       },
       created_at: '2020-01-01T00:00:00Z',
       updated_at: '2020-01-01T00:00:00Z',
@@ -83,14 +69,7 @@ describe('filtersState', () => {
       {
         id: '321',
         name: 'filter 1',
-        filters: [
-          {
-            id: '234',
-            type: 'student-group',
-            value: '2',
-            created_at: '2022-01-01T00:00:00Z',
-          },
-        ],
+        filters: [],
         created_at: '2020-01-01T00:00:00Z',
       },
     ])
@@ -113,7 +92,7 @@ describe('filtersState', () => {
         {
           id: '234',
           type: 'student-group',
-          value: '1',
+          value: '2',
           created_at: '2022-01-01T00:00:00Z',
         },
       ],
@@ -129,14 +108,7 @@ describe('filtersState', () => {
       {
         id: '321',
         name: 'filter 1',
-        filters: [
-          {
-            id: '234',
-            type: 'student-group',
-            value: '2',
-            created_at: '2022-01-01T00:00:00Z',
-          },
-        ],
+        filters: [],
         created_at: '2020-01-01T00:00:00Z',
         updated_at: '2020-01-01T00:00:00Z',
       },
@@ -149,14 +121,7 @@ describe('filtersState', () => {
         {
           id: '321',
           name: 'filter 1',
-          filters: [
-            {
-              id: '123',
-              type: 'student-group',
-              value: '1',
-              created_at: '2022-01-01T00:00:00Z',
-            },
-          ],
+          filters: [],
           created_at: '2020-01-01T00:00:00Z',
           updated_at: '2020-01-01T00:00:00Z',
         },
@@ -172,14 +137,7 @@ describe('filtersState', () => {
     await store.getState().updateFilterPreset({
       id: '321',
       name: 'filter 1 (renamed)',
-      filters: [
-        {
-          id: '123',
-          type: 'student-group',
-          value: '1',
-          created_at: '2022-01-01T00:00:00Z',
-        },
-      ],
+      filters: [],
       created_at: '2020-01-01T00:00:00Z',
       updated_at: '2020-01-01T00:00:00Z',
     })
@@ -188,14 +146,7 @@ describe('filtersState', () => {
       {
         id: '321',
         name: 'filter 1 (renamed)',
-        filters: [
-          {
-            id: '234',
-            type: 'student-group',
-            value: '2',
-            created_at: '2022-01-01T00:00:00Z',
-          },
-        ],
+        filters: [],
         created_at: '2020-01-01T00:00:00Z',
       },
     ])
@@ -479,14 +430,14 @@ describe('filtersState', () => {
       created_at: '2020-01-01T00:00:00Z',
       updated_at: '2020-01-01T00:00:00Z',
     })
-    expect(store.getState().filterPresets[0]).toMatchObject({
+    expect(store.getState().filterPresets[1]).toMatchObject({
       id: '321',
       name: 'filter 1',
       filters: [],
       created_at: '2020-01-01T00:00:00Z',
       updated_at: '2020-01-01T00:00:00Z',
     })
-    expect(store.getState().filterPresets[1]).toMatchObject({
+    expect(store.getState().filterPresets[0]).toMatchObject({
       id: '432',
       name: 'filter 2',
       filters: [],

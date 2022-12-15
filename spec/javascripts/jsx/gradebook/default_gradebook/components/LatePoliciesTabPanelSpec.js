@@ -29,6 +29,7 @@ import {DEFAULT_LATE_POLICY_DATA} from 'ui/features/gradebook/react/default_grad
 import LatePoliciesTabPanel from 'ui/features/gradebook/react/default_gradebook/components/LatePoliciesTabPanel'
 
 const MIN = '0'
+const MAX = '100'
 
 QUnit.module(
   'Gradebook > Default Gradebook > LatePoliciesTabPanel > without enzyme',
@@ -191,10 +192,10 @@ QUnit.module(
             strictEqual(disabled, false)
           })
 
-          test("the 'Grade percentage for missing submissions' defaults to 0", () => {
+          test("the 'Grade percentage for missing submissions' defaults to 100", () => {
             getAutomaticallyApplyGradeForMissingSubmissionsCheckbox().click()
             const input = getGradePercentageForMissingSubmissionsInput()
-            strictEqual(input.value, MIN)
+            strictEqual(input.value, MAX)
           })
 
           test('when a single character is entered in the input, changeLatePolicy is called once', () => {

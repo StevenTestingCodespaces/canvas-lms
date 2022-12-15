@@ -29,6 +29,7 @@ import {DiscussionManagerUtilityContext} from '../../utils/constants'
 import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 import {CloseButton} from '@instructure/ui-buttons'
 import {
+  CREATE_DISCUSSION_ENTRY,
   CREATE_DISCUSSION_ENTRY_DRAFT,
   DELETE_DISCUSSION_ENTRY,
   UPDATE_DISCUSSION_ENTRY_PARTICIPANT,
@@ -50,7 +51,6 @@ import React, {useCallback, useContext, useEffect, useMemo, useState} from 'reac
 import {useMutation, useQuery} from 'react-apollo'
 import {View} from '@instructure/ui-view'
 import * as ReactDOMServer from 'react-dom/server'
-import useCreateDiscussionEntry from '../../hooks/useCreateDiscussionEntry'
 
 const I18n = useI18nScope('discussion_topics_post')
 
@@ -78,16 +78,20 @@ export const SplitScreenViewContainer = props => {
     props.setHighlightEntryId(newDiscussionEntry._id)
   }
 
-  const onEntryCreationCompletion = data => {
-    props.setHighlightEntryId(data.createDiscussionEntry.discussionEntry._id)
-    if (splitScreenEntryOlderDirection.data.legacyNode.depth > 3) {
-      props.onOpenSplitScreenView(data.createDiscussionEntry.discussionEntry.rootEntryId, false)
-    } else if (splitScreenEntryOlderDirection.data.legacyNode.depth === 3) {
-      props.onOpenSplitScreenView(data.createDiscussionEntry.discussionEntry.parentId, false)
-    }
-  }
-
-  const {createDiscussionEntry} = useCreateDiscussionEntry(onEntryCreationCompletion, updateCache)
+  const [createDiscussionEntry] = useMutation(CREATE_DISCUSSION_ENTRY, {
+    update: updateCache,
+    onCompleted: data => {
+      setOnSuccess(I18n.t('The discussion entry was successfully created.'))
+      props.setHighlightEntryId(data.createDiscussionEntry.discussionEntry._id)
+      if (splitScreenEntryOlderDirection.data.legacyNode.depth > 3) {
+        props.onOpenSplitScreenView(data.createDiscussionEntry.discussionEntry.rootEntryId, false)
+      } else if (splitScreenEntryOlderDirection.data.legacyNode.depth === 3) {
+        props.onOpenSplitScreenView(data.createDiscussionEntry.discussionEntry.parentId, false)
+      }
+    },
+    onError: () =>
+      setOnFailure(I18n.t('There was an unexpected error creating the discussion entry.')),
+  })
 
   const [deleteDiscussionEntry] = useMutation(DELETE_DISCUSSION_ENTRY, {
     onCompleted: data => {
@@ -179,13 +183,12 @@ export const SplitScreenViewContainer = props => {
     }
   }
 
-  const onUpdate = (discussionEntry, message, file) => {
+  const onUpdate = (discussionEntry, message, fileId) => {
     updateDiscussionEntry({
       variables: {
         discussionEntryId: discussionEntry._id,
         message,
-        fileId: file?._id,
-        removeAttachment: !file?._id,
+        removeAttachment: !fileId,
       },
     })
   }
@@ -194,8 +197,7 @@ export const SplitScreenViewContainer = props => {
     window.open(getSpeedGraderUrl(discussionEntry.author._id), '_blank')
   }
 
-  // This reply method is used for the split-screen reply
-  const onReplySubmit = (message, file, quotedEntryId, isAnonymousAuthor) => {
+  const onReplySubmit = (message, fileId, includeReplyPreview, isAnonymousAuthor) => {
     // In this case. The parentEntry is the Entry that was clicked to start the reply
     const parentEntryDepth = splitScreenEntryOlderDirection.data.legacyNode.depth
     const parentId = splitScreenEntryOlderDirection.data.legacyNode._id
@@ -212,29 +214,29 @@ export const SplitScreenViewContainer = props => {
         : parentEntryDepth > 3
         ? rootTopicReplyId
         : parentId
-    const variables = {
-      discussionTopicId: props.discussionTopic._id,
-      parentEntryId: createdEntryParentId,
-      isAnonymousAuthor,
-      message,
-      fileId: file?._id,
-      includeReplyPreview: !!quotedEntryId,
-      courseID: ENV.course_id,
-      quotedEntryId,
-    }
-    const optimisticResponse = getOptimisticResponse({
-      message,
-      attachment: file,
-      parentId: createdEntryParentId,
-      rootEntryId: rootTopicReplyId,
-      quotedEntry: buildQuotedReply(
-        splitScreenEntryOlderDirection.data?.legacyNode?.discussionSubentriesConnection?.nodes,
-        replyFromId
-      ),
-      isAnonymous:
-        !!props.discussionTopic.anonymousState && props.discussionTopic.canReplyAnonymously,
+
+    createDiscussionEntry({
+      variables: {
+        discussionTopicId: props.discussionTopic._id,
+        parentEntryId: createdEntryParentId,
+        isAnonymousAuthor,
+        message,
+        fileId,
+        includeReplyPreview,
+        courseID: ENV.course_id,
+      },
+      optimisticResponse: getOptimisticResponse({
+        message,
+        parentId: createdEntryParentId,
+        rootEntryId: rootTopicReplyId,
+        quotedEntry: buildQuotedReply(
+          splitScreenEntryOlderDirection.data?.legacyNode?.discussionSubentriesConnection?.nodes,
+          replyFromId
+        ),
+        isAnonymous:
+          !!props.discussionTopic.anonymousState && props.discussionTopic.canReplyAnonymously,
+      }),
     })
-    createDiscussionEntry({variables, optimisticResponse})
   }
 
   const [createDiscussionEntryDraft] = useMutation(CREATE_DISCUSSION_ENTRY_DRAFT, {
@@ -461,8 +463,8 @@ export const SplitScreenViewContainer = props => {
                 rceIdentifier={props.discussionEntryId}
                 discussionAnonymousState={props.discussionTopic?.anonymousState}
                 canReplyAnonymously={props.discussionTopic?.canReplyAnonymously}
-                onSubmit={(message, quotedEntryId, file, anonymousAuthorState) => {
-                  onReplySubmit(message, file, quotedEntryId, anonymousAuthorState)
+                onSubmit={(message, includeReplyPreview, fileId, anonymousAuthorState) => {
+                  onReplySubmit(message, fileId, includeReplyPreview, anonymousAuthorState)
                   props.setRCEOpen(false)
                 }}
                 onCancel={() => props.setRCEOpen(false)}
@@ -498,7 +500,7 @@ export const SplitScreenViewContainer = props => {
           )}
         </SplitScreenParent>
         {!props.RCEOpen && (
-          <View as="div" borderWidth="small none none none">
+          <View as="div" borderWidth="small none none none" padding="medium none none">
             <SplitScreenThreadsContainer
               discussionTopic={props.discussionTopic}
               discussionEntry={splitScreenEntryOlderDirection.data.legacyNode}
@@ -548,7 +550,6 @@ export const SplitScreenViewContainer = props => {
         </Flex.Item>
         <Flex.Item>
           <CloseButton
-            size="medium"
             margin="small auto none"
             placement="end"
             offset="small"

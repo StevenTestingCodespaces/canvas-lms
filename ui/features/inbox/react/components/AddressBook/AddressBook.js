@@ -23,12 +23,10 @@ import {TextInput} from '@instructure/ui-text-input'
 import {TruncateText} from '@instructure/ui-truncate-text'
 import {Spinner} from '@instructure/ui-spinner'
 import {Heading} from '@instructure/ui-heading'
-import {Focusable} from '@instructure/ui-focusable'
 import {
   IconArrowOpenStartLine,
   IconArrowOpenEndLine,
   IconAddressBookLine,
-  IconSearchLine,
 } from '@instructure/ui-icons'
 import {
   ScreenReaderContent,
@@ -69,8 +67,7 @@ export const AddressBook = ({
   limitTagCount,
   headerText,
   width,
-  isMenuOpen,
-  setIsMenuOpen,
+  open,
   onUserFilterSelect,
   fetchMoreMenuData,
   hasMoreMenuData,
@@ -81,11 +78,11 @@ export const AddressBook = ({
   activeCourseFilter,
   addressBookMessages,
   isOnObserverSubmenu,
-  ...props
 }) => {
   const textInputRef = useRef(null)
   const componentViewRef = useRef(null)
   const popoverInstanceId = useRef(`address-book-menu-${nanoid()}`)
+  const [isMenuOpen, setIsMenuOpen] = useState(open)
   const [selectedItem, setSelectedItem] = useState(null)
   const [selectedMenuItems, setSelectedMenuItems] = useState([])
   const [isLimitReached, setLimitReached] = useState(false)
@@ -93,19 +90,15 @@ export const AddressBook = ({
   const menuRef = useRef(null)
   const userID = ENV.current_user_id?.toString()
   const [focusType, setFocusType] = useState(KEYBOARD_FOCUS_TYPE) // Options are 'keyboard' and 'mouse'
-  const isCourseHomeMenu =
-    activeCourseFilter?.contextID &&
-    currentFilter.context?.contextID === activeCourseFilter?.contextID
-  const backButtonArray =
-    isSubMenu && !isCourseHomeMenu
-      ? [{id: 'backButton', name: I18n.t('Back'), itemType: BACK_BUTTON_TYPE}]
-      : []
+  const backButtonArray = isSubMenu
+    ? [{id: 'backButton', name: I18n.t('Back'), itemType: BACK_BUTTON_TYPE}]
+    : []
   const headerArray = headerText
     ? [{id: 'headerText', name: headerText, focusSkip: true, itemType: HEADER_TEXT_TYPE}]
     : []
   const homeMenu = [
     {id: 'subMenuCourse', name: I18n.t('Courses'), itemType: SUBMENU_TYPE},
-    {id: 'subMenuUsers', name: I18n.t('Users'), itemType: SUBMENU_TYPE},
+    {id: 'subMenuStudents', name: I18n.t('Students'), itemType: SUBMENU_TYPE},
   ]
   const [data, setData] = useState([
     ...backButtonArray,
@@ -203,7 +196,7 @@ export const AddressBook = ({
       textInputRef?.current?.setAttribute('disabled', true)
       setIsMenuOpen(false)
     }
-  }, [selectedMenuItems, limitTagCount, textInputRef, setIsMenuOpen])
+  }, [selectedMenuItems, limitTagCount, textInputRef])
 
   // set initial recipients from props
   useEffect(() => {
@@ -373,30 +366,24 @@ export const AddressBook = ({
   const renderedSelectedTags = useMemo(() => {
     return selectedMenuItems.map(menuItem => {
       return (
-        <Focusable key={`address-book-tag-${menuItem.id}-${menuItem.itemType}`}>
-          {({focused}) => (
-            <span
-              data-testid="address-book-tag"
-              id={`address-book-label-${menuItem.id}-${menuItem.itemType}`}
-            >
-              <Tag
-                text={
-                  <AccessibleContent
-                    alt={focused ? `${I18n.t('Remove')} ${menuItem.name}` : `${menuItem.name}`}
-                  >
-                    {menuItem.name}
-                  </AccessibleContent>
-                }
-                dismissible={true}
-                margin="0 xx-small 0 0"
-                onClick={() => {
-                  removeTag(menuItem)
-                }}
-                key={`address-book-tag-${menuItem.id}-${menuItem.itemType}`}
-              />
-            </span>
-          )}
-        </Focusable>
+        <span
+          data-testid="address-book-tag"
+          key={`address-book-tag-${menuItem.id}-${menuItem.itemType}`}
+        >
+          <Tag
+            text={
+              <AccessibleContent alt={`${I18n.t('Remove')} ${menuItem.name}`}>
+                {menuItem.name}
+              </AccessibleContent>
+            }
+            dismissible={true}
+            margin="0 xx-small 0 0"
+            onClick={() => {
+              removeTag(menuItem)
+            }}
+            key={`address-book-tag-${menuItem.id}-${menuItem.itemType}`}
+          />
+        </span>
       )
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -518,8 +505,6 @@ export const AddressBook = ({
     onSelectedIdsChange([...newSelectedMenuItems])
   }
 
-  const searchPlaceholder = props.placeholder || I18n.t('Search...')
-
   return (
     <View as="div" width={width}>
       <div ref={componentViewRef}>
@@ -543,17 +528,13 @@ export const AddressBook = ({
               }}
               renderTrigger={
                 <TextInput
-                  placeholder={selectedMenuItems.length === 0 ? searchPlaceholder : null}
+                  placeholder={
+                    selectedMenuItems.length === 0 ? I18n.t('Insert or Select Names') : null
+                  }
                   renderLabel={
                     <ScreenReaderContent>{I18n.t('Address Book Input')}</ScreenReaderContent>
                   }
-                  renderBeforeInput={
-                    selectedMenuItems.length === 0 ? (
-                      <IconSearchLine inline={false} />
-                    ) : (
-                      renderedSelectedTags
-                    )
-                  }
+                  renderBeforeInput={selectedMenuItems.length === 0 ? null : renderedSelectedTags}
                   onFocus={() => {
                     if (!isLimitReached) {
                       setIsMenuOpen(true)
@@ -570,9 +551,6 @@ export const AddressBook = ({
                   type="search"
                   aria-owns={popoverInstanceId.current}
                   aria-label={ariaAddressBookLabel}
-                  aria-labelledby={selectedMenuItems
-                    .map(u => `address-book-label-${u?.id}-${u?.itemType}`)
-                    .join(' ')}
                   aria-autocomplete="list"
                   inputRef={ref => {
                     textInputRef.current = ref
@@ -695,8 +673,7 @@ AddressBook.propTypes = {
   /**
    * Bool which determines if addressbook is open
    */
-  isMenuOpen: PropTypes.bool,
-  setIsMenuOpen: PropTypes.func,
+  open: PropTypes.bool,
   /**
    * use State function to set user filter for conversations
    */
@@ -728,10 +705,6 @@ AddressBook.propTypes = {
   activeCourseFilter: PropTypes.object,
   addressBookMessages: PropTypes.array,
   isOnObserverSubmenu: PropTypes.bool,
-  /**
-   * placeholder text for search text input
-   */
-  placeholder: PropTypes.string,
 }
 
 export default AddressBook

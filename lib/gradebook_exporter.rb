@@ -97,8 +97,7 @@ class GradebookExporter
 
     # remove duplicate enrollments for students enrolled in multiple sections
     student_enrollments = if @options[:current_view]
-                            student_order = @options[:student_order].map(&:to_i)
-                            student_enrollments.select { |s| student_order.include?(s[:user_id]) }.uniq(&:user_id)
+                            student_enrollments.select { |s| @options[:student_order].include?(s[:user_id]) }.uniq(&:user_id)
                           else
                             student_enrollments.uniq(&:user_id)
                           end
@@ -110,7 +109,7 @@ class GradebookExporter
       student_enrollments.map(&:user_id),
       @course,
       ignore_muted: false,
-      grading_period:
+      grading_period: grading_period
     )
 
     submissions = {}
@@ -420,7 +419,7 @@ class GradebookExporter
     @course.display_totals_for_all_grading_periods?
   end
 
-  STARTS_WITH_EQUAL = /^\s*=/
+  STARTS_WITH_EQUAL = /^\s*=/.freeze
 
   # Returns the student name to use for the export.  If the name
   # starts with =, quote it so anyone pulling the data into Excel

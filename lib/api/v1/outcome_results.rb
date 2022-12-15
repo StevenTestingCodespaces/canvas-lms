@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "csv"
+
 module Api::V1::OutcomeResults
   include Api::V1::Outcome
   include Outcomes::OutcomeFriendlyDescriptionResolver
@@ -89,12 +91,11 @@ module Api::V1::OutcomeResults
     outcomes.map do |o|
       hash = outcome_json(
         o,
-        @current_user,
-        session,
-        assessed_outcomes:,
+        @current_user, session,
+        assessed_outcomes: assessed_outcomes,
         rating_percents: percents[o.id],
-        context:,
-        friendly_descriptions:
+        context: context,
+        friendly_descriptions: friendly_descriptions
       )
       hash[:alignments] = alignment_asset_string_map[o.id]
       hash
@@ -112,7 +113,7 @@ module Api::V1::OutcomeResults
   #
   # Returns a Hash containing serialized outcome links.
   def outcome_results_include_outcome_links_json(outcome_links, context)
-    outcome_links_json(outcome_links, @current_user, session, { context: })
+    outcome_links_json(outcome_links, @current_user, session, { context: context })
   end
 
   # Public: Returns an Array of serialized Course objects for linked hash.
@@ -183,6 +184,7 @@ module Api::V1::OutcomeResults
     serialized_rollup_pairs = rollups.map do |rollup|
       [rollup, serialize_rollup(rollup, :user)]
     end
+
     duplicate_rollup_rows_for_sections(serialized_rollup_pairs)
   end
 
@@ -198,16 +200,16 @@ module Api::V1::OutcomeResults
     # we're mostly assuming that there is one section enrollment per user. if a user
     # is in multiple sections, they will have multiple rollup results. pagination is
     # still by user, so the counts won't match up. again, this is a very rare thing
-    section_func = if @section
-                     ->(user) { [[@section.id, @context.all_accepted_student_enrollments.where(user_id: user.id, course_section_id: @section.id).first.workflow_state]] }
-                   else
-                     enrollments = @context.all_accepted_student_enrollments.where(user_id: serialized_rollup_pairs.map { |pair| pair.first.context.id }).to_a
-                     ->(user) { enrollments.select { |e| e.user_id == user.id }.map { |e| [e&.course_section_id, e.workflow_state] } }
-                   end
+    section_ids_func = if @section
+                         ->(_user) { [@section.id] }
+                       else
+                         enrollments = @context.all_accepted_student_enrollments.where(user_id: serialized_rollup_pairs.map { |pair| pair[0].context.id }).to_a
+                         ->(user) { enrollments.select { |e| e.user_id == user.id }.map(&:course_section_id) }
+                       end
 
     serialized_rollup_pairs.flat_map do |rollup, serialized_rollup|
-      section_func.call(rollup.context).map do |section_id, workflow_state|
-        serialized_rollup.deep_merge(links: { section: section_id.to_s, status: workflow_state })
+      section_ids_func.call(rollup.context).map do |section_id|
+        serialized_rollup.deep_merge(links: { section: section_id.to_s })
       end
     end
   end
@@ -262,8 +264,8 @@ module Api::V1::OutcomeResults
       outcomes.each do |outcome|
         pathParts = outcome_paths.find { |x| x[:id] == outcome.id }[:parts]
         path = pathParts.pluck(:name).join(" > ")
-        row << I18n.t(:outcome_path_result, "%{path} result", path:)
-        row << I18n.t(:outcome_path_mastery_points, "%{path} mastery points", path:)
+        row << I18n.t(:outcome_path_result, "%{path} result", path: path)
+        row << I18n.t(:outcome_path_mastery_points, "%{path} mastery points", path: path)
       end
       csv << row
       mastery_points = @context.root_account.feature_enabled?(:account_level_mastery_scales) && @context.resolved_outcome_proficiency&.mastery_points

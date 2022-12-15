@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2013 - present Instructure, Inc.
  *
@@ -20,6 +19,7 @@
 import $ from 'jquery'
 import 'jqueryui/menu'
 import {useScope as useI18nScope} from '@canvas/i18n'
+import htmlEscape from 'html-escape'
 
 const I18n = useI18nScope('LongTextEditor')
 /*
@@ -49,19 +49,16 @@ function LongTextEditor(args) {
         'border-radius': '10px',
       })
       .appendTo($container)
-    $input = $('<textarea>', {
-      hidefocus: true,
-      rows: 5,
-      maxlength: args.maxLength,
-    }).css({
-      'background-color': 'white',
-      width: '250px',
-      height: '80px',
-      border: 0,
-      outline: 0,
-    })
-
-    $wrapper.empty().append($input)
+    $input = $('<textarea hidefocus rows="5"/>')
+      .attr('maxlength', htmlEscape(args.maxLength))
+      .css({
+        backround: 'white',
+        width: '250px',
+        height: '80px',
+        border: 0,
+        outline: 0,
+      })
+      .appendTo($wrapper)
 
     const buttonContainer = $('<div/>')
       .css({
@@ -70,8 +67,8 @@ function LongTextEditor(args) {
       .appendTo($wrapper)
     const saveText = I18n.t('save', 'Save')
     const cancelText = I18n.t('cancel', 'Cancel')
-    $saveButton = $('<button>').text(saveText).appendTo(buttonContainer)
-    $cancelButton = $('<button>').text(cancelText).appendTo(buttonContainer)
+    $saveButton = $('<button/>').append(htmlEscape(saveText)).appendTo(buttonContainer)
+    $cancelButton = $('<button/>').append(htmlEscape(cancelText)).appendTo(buttonContainer)
 
     $saveButton.click(this.save)
     $cancelButton.click(this.cancel)

@@ -9,11 +9,12 @@ Gem::Specification.new do |spec|
 
   spec.files         = Dir.glob("{lib|spec}/**/*")
   spec.require_paths = ["lib"]
+  spec.test_files    = spec.files.grep(%r{^spec/})
 
   spec.required_ruby_version = ">= 2.0"
 
-  spec.add_development_dependency "activesupport", "~> 7.0"
+  spec.add_development_dependency "activesupport", "~> 6.1"
   spec.add_development_dependency "byebug"
-  spec.add_development_dependency "railties", "~> 7.0"
-  spec.add_development_dependency "rspec", "~> 3.12"
+  spec.add_development_dependency "railties", "~> 6.1"
+  spec.add_development_dependency "rspec", "~> 3.5.0"
 end

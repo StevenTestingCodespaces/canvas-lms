@@ -452,8 +452,6 @@ export function K5Course({
   tabContentOnly,
   isMasterCourse,
   showImmersiveReader,
-  gradingScheme,
-  restrictQuantitativeData,
 }) {
   const initialObservedId = observedUsersList.find(o => o.id === savedObservedId(currentUser.id))
     ? savedObservedId(currentUser.id)
@@ -668,8 +666,6 @@ export function K5Course({
             showLearningMasteryGradebook={showLearningMasteryGradebook}
             outcomeProficiency={outcomeProficiency}
             observedUserId={showObserverOptions ? observedUserId : null}
-            gradingScheme={gradingScheme}
-            restrictQuantitativeData={restrictQuantitativeData}
           />
         )}
         <ResourcesPage
@@ -733,8 +729,6 @@ K5Course.propTypes = {
   tabContentOnly: PropTypes.bool,
   isMasterCourse: PropTypes.bool.isRequired,
   showImmersiveReader: PropTypes.bool.isRequired,
-  gradingScheme: PropTypes.array,
-  restrictQuantitativeData: PropTypes.bool,
 }
 
 const WrappedK5Course = connect(mapStateToProps)(K5Course)

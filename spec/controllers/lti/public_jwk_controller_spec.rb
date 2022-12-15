@@ -20,6 +20,7 @@
 
 require_relative "ims/concerns/advantage_services_shared_context"
 require_relative "ims/concerns/lti_services_shared_examples"
+require_dependency "lti/public_jwk_controller"
 
 module Lti
   describe PublicJwkController do
@@ -60,8 +61,8 @@ module Lti
           end
 
           it "update public jwk was successful" do
-            expect(response.parsed_body["public_jwk"]).to_not eq old_public_jwk
-            expect(response.parsed_body["public_jwk"]).to eq new_public_jwk
+            expect(JSON.parse(response.body)["public_jwk"]).to_not eq old_public_jwk
+            expect(JSON.parse(response.body)["public_jwk"]).to eq new_public_jwk
             expect(developer_key.reload.public_jwk).to eq new_public_jwk
           end
 
@@ -100,7 +101,7 @@ module Lti
           end
 
           it "update public jwk was not successful" do
-            expect(response.parsed_body["public_jwk"]).to eq old_public_jwk
+            expect(JSON.parse(response.body)["public_jwk"]).to eq old_public_jwk
           end
 
           it "return 400 unathorized http status" do

@@ -29,25 +29,59 @@ const I18n = useI18nScope('external_content.success')
 
 const ExternalContentSuccess = {}
 
-const {lti_response_messages, service_id, retrieved_data: data, service} = ENV
-const parentWindow = window.parent || window.opener
+const {lti_response_messages} = ENV
+const {service_id} = ENV
+const data = ENV.retrieved_data
+const callback = ENV.service
+let parentWindow = window.parent || window.opener
+
+ExternalContentSuccess.getIFrameSrc = function () {
+  let src = parentWindow.$('[data-cid="Modal"]').find('iframe').attr('src')
+
+  if (src === undefined) {
+    src = parentWindow.$('[data-cid="Tray"]').find('iframe').attr('src')
+  }
+
+  return src
+}
+
+ExternalContentSuccess.getLaunchType = function () {
+  const src = ExternalContentSuccess.getIFrameSrc()
+
+  if (src === undefined) {
+    return undefined
+  }
+
+  const params = new URLSearchParams(src.split('?')[1])
+  return params.get('launch_type')
+}
 
 ExternalContentSuccess.dataReady = function (data, service_id) {
-  parentWindow.postMessage(
-    {
-      subject: 'externalContentReady',
-      contentItems: data,
-      service_id,
-      service,
-    },
-    ENV.DEEP_LINKING_POST_MESSAGE_ORIGIN
-  )
+  const e = $.Event('externalContentReady')
+  e.contentItems = data
+  e.service_id = service_id
 
-  setTimeout(() => {
+  parentWindow.$(parentWindow).trigger('externalContentReady', e)
+
+  if (parentWindow[callback] && parentWindow[callback].ready) {
+    parentWindow[callback].ready(data)
+    setTimeout(() => {
+      if (callback === 'external_tool_dialog') {
+        $('#dialog_message').text(
+          I18n.t('popup_success', 'Success! This popup should close on its own...')
+        )
+      } else {
+        $('#dialog_message').text('')
+      }
+    }, 1000)
+  } else {
     $('#dialog_message').text(
-      I18n.t('popup_success', 'Success! This popup should close on its own...')
+      I18n.t(
+        'content_failure',
+        'Content retrieval failed, please try again or notify your system administrator of the error.'
+      )
     )
-  }, 1000)
+  }
 }
 
 // Handles lti 1.0 responses for Assignments 2 which expects a
@@ -107,6 +141,14 @@ ExternalContentSuccess.processLtiMessages = async (messages, target) => {
 }
 
 ExternalContentSuccess.start = async function () {
+  while (parentWindow && parentWindow.parent !== parentWindow && !parentWindow[callback]) {
+    parentWindow = parentWindow.parent
+  }
+
+  if (parentWindow.$ === undefined) {
+    parentWindow.$ = $
+  }
+
   await this.processLtiMessages(lti_response_messages, document.querySelector('.ic-app'))
 
   if (ENV.oembed) {
@@ -132,6 +174,8 @@ ExternalContentSuccess.start = async function () {
           )
         )
     )
+  } else if (ExternalContentSuccess.getLaunchType() === 'assignment_index_menu') {
+    parentWindow.location.reload()
   } else {
     ExternalContentSuccess.dataReady(data, service_id)
     ExternalContentSuccess.a2DataReady(data)

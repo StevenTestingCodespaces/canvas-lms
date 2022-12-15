@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2011 - present Instructure, Inc.
  *
@@ -19,16 +18,16 @@
 
 import axios from '@canvas/axios'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import {underscoreProperties} from '@canvas/convert-case'
+import {underscore} from 'convert-case'
 import doFetchApi from '@canvas/do-fetch-api-effect'
 import {serializeFilter} from '../Gradebook.utils'
-import type {CustomColumn, FilterPreset, GradebookSettings} from '../gradebook.d'
+import type {GradebookSettings, ColumnOrderSettings, FilterPreset} from '../gradebook.d'
 
 const I18n = useI18nScope('gradebookGradebookApi')
 
-function applyScoreToUngradedSubmissions(courseId?: string, params: any = {}) {
+function applyScoreToUngradedSubmissions(courseId: string, params) {
   const url = `/api/v1/courses/${courseId}/apply_score_to_ungraded_submissions`
-  return axios.put(url, underscoreProperties(params))
+  return axios.put(url, underscore(params))
 }
 
 function createTeacherNotesColumn(courseId: string) {
@@ -40,7 +39,7 @@ function createTeacherNotesColumn(courseId: string) {
       title: I18n.t('Notes'),
     },
   }
-  return axios.post<CustomColumn>(url, data)
+  return axios.post(url, data)
 }
 
 function updateTeacherNotesColumn(courseId: string, columnId: string, attr) {
@@ -57,7 +56,7 @@ function updateSubmission(
 ) {
   const url = `/api/v1/courses/${courseId}/assignments/${assignmentId}/submissions/${userId}`
   return axios.put(url, {
-    submission: underscoreProperties(submission),
+    submission: underscore(submission),
     include: ['visibility'],
     prefer_points_over_scheme: enterGradesAs === 'points',
   })
@@ -66,6 +65,11 @@ function updateSubmission(
 function saveUserSettings(courseId: string, gradebook_settings: GradebookSettings) {
   const url = `/api/v1/courses/${courseId}/gradebook_settings`
   return axios.put(url, {gradebook_settings})
+}
+
+function updateColumnOrder(courseId: string, columnOrder: ColumnOrderSettings) {
+  const url = `/courses/${courseId}/gradebook/save_gradebook_column_order`
+  return axios.post(url, {column_order: columnOrder})
 }
 
 function createGradebookFilterPreset(courseId: string, filter: FilterPreset) {
@@ -99,6 +103,7 @@ export default {
   createTeacherNotesColumn,
   deleteGradebookFilterPreset,
   saveUserSettings,
+  updateColumnOrder,
   updateGradebookFilterPreset,
   updateSubmission,
   updateTeacherNotesColumn,

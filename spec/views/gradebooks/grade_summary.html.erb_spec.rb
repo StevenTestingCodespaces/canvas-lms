@@ -79,9 +79,7 @@ describe "gradebooks/grade_summary" do
     view_context
     a = @course.assignments.create!(title: "some assignment", submission_types: ["online_text_entry"])
     sub = a.submit_homework(@student, submission_type: "online_text_entry", body: "o hai")
-    sub.add_comment(author: @teacher,
-                    media_comment_id: "0_ijklmnop",
-                    media_comment_type: "video",
+    sub.add_comment(author: @teacher, media_comment_id: "0_ijklmnop", media_comment_type: "video",
                     comment: "hello")
     assign(:presenter, GradeSummaryPresenter.new(@course, @teacher, @student.id))
     render("gradebooks/grade_summary")
@@ -303,7 +301,7 @@ describe "gradebooks/grade_summary" do
     let(:course) { Course.create! }
     let(:site_admin) { site_admin_user }
     let(:teacher) { course.enroll_teacher(User.create!, active_all: true).user }
-    let(:student) { student_in_course(course:, active_all: true).user }
+    let(:student) { student_in_course(course: course, active_all: true).user }
     let(:attachment) { attachment_model(context: student, content_type: "text/plain") }
     let(:state) { "acceptable" }
 
@@ -346,7 +344,7 @@ describe "gradebooks/grade_summary" do
             web_overlap: 5.0,
             publication_overlap: 0.0,
             student_overlap: 0.0,
-            state:
+            state: state
           }
         }
       end
@@ -555,7 +553,7 @@ describe "gradebooks/grade_summary" do
 
       it "displays an updated plagiarism indicator when the assignment uses Turnitin" do
         allow(presenter).to receive(:turnitin_enabled?).and_return(true)
-        submission.update!(turnitin_data:)
+        submission.update!(turnitin_data: turnitin_data)
 
         render "gradebooks/grade_summary"
         expect(response).to have_tag(icon_css_query)
@@ -701,11 +699,10 @@ describe "gradebooks/grade_summary" do
     let(:course) { Course.create! }
     let(:student) { course.enroll_student(User.create!, active_all: true).user }
     let(:teacher) { course.enroll_teacher(User.create!, active_all: true).user }
-    let(:presenter) { GradeSummaryPresenter.new(course, student, student.id) }
 
     before do
       view_context(course, student)
-      assign(:presenter, presenter)
+      assign(:presenter, GradeSummaryPresenter.new(course, student, nil))
     end
 
     context "when visibility feedback feature is enabled" do
@@ -744,29 +741,6 @@ describe "gradebooks/grade_summary" do
         render "gradebooks/grade_summary"
         expect(response).to match(%r{</span>\s+90%\s+</span>}mi)
       end
-
-      it "renders out of for assignment groups" do
-        assignment1 = course.assignments.create!(grading_type: "percent", points_possible: 10)
-        assignment1.submit_homework student, submission_type: "online_text_entry", body: "hey 2"
-        assignment1.grade_student(student, grade: "90%", grader: teacher)
-
-        group = course.assignment_groups.create!(name: "a group")
-        group_assignment = OpenObject.build("assignment",
-                                            id: "group-#{group.id}",
-                                            rules: group.rules,
-                                            title: group.name,
-                                            points_possible: 10,
-                                            hard_coded: true,
-                                            special_class: "group_total",
-                                            assignment_group_id: group.id,
-                                            group_weight: group.group_weight,
-                                            asset_string: "group_total_#{group.id}")
-        presenter.groups_assignments = [group_assignment]
-
-        render "gradebooks/grade_summary"
-        expect(response).to match(%r{</span>\s+90%\s+</span>}mi)
-        expect(response).to have_tag("span.points_possible")
-      end
     end
 
     context "when visibility feedback feature is disabled" do
@@ -775,29 +749,6 @@ describe "gradebooks/grade_summary" do
         course.assignments.create!
         render "gradebooks/grade_summary"
         expect(response).to have_tag("#grades_summary th.possible")
-      end
-
-      it "does not render out of for assignment groups" do
-        assignment1 = course.assignments.create!(grading_type: "percent", points_possible: 10)
-        assignment1.submit_homework student, submission_type: "online_text_entry", body: "hey 2"
-        assignment1.grade_student(student, grade: "90%", grader: teacher)
-
-        group = course.assignment_groups.create!(name: "a group")
-        group_assignment = OpenObject.build("assignment",
-                                            id: "group-#{group.id}",
-                                            rules: group.rules,
-                                            title: group.name,
-                                            points_possible: 10,
-                                            hard_coded: true,
-                                            special_class: "group_total",
-                                            assignment_group_id: group.id,
-                                            group_weight: group.group_weight,
-                                            asset_string: "group_total_#{group.id}")
-        presenter.groups_assignments = [group_assignment]
-
-        render "gradebooks/grade_summary"
-        expect(response).to match(%r{</span>\s+90%\s+</span>}mi)
-        expect(response).not_to have_tag("span.points_possible")
       end
     end
   end
@@ -906,6 +857,59 @@ describe "gradebooks/grade_summary" do
 
       it "does not have the visibility_feedback_ff class" do
         expect(response).not_to have_tag("#grades_summary .visibility_feedback_ff")
+      end
+    end
+  end
+
+  describe "update submission unread count when student enters grade summary page" do
+    before do
+      course_with_teacher active_all: true
+      student_in_course active_all: true
+    end
+
+    context "when Assignment Enhancement - Student feature flag is enabled" do
+      before do
+        @course.enable_feature!(:assignments_2_student)
+        view_context(@course, @student)
+        assign(:presenter, GradeSummaryPresenter.new(@course, @student, @student.id))
+      end
+
+      it "unread count goes to 0 when student enters grade summary page" do
+        assignment1 = @course.assignments.create!(title: "Assignment 1")
+        assignment2 = @course.assignments.create!(title: "Assignment 2")
+        assignment1.grade_student(@student, grade: 10, grader: @teacher)
+        assignment2.grade_student(@student, grade: 10, grader: @teacher)
+        render "gradebooks/grade_summary"
+        cpc = ContentParticipationCount.create_or_update(context: @course, user: @student, content_type: "Submission")
+        expect(cpc.unread_count).to eq 0
+      end
+
+      it "unread count increments after student views grade summary page and followed by the teacher grading an existing assignment" do
+        assignment1 = @course.assignments.create!(title: "Assignment 1")
+        assignment2 = @course.assignments.create!(title: "Assignment 2")
+        assignment1.grade_student(@student, grade: 10, grader: @teacher)
+        assignment2.grade_student(@student, grade: 10, grader: @teacher)
+        render "gradebooks/grade_summary"
+        assignment1.grade_student(@student, grade: 60, grader: @teacher)
+        cpc = ContentParticipationCount.create_or_update(context: @course, user: @student, content_type: "Submission")
+        expect(cpc.unread_count).to eq 1
+      end
+    end
+
+    context "when Assignment Enhancement - Student feature flag is disabled" do
+      before do
+        view_context(@course, @student)
+        assign(:presenter, GradeSummaryPresenter.new(@course, @student, @student.id))
+      end
+
+      it "unread count is 2 when student enters grade summary page" do
+        assignment1 = @course.assignments.create!(title: "Assignment 1")
+        assignment2 = @course.assignments.create!(title: "Assignment 2")
+        assignment1.grade_student(@student, grade: 10, grader: @teacher)
+        assignment2.grade_student(@student, grade: 10, grader: @teacher)
+        render "gradebooks/grade_summary"
+        cpc = ContentParticipationCount.create_or_update(context: @course, user: @student, content_type: "Submission")
+        expect(cpc.unread_count).to eq 2
       end
     end
   end

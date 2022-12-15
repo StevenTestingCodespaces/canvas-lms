@@ -76,8 +76,7 @@ class ProgressRunner
   # The default completed message.
   # @param [Integer] completed_count The number of items that were processed successfully.
   def default_completed_message(completed_count)
-    I18n.t("lib.progress_runner.completed_message",
-           {
+    I18n.t("lib.progress_runner.completed_message", {
              one: "1 item processed",
              other: "%{count} items processed"
            },
@@ -93,9 +92,9 @@ class ProgressRunner
 
   private
 
-  def update_batch(batch, &)
+  def update_batch(batch, &process_element)
     batch.each do |element|
-      update_element(element, &)
+      update_element(element, &process_element)
     end
   end
 
@@ -113,7 +112,7 @@ class ProgressRunner
     @errors.each do |message, elements|
       @progress.message += "\n" + @error_message.call(message, elements)
     end
-    (@completed_count > 0) ? @progress.complete! : @progress.fail!
+    @completed_count > 0 ? @progress.complete! : @progress.fail!
     @progress.save
   end
 end

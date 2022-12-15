@@ -18,6 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "logger"
 require "syslog"
 
 class SyslogWrapper
@@ -123,28 +124,28 @@ class SyslogWrapper
     add(@level, msg)
   end
 
-  def debug(progname = nil, &)
-    add(Logger::DEBUG, nil, progname, &)
+  def debug(progname = nil, &block)
+    add(Logger::DEBUG, nil, progname, &block)
   end
 
-  def info(progname = nil, &)
-    add(Logger::INFO, nil, progname, &)
+  def info(progname = nil, &block)
+    add(Logger::INFO, nil, progname, &block)
   end
 
-  def warn(progname = nil, &)
-    add(Logger::WARN, nil, progname, &)
+  def warn(progname = nil, &block)
+    add(Logger::WARN, nil, progname, &block)
   end
 
-  def error(progname = nil, &)
-    add(Logger::ERROR, nil, progname, &)
+  def error(progname = nil, &block)
+    add(Logger::ERROR, nil, progname, &block)
   end
 
-  def fatal(progname = nil, &)
-    add(Logger::FATAL, nil, progname, &)
+  def fatal(progname = nil, &block)
+    add(Logger::FATAL, nil, progname, &block)
   end
 
-  def unknown(progname = nil, &)
-    add(Logger::UNKNOWN, nil, progname, &)
+  def unknown(progname = nil, &block)
+    add(Logger::UNKNOWN, nil, progname, &block)
   end
 
   def debug?

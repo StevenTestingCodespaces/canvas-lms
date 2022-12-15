@@ -22,7 +22,7 @@ import {ImageOptions} from '../ImageOptions'
 import {actions} from '../../../../reducers/imageSection'
 import {actions as trayActions} from '../../../../reducers/svgSettings'
 
-jest.mock('../../../../../shared/ImageCropper/imageCropUtils', () => ({
+jest.mock('../../ImageCropper/imageCropUtils', () => ({
   createCroppedImageSvg: jest.fn(() =>
     Promise.resolve({
       outerHTML: '<svg />',
@@ -30,7 +30,7 @@ jest.mock('../../../../../shared/ImageCropper/imageCropUtils', () => ({
   ),
 }))
 
-jest.mock('../../../../../shared/fileUtils', () => {
+jest.mock('../../../../svg/utils', () => {
   return {
     convertFileToBase64: jest
       .fn()
@@ -56,6 +56,7 @@ describe('ImageOptions', () => {
       embedImage: null,
     },
     dispatch: dispatchFn,
+    rcsConfig: {},
     trayDispatch: trayDispatchFn,
   }
 
@@ -409,7 +410,7 @@ describe('ImageOptions', () => {
 
   describe('when the "Upload Image" mode is selected', () => {
     beforeEach(() => {
-      const component = subject()
+      const component = subject({rcsConfig: {features: {icon_maker_cropper: true}}})
 
       fireEvent.click(component.getByText('Add Image'))
       fireEvent.click(component.getByText('Upload Image'))
@@ -422,7 +423,7 @@ describe('ImageOptions', () => {
 
   describe('when the "Course Images" mode is selected', () => {
     beforeEach(() => {
-      const component = subject()
+      const component = subject({rcsConfig: {features: {icon_maker_cropper: true}}})
 
       fireEvent.click(component.getByText('Add Image'))
       fireEvent.click(component.getByText('Course Images'))

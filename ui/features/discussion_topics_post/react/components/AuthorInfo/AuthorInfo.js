@@ -36,7 +36,6 @@ import {Text} from '@instructure/ui-text'
 import {Tooltip} from '@instructure/ui-tooltip'
 import {DiscussionEntryVersion} from '../../../graphql/DiscussionEntryVersion'
 import {DiscussionEntryVersionHistory} from '../DiscussionEntryVersionHistory/DiscussionEntryVersionHistory'
-import {ReportsSummaryBadge} from '../ReportsSummaryBadge/ReportsSummaryBadge'
 
 const I18n = useI18nScope('discussion_posts')
 
@@ -45,10 +44,7 @@ export const AuthorInfo = props => {
 
   const hasAuthor = Boolean(props.author || props.anonymousAuthor)
   const avatarUrl = isAnonymous(props) ? null : props.author?.avatarUrl
-
-  const getUnreadBadgeOffset = avatarSize => {
-    return avatarSize === 'medium' ? '11px' : '7px'
-  }
+  const threadMode = props.threadMode
 
   return (
     <Responsive
@@ -60,14 +56,14 @@ export const AuthorInfo = props => {
           timestampTextSize: 'x-small',
           nameAndRoleDirection: 'column',
           badgeMarginLeft: '-16px',
-          avatarSize: props.threadMode ? 'small' : 'medium',
+          avatarSize: threadMode ? 'small' : 'medium',
         },
         desktop: {
-          authorNameTextSize: props.threadMode ? 'small' : 'medium',
-          timestampTextSize: props.threadMode ? 'x-small' : 'small',
+          authorNameTextSize: threadMode ? 'small' : 'medium',
+          timestampTextSize: threadMode ? 'x-small' : 'small',
           nameAndRoleDirection: 'row',
-          badgeMarginLeft: props.threadMode ? '-16px' : '-24px',
-          avatarSize: props.threadMode && !props.threadParent ? 'small' : 'medium',
+          badgeMarginLeft: threadMode ? '-16px' : '-24px',
+          avatarSize: threadMode ? 'small' : 'medium',
         },
         mobile: {
           authorNameTextSize: 'small',
@@ -85,7 +81,7 @@ export const AuthorInfo = props => {
                 style={{
                   float: 'left',
                   marginLeft: responsiveProps.badgeMarginLeft,
-                  marginTop: hasAuthor ? getUnreadBadgeOffset(responsiveProps.avatarSize) : '2px',
+                  marginTop: hasAuthor ? '11px' : '2px',
                 }}
                 data-testid="is-unread"
                 data-isforcedread={props.isForcedRead}
@@ -148,9 +144,6 @@ export const AuthorInfo = props => {
                         data-testid="pill-container"
                       />
                     </Flex.Item>
-                    {props.reportTypeCounts && props.reportTypeCounts.total && (
-                      <ReportsSummaryBadge reportTypeCounts={props.reportTypeCounts} />
-                    )}
                   </Flex>
                 </Flex.Item>
               )}
@@ -231,9 +224,7 @@ AuthorInfo.propTypes = {
    */
   isTopicAuthor: PropTypes.bool,
   discussionEntryVersions: PropTypes.arrayOf(DiscussionEntryVersion.shape),
-  reportTypeCounts: PropTypes.object,
   threadMode: PropTypes.bool,
-  threadParent: PropTypes.bool,
 }
 
 const Timestamps = props => {

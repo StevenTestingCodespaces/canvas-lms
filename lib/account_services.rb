@@ -44,6 +44,11 @@ module AccountServices
                                       description: "",
                                       expose_to_ui: :service
                                     },
+                                    delicious: {
+                                      name: I18n.t("Delicious"),
+                                      description: "",
+                                      expose_to_ui: :service
+                                    },
                                     diigo: {
                                       name: I18n.t("Diigo"),
                                       description: "",

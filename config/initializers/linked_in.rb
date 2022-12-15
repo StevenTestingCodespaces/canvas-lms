@@ -26,7 +26,7 @@ class CanvasLinkedInConfig
         secret_key: settings[:client_secret_dec]
       }.with_indifferent_access
     else
-      Rails.application.credentials.linked_in_creds.dup
+      ConfigFile.load("linked_in").dup
     end
   end
 end

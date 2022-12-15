@@ -39,7 +39,6 @@ const RubricTab = lazy(() =>
 ContentTabs.propTypes = {
   assignment: Assignment.shape,
   submission: Submission.shape,
-  reviewerSubmission: Submission.shape,
 }
 
 function LoggedInContentTabs(props) {
@@ -48,11 +47,7 @@ function LoggedInContentTabs(props) {
   return (
     <div data-testid="assignment-2-student-content-tabs">
       <View padding={noRightLeftPadding}>
-        <SubmissionManager
-          assignment={props.assignment}
-          submission={props.submission}
-          reviewerSubmission={props.reviewerSubmission}
-        />
+        <SubmissionManager assignment={props.assignment} submission={props.submission} />
       </View>
     </div>
   )

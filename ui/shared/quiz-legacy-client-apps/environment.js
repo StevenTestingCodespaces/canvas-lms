@@ -17,7 +17,7 @@
  */
 
 import $ from 'jquery'
-import _ from '@instructure/lodash-underscore'
+import _ from 'lodash-underscore'
 
 const extend = _.extend
 

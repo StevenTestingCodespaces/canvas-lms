@@ -18,10 +18,10 @@
 import $ from 'jquery'
 import _ from 'underscore'
 import Backbone from '@canvas/backbone'
-import Assignment from '@canvas/assignments/backbone/models/Assignment'
+import Assignment from '@canvas/assignments/backbone/models/Assignment.coffee'
 import DateGroup from '@canvas/date-group/backbone/models/DateGroup'
-import AssignmentOverrideCollection from '@canvas/assignments/backbone/collections/AssignmentOverrideCollection'
-import DateGroupCollection from '@canvas/date-group/backbone/collections/DateGroupCollection'
+import AssignmentOverrideCollection from '@canvas/assignments/backbone/collections/AssignmentOverrideCollection.coffee'
+import DateGroupCollection from '@canvas/date-group/backbone/collections/DateGroupCollection.coffee'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import '@canvas/jquery/jquery.ajaxJSON'
 import '@canvas/jquery/jquery.instructure_misc_helpers'
@@ -151,7 +151,7 @@ export default class Quiz extends Backbone.Model {
   }
 
   url() {
-    if (this.isQuizzesNext() && ENV.PERMISSIONS?.manage) {
+    if (this.isQuizzesNext() && ENV.PERMISSIONS?.manage && ENV.FLAGS?.new_quizzes_modules_support) {
       return this.edit_url()
     }
     return this.build_url()

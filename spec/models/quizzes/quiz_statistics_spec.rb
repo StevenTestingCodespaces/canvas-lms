@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "csv"
+
 describe Quizzes::QuizStatistics do
   before(:once) do
     student_in_course(active_all: true)
@@ -151,7 +153,7 @@ describe Quizzes::QuizStatistics do
     allow(InstFS).to receive(:enabled?).and_return(false)
     stats = @quiz.current_statistics_for "student_analysis"
     attachment = stats.generate_csv
-    expect(attachment.instfs_uuid).to be_nil
+    expect(attachment.instfs_uuid).to eq(nil)
   end
 
   describe "self#large_quiz?" do

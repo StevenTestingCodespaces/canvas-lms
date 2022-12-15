@@ -298,7 +298,7 @@ module K5DashboardPageObject
   end
 
   def welcome_title_selector
-    "span:contains('Welcome,')"
+    "h1"
   end
 
   #------------------------- Elements --------------------------
@@ -582,7 +582,7 @@ module K5DashboardPageObject
   end
 
   def welcome_title
-    fj(welcome_title_selector)
+    f(welcome_title_selector)
   end
 
   #----------------------- Actions & Methods -------------------------
@@ -732,6 +732,10 @@ module K5DashboardPageObject
 
   def retrieve_title_text
     course_dashboard_title.text
+  end
+
+  def retrieve_welcome_text
+    welcome_title.text
   end
 
   #----------------------------Element Management---------------------#

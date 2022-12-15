@@ -43,10 +43,10 @@ describe AuthenticationProvider::PluginSettings do
   describe ".globally_configured?" do
     it "chains to the plugin being enabled" do
       allow(plugin).to receive(:enabled?).and_return(false)
-      expect(klass.globally_configured?).to be false
+      expect(klass.globally_configured?).to eq false
 
       allow(plugin).to receive(:enabled?).and_return(true)
-      expect(klass.globally_configured?).to be true
+      expect(klass.globally_configured?).to eq true
     end
   end
 

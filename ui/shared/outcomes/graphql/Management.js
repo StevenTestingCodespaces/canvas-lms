@@ -17,7 +17,7 @@
  */
 
 import axios from '@canvas/axios'
-import pluralize from '@canvas/util/stringPluralize'
+import pluralize from 'str-pluralize'
 import {gql} from '@canvas/apollo'
 
 export const groupFields = `
@@ -392,16 +392,10 @@ export const SEARCH_OUTCOME_ALIGNMENTS = gql`
                   title
                   contentType
                   assignmentContentType
-                  assignmentWorkflowState
                   url
                   moduleName
                   moduleUrl
                   moduleWorkflowState
-                  quizItems {
-                    _id
-                    title
-                  }
-                  alignmentsCount
                 }
               }
             }

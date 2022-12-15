@@ -20,7 +20,7 @@
 
 describe AssignmentOverride do
   before :once do
-    @active_student = student_in_course(active_all: true).user
+    student_in_course
   end
 
   it "soft-deletes" do
@@ -74,7 +74,7 @@ describe AssignmentOverride do
     @override = AssignmentOverride.new
     @override.set_type = "Noop"
     expect(@override.set_id).to be_nil
-    expect(@override.set).to be_nil
+    expect(@override.set).to eq nil
   end
 
   it "removes adhoc associations when an adhoc override is deleted" do
@@ -108,51 +108,6 @@ describe AssignmentOverride do
     expect { @override_student2.save! }.not_to raise_error
     @override2.reload
     expect(@override2.set).to eq [@student]
-  end
-
-  describe "#for_nonactive_enrollment?" do
-    before(:once) do
-      @override = assignment_override_model(course: @course, set: @course.default_section)
-    end
-
-    it "returns false by default" do
-      expect(@override).not_to be_for_nonactive_enrollment
-    end
-
-    context "when nonactive enrollment state has been preloaded" do
-      it "returns true for section overrides associated with deactivated enrollments" do
-        @course.enrollments.find_by(user: @student).deactivate
-        AssignmentOverride.preload_for_nonactive_enrollment([@override], @course, @student)
-        expect(@override).to be_for_nonactive_enrollment
-      end
-
-      it "returns true for section overrides associated with concluded enrollments" do
-        @course.enrollments.find_by(user: @student).conclude
-        AssignmentOverride.preload_for_nonactive_enrollment([@override], @course, @student)
-        expect(@override).to be_for_nonactive_enrollment
-      end
-
-      it "returns false for section overrides associated with active enrollments" do
-        AssignmentOverride.preload_for_nonactive_enrollment([@override], @course, @student)
-        expect(@override).not_to be_for_nonactive_enrollment
-      end
-
-      it "returns false for individual overrides" do
-        @override.update!(set_type: "ADHOC", set: nil)
-        @override.assignment_override_students.create(user: @student)
-        AssignmentOverride.preload_for_nonactive_enrollment([@override], @course, @student)
-        expect(@override).not_to be_for_nonactive_enrollment
-      end
-
-      it "returns false for group overrides" do
-        category = group_category
-        @override.assignment.update!(group_category: category)
-        group = category.groups.create!(context: @override.assignment.context)
-        @override.update!(set: group)
-        AssignmentOverride.preload_for_nonactive_enrollment([@override], @course, @student)
-        expect(@override).not_to be_for_nonactive_enrollment
-      end
-    end
   end
 
   describe "#notify_change?" do
@@ -224,17 +179,17 @@ describe AssignmentOverride do
     end
 
     it "returns true when it is a mastery_paths override" do
-      expect(override.mastery_paths?).to be true
+      expect(override.mastery_paths?).to eq true
     end
 
     it "returns false when it is not a mastery_paths noop" do
       override.set_id = 999
-      expect(override.mastery_paths?).to be false
+      expect(override.mastery_paths?).to eq false
     end
 
     it "returns false when it is not a noop override" do
       override.set_type = "EvilType"
-      expect(override.mastery_paths?).to be false
+      expect(override.mastery_paths?).to eq false
     end
   end
 
@@ -523,14 +478,14 @@ describe AssignmentOverride do
 
       it "sets the override when a override_#{field} is called" do
         @override.send("override_#{field}", value2)
-        expect(@override.send("#{field}_overridden")).to be true
+        expect(@override.send("#{field}_overridden")).to eq true
         expect(@override.send(field)).to eq value2
       end
 
       it "clears the override when clear_#{field}_override is called" do
         @override.send("override_#{field}", value2)
         @override.send("clear_#{field}_override")
-        expect(@override.send("#{field}_overridden")).to be false
+        expect(@override.send("#{field}_overridden")).to eq false
         expect(@override.send(field)).to be_nil
       end
     end
@@ -555,60 +510,60 @@ describe AssignmentOverride do
 
     it "interprets 11:59pm as all day with no prior value" do
       @override.due_at = fancy_midnight(zone: "Alaska")
-      expect(@override.all_day).to be true
+      expect(@override.all_day).to eq true
     end
 
     it "interprets 11:59pm as all day with same-tz all-day prior value" do
       @override.due_at = fancy_midnight(zone: "Alaska") + 1.day
       @override.due_at = fancy_midnight(zone: "Alaska")
-      expect(@override.all_day).to be true
+      expect(@override.all_day).to eq true
     end
 
     it "interprets 11:59pm as all day with other-tz all-day prior value" do
       @override.due_at = fancy_midnight(zone: "Baghdad")
       @override.due_at = fancy_midnight(zone: "Alaska")
-      expect(@override.all_day).to be true
+      expect(@override.all_day).to eq true
     end
 
     it "interprets 11:59pm as all day with non-all-day prior value" do
       @override.due_at = fancy_midnight(zone: "Alaska") + 1.hour
       @override.due_at = fancy_midnight(zone: "Alaska")
-      expect(@override.all_day).to be true
+      expect(@override.all_day).to eq true
     end
 
     it "does not interpret non-11:59pm as all day no prior value" do
       @override.due_at = fancy_midnight(zone: "Alaska").in_time_zone("Baghdad")
-      expect(@override.all_day).to be false
+      expect(@override.all_day).to eq false
     end
 
     it "does not interpret non-11:59pm as all day with same-tz all-day prior value" do
       @override.due_at = fancy_midnight(zone: "Alaska")
       @override.due_at = fancy_midnight(zone: "Alaska") + 1.hour
-      expect(@override.all_day).to be false
+      expect(@override.all_day).to eq false
     end
 
     it "does not interpret non-11:59pm as all day with other-tz all-day prior value" do
       @override.due_at = fancy_midnight(zone: "Baghdad")
       @override.due_at = fancy_midnight(zone: "Alaska") + 1.hour
-      expect(@override.all_day).to be false
+      expect(@override.all_day).to eq false
     end
 
     it "does not interpret non-11:59pm as all day with non-all-day prior value" do
       @override.due_at = fancy_midnight(zone: "Alaska") + 1.hour
       @override.due_at = fancy_midnight(zone: "Alaska") + 2.hours
-      expect(@override.all_day).to be false
+      expect(@override.all_day).to eq false
     end
 
     it "preserves all-day when only changing time zone" do
       @override.due_at = fancy_midnight(zone: "Alaska")
       @override.due_at = fancy_midnight(zone: "Alaska").in_time_zone("Baghdad")
-      expect(@override.all_day).to be true
+      expect(@override.all_day).to eq true
     end
 
     it "preserves non-all-day when only changing time zone" do
       @override.due_at = fancy_midnight(zone: "Alaska").in_time_zone("Baghdad")
       @override.due_at = fancy_midnight(zone: "Alaska")
-      expect(@override.all_day).to be false
+      expect(@override.all_day).to eq false
     end
 
     it "determines date from due_at's timezone" do
@@ -1011,12 +966,11 @@ describe AssignmentOverride do
       @override.set = @course.default_section
       @override.save!
 
-      expect(@override.applies_to_students).to include(@active_student)
-      expect(@override.applies_to_students).not_to include(@student)
+      expect(@override.applies_to_students).to eq []
 
       @course.enroll_student(@student, enrollment_state: "active", section: @override.set)
 
-      expect(@override.applies_to_students).to include(@active_student, @student)
+      expect(@override.applies_to_students).to eq [@student]
     end
   end
 
@@ -1029,18 +983,18 @@ describe AssignmentOverride do
       allow(@override).to receive(:set_type).and_return "ADHOC"
       allow(@override).to receive(:set).and_return []
 
-      expect(@override.set_not_empty?).to be false
+      expect(@override.set_not_empty?).to eq false
     end
 
     it "returns true if no students who are active in course and CourseSection or Group" do
       allow(@override).to receive(:set_type).and_return "CourseSection"
       allow(@override).to receive(:set).and_return []
 
-      expect(@override.set_not_empty?).to be true
+      expect(@override.set_not_empty?).to eq true
 
       allow(@override).to receive(:set_type).and_return "Group"
 
-      expect(@override.set_not_empty?).to be true
+      expect(@override.set_not_empty?).to eq true
     end
 
     it "returns true if has students who are active in course for ADHOC" do
@@ -1050,7 +1004,7 @@ describe AssignmentOverride do
       @override_student.user = student.user
       @override_student.save!
 
-      expect(@override.set_not_empty?).to be true
+      expect(@override.set_not_empty?).to eq true
     end
   end
 

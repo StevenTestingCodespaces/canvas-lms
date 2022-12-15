@@ -23,7 +23,7 @@ import {render, fireEvent, waitFor} from '@testing-library/react'
 import Course from '../Course'
 import {actions} from '../../../../reducers/imageSection'
 import {useStoreProps} from '../../../../../shared/StoreContext'
-import {compressImage, shouldCompressImage} from '../../../../../shared/compressionUtils'
+import {compressImage, shouldCompressImage} from '../compressionUtils'
 import {isAnUnsupportedGifPngImage} from '../utils'
 
 const storeProps = {
@@ -98,7 +98,7 @@ jest.mock('../../../../../shared/StoreContext', () => {
   }
 })
 
-jest.mock('../../../../../shared/compressionUtils', () => ({
+jest.mock('../compressionUtils', () => ({
   shouldCompressImage: jest.fn().mockReturnValue(false),
   compressImage: jest.fn().mockReturnValue(Promise.resolve('data:image/jpeg;base64,abcdefghijk==')),
   canCompressImage: jest.fn().mockReturnValue(true),
@@ -118,7 +118,6 @@ describe('Course()', () => {
     props = {
       dispatch: jest.fn(),
       onChange: jest.fn(),
-      canvasOrigin: 'https://canvas.instructor.com',
     }
   })
 
@@ -299,11 +298,7 @@ describe('Course()', () => {
 
     it('compressImage() was called', async () => {
       await waitFor(() => {
-        expect(compressImage).toHaveBeenCalledWith({
-          encodedImage: 'data:image/jpeg;base64,SGVsbG8sIFdvcmxkIQ==',
-          previewHeight: 350,
-          previewWidth: 942,
-        })
+        expect(compressImage).toHaveBeenCalledWith('data:image/jpeg;base64,SGVsbG8sIFdvcmxkIQ==')
       })
     })
 

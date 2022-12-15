@@ -137,6 +137,6 @@ class BounceNotificationProcessor
   end
 
   def bouncy_addresses(bounce)
-    bounce["bouncedRecipients"].pluck("emailAddress")
+    bounce["bouncedRecipients"].map { |r| r["emailAddress"] }
   end
 end

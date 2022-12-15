@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -21,24 +20,12 @@ import React, {useState} from 'react'
 import CanvasMultiSelect from '@canvas/multi-select'
 import {View} from '@instructure/ui-view'
 import {IconSearchLine} from '@instructure/ui-icons'
+import PropTypes from 'prop-types'
 
-const {Option: CanvasMultiSelectOption} = CanvasMultiSelect as any
+function MultiSelectSearchInput(props) {
+  const [selectedOptionIds, setSelectedOptionIds] = useState([])
 
-type Props = {
-  id: string
-  label: string
-  'data-test-id'?: string
-  customMatcher?: (option: {label: string; id: string}, query: string) => boolean
-  disabled: boolean
-  options: Array<{id: string; text: string}>
-  onChange: (optionIds: string[]) => void
-  placeholder: string
-}
-
-function MultiSelectSearchInput(props: Props) {
-  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([])
-
-  const handleInputChange = (optionIds: string[]) => {
+  const handleInputChange = optionIds => {
     setSelectedOptionIds(optionIds)
     props.onChange(optionIds)
   }
@@ -46,7 +33,6 @@ function MultiSelectSearchInput(props: Props) {
   return (
     <View as="div" textAlign="start" margin="0 0 small 0">
       <CanvasMultiSelect
-        data-testid={props['data-test-id']}
         id={props.id}
         label={props.label}
         selectedOptionIds={selectedOptionIds}
@@ -57,13 +43,28 @@ function MultiSelectSearchInput(props: Props) {
         customMatcher={props.customMatcher}
       >
         {props.options.map(option => (
-          <CanvasMultiSelectOption id={option.id} key={option.id} value={option.id}>
+          <CanvasMultiSelect.Option id={option.id} key={option.id} value={option.id}>
             {option.text}
-          </CanvasMultiSelectOption>
+          </CanvasMultiSelect.Option>
         ))}
       </CanvasMultiSelect>
     </View>
   )
+}
+
+MultiSelectSearchInput.propTypes = {
+  id: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  customMatcher: PropTypes.func,
+  disabled: PropTypes.bool.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      text: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string.isRequired,
 }
 
 MultiSelectSearchInput.defaultProps = {

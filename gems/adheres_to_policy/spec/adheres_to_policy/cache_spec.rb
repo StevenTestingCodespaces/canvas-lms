@@ -104,7 +104,7 @@ describe AdheresToPolicy::Cache do
 
     it "clears all the cached objects" do
       AdheresToPolicy::Cache.clear
-      expect(cached).to be_nil
+      expect(cached).to eq nil
     end
 
     it "clears only the key provided" do

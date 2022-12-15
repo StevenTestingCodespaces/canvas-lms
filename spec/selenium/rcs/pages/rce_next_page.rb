@@ -50,16 +50,6 @@ module RCENextPage
     f('button[title="Exit Fullscreen"]')
   end
 
-  def full_screen_menu_item
-    menubar_open_menu("View")
-    menu_item_by_name("Fullscreen")
-  end
-
-  def exit_full_screen_menu_item
-    menubar_open_menu("View")
-    menu_item_by_name("Exit Fullscreen")
-  end
-
   def keyboard_shortcut_modal
     f('[role="dialog"][aria-label="Keyboard Shortcuts"]')
   end
@@ -195,7 +185,7 @@ module RCENextPage
 
   def rce_validate_wiki_style_attrib(type, value, selectors)
     in_frame rce_page_body_ifr_id do
-      expect(f("#tinymce #{selectors}").attribute("style")).to match("#{type}: #{value};")
+      expect(f("#tinymce #{selectors}").attribute("style")).to match("#{type}: #{value}\;")
     end
   end
 
@@ -272,30 +262,6 @@ module RCENextPage
   #=====================================================================================================================
   # Content tray
 
-  def content_tray_content_type
-    f('[data-testid="filter-content-type"]')
-  end
-
-  def content_tray_content_type_links
-    f("#links")
-  end
-
-  def content_tray_content_subtype
-    f('[data-testid="filter-content-subtype"]')
-  end
-
-  def content_tray_content_subtype_images
-    f("#images")
-  end
-
-  def content_tray_sort_by
-    f('[data-testid="filter-sort-by"]')
-  end
-
-  def content_tray_sort_by_date_added
-    f("#date_added")
-  end
-
   def change_content_tray_content_type(which)
     content_type = content_tray_content_type
     content_type.click
@@ -303,6 +269,10 @@ module RCENextPage
     options = f("##{options_id}")
     option = fj(":contains(#{which})", options)
     option.click
+  end
+
+  def content_tray_content_subtype
+    fxpath('//input[ancestor::span[. = "Content Subtype"]]')
   end
 
   def change_content_tray_content_subtype(subtype)
@@ -321,6 +291,10 @@ module RCENextPage
   def click_content_tray_close_button
     content_tray_close_button.click
     wait_for_animations
+  end
+
+  def content_tray_content_type
+    f('input[aria-haspopup="listbox"]', fj(':contains("Content Type")'))
   end
 
   #=====================================================================================================================
@@ -934,56 +908,68 @@ module RCENextPage
   #=====================================================================================================================
   # Math
 
-  def mathjax_element_exists_in_title?
-    element_exists?(".assignment-title .MathJax_Preview")
+  def select_squareroot_symbol
+    math_square_root_button.click
   end
 
-  def equation_editor_modal_exists?
-    element_exists?("[aria-label='Equation Editor']")
+  def add_squareroot_value
+    editor_sqrt_textarea.send_keys("81")
   end
 
-  def math_rendering_exists?
-    element_exists?("#MathJax-Element-1-Frame")
+  def select_math_equation_from_toolbar
+    math_builder_button.click
   end
 
-  def equation_editor_button
+  def click_insert_equation
+    math_builder_insert_equation_button.click
+  end
+
+  def click_page_save_button
+    save_button.click
+  end
+
+  def select_math_image
+    math_image.click
+  end
+
+  def click_edit_equation
+    edit_equation_button.click
+  end
+
+  def math_builder_button
     possibly_hidden_toolbar_button('button[aria-label="Insert Math Equation"]')
   end
 
-  def equation_editor_done_button
-    f("[data-testid='equation-editor-modal-done']")
+  def math_square_root_button
+    f(".sqrt-prefix")
   end
 
-  def equation_editor_close_button
-    f("[data-testid='equation-editor-modal-close']")
+  def editor_sqrt_textarea
+    f("#mathquill-container textarea")
+  end
+
+  def math_builder_insert_equation_button
+    find_button("Insert Equation")
   end
 
   def math_image
     f(".equation_image")
   end
 
-  def edit_math_image_button
-    find_button("Edit Equation")
+  def edit_equation_button
+    fxpath('//button[*[.="Edit Equation"]]')
   end
 
-  def advanced_editor_toggle
-    parent_fxpath(advanced_editor_toggle_child)
+  def math_dialog_exists?
+    element_exists?(".math-dialog")
   end
 
-  def advanced_editor_toggle_child
-    f("[data-testid='advanced-toggle']")
+  def math_rendering_exists?
+    element_exists?(".equation_image")
   end
 
-  def advanced_editor_textarea
-    f("[data-testid='advanced-editor']")
-  end
-
-  def basic_editor_textarea
-    f("[data-testid='math-field")
-  end
-
-  def first_math_symbol_button
-    find_from_element_fxpath(ff('[data-testid="math-symbol-icon"]')[0], "../../../../..")
+  def mathjax_element_exists_in_title?
+    element_exists?(".assignment-title .MathJax_Preview")
   end
 
   #=====================================================================================================================
@@ -1074,15 +1060,10 @@ module RCENextPage
   end
 
   def possibly_hidden_toolbar_button(selector)
-    element = f(selector)
-    if !element.displayed? || !element.enabled?
-      more_toolbar_button.click
-
-      # Wait for the toolbar opening animation to finish
-      # Toolbar buttons can't be interacted with until it's done
-      wait_for_no_such_element { f(".tox-toolbar__overflow--growing") }
-    end
-    element
+    f(selector)
+  rescue Selenium::WebDriver::Error::NoSuchElementError
+    more_toolbar_button.click
+    f(selector)
   end
 
   def toolbar_button(button_label)
@@ -1190,23 +1171,5 @@ module RCENextPage
 
   def document_menubar_button
     menu_option_by_name("Upload Document")
-  end
-
-  def rce_selection_focus_offset
-    # rubocop:disable Specs/NoExecuteScript
-    driver.execute_script(
-      # language=javascript
-      "return document.querySelector('#wiki_page_body_ifr').contentDocument.getSelection().focusOffset"
-    )
-    # rubocop:enable Specs/NoExecuteScript
-  end
-
-  def clear_rce_selection
-    # rubocop:disable Specs/NoExecuteScript
-    driver.execute_script(
-      # language=javascript
-      "return document.querySelector('#wiki_page_body_ifr').contentDocument.getSelection().removeAllRanges()"
-    )
-    # rubocop:enable Specs/NoExecuteScript
   end
 end

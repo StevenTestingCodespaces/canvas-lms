@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require "active_support/dependencies"
+require_dependency "turnitin/outcome_response_processor"
 require_relative "turnitin_spec_helper"
 require "turnitin_api"
 module Turnitin
@@ -144,7 +146,7 @@ module Turnitin
           it "creates a submission if we got an uploaded at" do
             process
             expect(sub.workflow_state).to eq("submitted")
-            expect(sub.submitted_at).to_not be_nil
+            expect(sub.submitted_at).to_not be(nil)
             expect(sub.submitted_at).to eq(subject.turnitin_client.uploaded_at)
             expect(sub.turnitin_data).to eq(
               "attachment_#{lti_assignment.attachments.first.id}" => {

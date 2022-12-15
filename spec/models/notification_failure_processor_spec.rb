@@ -164,7 +164,7 @@ describe NotificationFailureProcessor do
       Timecop.freeze do
         expect { nfp.process }.to throw_symbol(:stop_polling)
       end
-      expect(reached).to be true
+      expect(reached).to eq true
     end
 
     context "shards" do

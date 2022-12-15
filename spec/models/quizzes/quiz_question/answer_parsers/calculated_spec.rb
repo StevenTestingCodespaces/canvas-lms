@@ -55,13 +55,13 @@ describe Quizzes::QuizQuestion::AnswerParsers::Calculated do
 
     it "formats formulas for the question" do
       @question[:formulas].each do |formula|
-        expect(formula).to be_a(Hash)
+        expect(formula).to be_kind_of(Hash)
       end
     end
 
     it "formats variables for the question" do
       @question.answers.each do |answer|
-        expect(answer[:variables]).to be_a(Array)
+        expect(answer[:variables]).to be_kind_of(Array)
       end
     end
 

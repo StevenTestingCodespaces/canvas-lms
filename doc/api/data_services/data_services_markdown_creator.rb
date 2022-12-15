@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "erb"
+
 class DataServicesMarkdownCreator
   CALIPER_EVENT_TEMPLATE = File.read("doc/api/data_services/caliper_event_template.md.erb")
   CALIPER_STRUCTURE_TEMPLATE = File.read("doc/api/data_services/caliper_structure_template.md.erb")
@@ -48,6 +50,8 @@ class DataServicesMarkdownCreator
   def self.write_file(file_name, template, content)
     erb_renderer = ERB.new(template)
 
-    File.binwrite("#{MARKDOWN_PATH}/data_service_#{file_name}.md", erb_renderer.result(binding))
+    File.open("#{MARKDOWN_PATH}/data_service_#{file_name}.md", "wb") do |file|
+      file.write erb_renderer.result(binding)
+    end
   end
 end

@@ -53,9 +53,9 @@ module Lti
       scopes.inject([]) { |agg, scope| agg.concat(scope.pluck(*args)) }
     end
 
-    def each(&)
+    def each(&blk)
       scopes.each do |scope|
-        scope.each(&)
+        scope.each(&blk)
       end
     end
   end

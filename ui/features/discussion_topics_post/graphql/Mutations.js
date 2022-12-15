@@ -136,7 +136,6 @@ export const CREATE_DISCUSSION_ENTRY = gql`
     $includeReplyPreview: Boolean
     $isAnonymousAuthor: Boolean
     $courseID: String
-    $quotedEntryId: ID
   ) {
     createDiscussionEntry(
       input: {
@@ -146,7 +145,6 @@ export const CREATE_DISCUSSION_ENTRY = gql`
         fileId: $fileId
         includeReplyPreview: $includeReplyPreview
         isAnonymousAuthor: $isAnonymousAuthor
-        quotedEntryId: $quotedEntryId
       }
     ) {
       discussionEntry {

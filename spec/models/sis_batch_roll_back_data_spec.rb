@@ -37,7 +37,7 @@ describe SisBatchRollBackData do
 
   it "has each context respond to updated_at" do
     SisBatchRollBackData::RESTORE_ORDER.each do |type|
-      expect(type.constantize.column_names.include?("updated_at")).to be true
+      expect(type.constantize.column_names.include?("updated_at")).to eq true
     end
   end
 end

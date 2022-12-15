@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "importers"
+
 module Importers
   class WikiPageImporter < Importer
     self.item_class = WikiPage
@@ -46,7 +48,7 @@ module Importers
       wikis.each do |wiki|
         unless wiki
           message = "There was a nil wiki page imported for ContentMigration:#{migration.id}"
-          Canvas::Errors.capture(:content_migration, message:)
+          Canvas::Errors.capture(:content_migration, message: message)
           next
         end
         next unless wiki_page_migration?(migration, wiki)
@@ -124,9 +126,7 @@ module Importers
 
         Importers::WikiPageImporter.import_from_migration(sub_item.merge({
                                                                            outline_folders_to_import: hash[:outline_folders_to_import]
-                                                                         }),
-                                                          context,
-                                                          migration)
+                                                                         }), context, migration)
       end
       return if hash[:type] && ["folder", "FOLDER_TYPE"].member?(hash[:type]) && hash[:linked_resource_id]
 
@@ -207,7 +207,7 @@ module Importers
 
         item.body = description
         allow_save = false if description.blank?
-      # elsif hash[:page_type] == "module_toc"
+      elsif hash[:page_type] == "module_toc"
       elsif hash[:topics]
         item.title = t("title_for_topics_category", "%{category} Topics", category: hash[:category_name])
         description = (hash[:category_description]).to_s
@@ -217,9 +217,7 @@ module Importers
           topic = Importers::DiscussionTopicImporter.import_from_migration(topic.merge({
                                                                                          topics_to_import: hash[:topics_to_import],
                                                                                          topic_entries_to_import: hash[:topic_entries_to_import]
-                                                                                       }),
-                                                                           context,
-                                                                           migration)
+                                                                                       }), context, migration)
           if topic
             topic_count += 1
             description += "  <li><a href='/#{context.class.to_s.downcase.pluralize}/#{context.id}/discussion_topics/#{topic.id}'>#{topic.title}</a></li>\n"
@@ -233,8 +231,7 @@ module Importers
         item.title = hash[:title].presence || item.url.presence || "unnamed page"
         if item.title.length > WikiPage::TITLE_LENGTH
           migration.add_warning(t("warnings.truncated_wiki_title",
-                                  "The title of the following wiki page was truncated: %{title}",
-                                  title: item.title))
+                                  "The title of the following wiki page was truncated: %{title}", title: item.title))
           item.title.splice!(0...WikiPage::TITLE_LENGTH) # truncate too-long titles
         end
 

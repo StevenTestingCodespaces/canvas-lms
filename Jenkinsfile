@@ -21,7 +21,6 @@
 final static JS_BUILD_IMAGE_STAGE = 'Javascript (Build Image)'
 final static LINTERS_BUILD_IMAGE_STAGE = 'Linters (Build Image)'
 final static RUN_MIGRATIONS_STAGE = 'Run Migrations'
-final static BUILD_DOCKER_IMAGE_STAGE = 'Build Docker Image'
 
 def buildParameters = [
   string(name: 'GERRIT_REFSPEC', value: "${env.GERRIT_REFSPEC}"),
@@ -40,14 +39,6 @@ def buildParameters = [
   string(name: 'MASTER_BOUNCER_RUN', value: "${env.MASTER_BOUNCER_RUN}"),
   string(name: 'CRYSTALBALL_MAP_S3_VERSION', value: "${env.CRYSTALBALL_MAP_S3_VERSION}")
 ]
-
-commitMessageFlag.setEnabled(env.GERRIT_EVENT_TYPE != 'change-merged')
-
-library "canvas-builds-library@${getCanvasBuildsRefspec()}"
-loadLocalLibrary('local-lib', 'build/new-jenkins/library')
-
-commitMessageFlag.setDefaultValues(commitMessageFlagDefaults() + commitMessageFlagPrivateDefaults())
-protectedNode.setReportUnhandledExceptions(!env.JOB_NAME.endsWith('Jenkinsfile'))
 
 def getSummaryUrl() {
   return "${env.BUILD_URL}/build-summary-report"
@@ -69,8 +60,10 @@ def getLocalWorkDir() {
   return env.GERRIT_PROJECT == 'canvas-lms' ? '.' : "gems/plugins/${env.GERRIT_PROJECT}"
 }
 
+// return false if the current patchset tag doesn't match the
+// mainline publishable tag. i.e. ignore pg-9.5 builds
 def isPatchsetPublishable() {
-  env.PUBLISH_PATCHSET_IMAGE == "1"
+  env.PATCHSET_TAG == env.PUBLISHABLE_TAG
 }
 
 def isPatchsetRetriggered() {
@@ -114,7 +107,7 @@ def postFn(status) {
       }
 
       if (isStartedByUser()) {
-        submitGerritReview((status == 'SUCCESS' ? '--verified +1' : '--verified -1'), "${env.BUILD_URL}/build-summary-report/")
+        gerrit.submitVerified((status == 'SUCCESS' ? '+1' : '-1'), "${env.BUILD_URL}/build-summary-report/")
       }
     }
 
@@ -137,7 +130,8 @@ def shouldPatchsetRetrigger() {
   // NOTE: The IS_AUTOMATIC_RETRIGGER check is here to ensure that the parameter is properly defined for the triggering job.
   // If it isn't, we have the risk of triggering this job over and over in an infinite loop.
   return env.IS_AUTOMATIC_RETRIGGER == '0' && (
-    configuration.isChangeMerged() && (commitMessageFlag('enable-automatic-retrigger') as Boolean)
+    env.GERRIT_EVENT_TYPE == 'change-merged' ||
+    configuration.getBoolean('change-merged') && configuration.getBoolean('enable-automatic-retrigger', '0')
   )
 }
 
@@ -166,12 +160,10 @@ def maybeSlackSendFailure() {
 
 def maybeSlackSendSuccess() {
   if (configuration.isChangeMerged() && isPatchsetRetriggered()) {
-    def patchsetPrefix = env.GERRIT_CHANGE_URL ? "Patchset <${env.GERRIT_CHANGE_URL}|#${env.GERRIT_CHANGE_NUMBER}>" : env.JOB_NAME
-
     slackSend(
       channel: getSlackChannel(),
       color: 'good',
-      message: "${patchsetPrefix} succeeded on re-trigger. Build <${getSummaryUrl()}|#${env.BUILD_NUMBER}>"
+      message: "Patchset <${env.GERRIT_CHANGE_URL}|#${env.GERRIT_CHANGE_NUMBER}> succeeded on re-trigger. Build <${getSummaryUrl()}|#${env.BUILD_NUMBER}>"
     )
   }
 
@@ -184,12 +176,10 @@ def maybeSlackSendSuccess() {
 
 def maybeSlackSendRetrigger() {
   if (configuration.isChangeMerged() && isPatchsetRetriggered()) {
-    def patchsetPrefix = env.GERRIT_CHANGE_URL ? "Patchset <${env.GERRIT_CHANGE_URL}|#${env.GERRIT_CHANGE_NUMBER}>" : env.JOB_NAME
-
     slackSend(
       channel: getSlackChannel(),
       color: 'warning',
-      message: "${patchsetPrefix} by ${env.GERRIT_EVENT_ACCOUNT_EMAIL} has been re-triggered. Build <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
+      message: "Patchset <${env.GERRIT_CHANGE_URL}|#${env.GERRIT_CHANGE_NUMBER}> by ${env.GERRIT_EVENT_ACCOUNT_EMAIL} has been re-triggered. Build <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
     )
   }
 }
@@ -216,19 +206,40 @@ def getSlackChannel() {
   return env.SLACK_CHANNEL_OVERRIDE ?: env.GERRIT_EVENT_TYPE == 'change-merged' ? '#canvas_builds' : '#devx-bots'
 }
 
-def getCanvasBuildsRefspec() {
-  def defaultValue = env.GERRIT_BRANCH.contains('stable/') ? env.GERRIT_BRANCH : 'master'
+@groovy.transform.Field final static CANVAS_BUILDS_REFSPEC_REGEX = /\[canvas\-builds\-refspec=(.+?)\]/
 
-  return commitMessageFlag('canvas-builds-refspec') as String ?: defaultValue
+def getCanvasBuildsRefspec() {
+  def commitMessage = env.GERRIT_CHANGE_COMMIT_MESSAGE ? new String(env.GERRIT_CHANGE_COMMIT_MESSAGE.decodeBase64()) : null
+
+  if (env.GERRIT_EVENT_TYPE == 'change-merged' || !commitMessage || !(commitMessage =~ CANVAS_BUILDS_REFSPEC_REGEX).find()) {
+    return env.GERRIT_BRANCH.contains('stable/') ? env.GERRIT_BRANCH : 'master'
+  }
+
+  return (commitMessage =~ CANVAS_BUILDS_REFSPEC_REGEX).findAll()[0][1]
 }
 
+@groovy.transform.Field final static CANVAS_LMS_REFSPEC_REGEX = /\[canvas\-lms\-refspec=(.+?)\]/
 def getCanvasLmsRefspec() {
-  def defaultBranch = env.GERRIT_BRANCH.contains('stable/') ? env.GERRIT_BRANCH : 'master'
-  def defaultValue = "+refs/heads/$defaultBranch:refs/remotes/origin/$defaultBranch"
+  // If stable branch, first search commit message for canvas-lms-refspec. If not present use stable branch head on origin.
+  if (env.GERRIT_BRANCH.contains('stable/')) {
+    def commitMessage = env.GERRIT_CHANGE_COMMIT_MESSAGE ? new String(env.GERRIT_CHANGE_COMMIT_MESSAGE.decodeBase64()) : null
 
-  return commitMessageFlag('canvas-lms-refspec') as String ?: defaultValue
+    if ((commitMessage =~ CANVAS_LMS_REFSPEC_REGEX).find()) {
+      return configuration.canvasLmsRefspec()
+    }
+
+    return "+refs/heads/$GERRIT_BRANCH:refs/remotes/origin/$GERRIT_BRANCH"
+  }
+
+  return env.GERRIT_EVENT_TYPE == 'change-merged' ? configuration.canvasLmsRefspecDefault() : configuration.canvasLmsRefspec()
 }
 // =========
+
+library "canvas-builds-library@${getCanvasBuildsRefspec()}"
+loadLocalLibrary('local-lib', 'build/new-jenkins/library')
+
+configuration.setUseCommitMessageFlags(env.GERRIT_EVENT_TYPE != 'change-merged')
+protectedNode.setReportUnhandledExceptions(!env.JOB_NAME.endsWith('Jenkinsfile'))
 
 pipeline {
   agent none
@@ -245,7 +256,8 @@ pipeline {
     BUILD_IMAGE = configuration.buildRegistryPath()
     POSTGRES = configuration.postgres()
     POSTGRES_CLIENT = configuration.postgresClient()
-    RSPEC_PROCESSES = commitMessageFlag('rspecq-processes').asType(Integer)
+    SKIP_CACHE = configuration.skipCache()
+    RSPEC_PROCESSES = configuration.getInteger('rspecq-processes')
     GERRIT_CHANGE_ID = getChangeId()
 
     // e.g. postgres-12-ruby-2.6
@@ -254,15 +266,20 @@ pipeline {
     // e.g. canvas-lms:01.123456.78-postgres-12-ruby-2.6
     PATCHSET_TAG = imageTag.patchset()
 
+    // e.g. canvas-lms:01.123456.78-postgres-12-ruby-2.6
+    PUBLISHABLE_TAG = imageTag.publishableTag()
+
     // e.g. canvas-lms:master when not on another branch
     MERGE_TAG = imageTag.mergeTag()
 
     // e.g. canvas-lms:01.123456.78; this is for consumers like Portal 2 who want to build a patchset
     EXTERNAL_TAG = imageTag.externalTag()
 
+    ALPINE_MIRROR = configuration.alpineMirror()
+    NODE = configuration.node()
     RUBY = configuration.ruby() // RUBY_VERSION is a reserved keyword for ruby installs
 
-    FORCE_CRYSTALBALL = "${commitMessageFlag('force-crystalball').asBooleanInteger()}"
+    FORCE_CRYSTALBALL = "${configuration.getBoolean('force-crystalball', '0') ? 1 : 0}"
 
     BASE_RUNNER_PREFIX = configuration.buildRegistryPath('base-runner')
     CASSANDRA_PREFIX = configuration.buildRegistryPath('cassandra-migrations')
@@ -333,21 +350,21 @@ pipeline {
                 // vote. Work around this by disabling the build start message and setting EMULATE_BUILD_START=1
                 // in the Build Parameters section.
                 // https://issues.jenkins.io/browse/JENKINS-28339
-                if (commitMessageFlag("emulate-build-start") as Boolean) {
-                  submitGerritReview("", "Build Started ${RUN_DISPLAY_URL}")
+                if (configuration.getBoolean('emulate-build-start', 'false')) {
+                  gerrit.submitReview("", "Build Started ${RUN_DISPLAY_URL}")
                 }
 
-                if (commitMessageFlag("skip-ci") as Boolean) {
+                if (configuration.skipCi()) {
                   currentBuild.result = 'NOT_BUILT'
-                  submitGerritReview('--label Lint-Review=-2', 'Build not executed due to [skip-ci] flag')
+                  gerrit.submitLintReview('-2', 'Build not executed due to [skip-ci] flag')
                   error '[skip-ci] flag enabled: skipping the build'
                   return
                 } else if (extendedStage.isAllowStagesFilterUsed() || extendedStage.isIgnoreStageResultsFilterUsed() || extendedStage.isSkipStagesFilterUsed()) {
-                  submitGerritReview('--label Lint-Review=-2', 'One or more build flags causes a subset of the build to be run')
+                  gerrit.submitLintReview('-2', 'One or more build flags causes a subset of the build to be run')
                 } else if (setupStage.hasGemOverrides()) {
-                  submitGerritReview('--label Lint-Review=-2', 'One or more build flags causes the build to be run against an unmerged gem version override')
+                  gerrit.submitLintReview('-2', 'One or more build flags causes the build to be run against an unmerged gem version override')
                 } else {
-                  submitGerritReview('--label Lint-Review=0')
+                  gerrit.submitLintReview('0')
                 }
               }
 
@@ -357,7 +374,7 @@ pipeline {
               }
 
               // Ensure that all build flags are compatible.
-              if (commitMessageFlag('change-merged') as Boolean && configuration.buildRegistryPath() == configuration.buildRegistryPathDefault()) {
+              if (configuration.getBoolean('change-merged') && configuration.isValueDefault('build-registry-path')) {
                 error 'Manually triggering the change-merged build path must be combined with a custom build-registry-path'
                 return
               }
@@ -396,7 +413,7 @@ pipeline {
                   buildParameters += string(name: 'CANVAS_LMS_REFSPEC', value: env.CANVAS_LMS_REFSPEC)
                 }
 
-                extendedStage('Builder').nodeRequirements(label: nodeLabel(), podTemplate: null).obeysAllowStages(false).reportTimings(false).queue(rootStages) {
+                extendedStage('Builder').nodeRequirements(label: configuration.nodeLabel(), podTemplate: null).obeysAllowStages(false).reportTimings(false).queue(rootStages) {
                   extendedStage('Setup')
                     .hooks(buildSummaryReportHooks.call())
                     .obeysAllowStages(false)
@@ -426,7 +443,7 @@ pipeline {
                     .timeout(20)
                     .execute(buildDockerImageStage.&premergeCacheImage)
 
-                  extendedStage(BUILD_DOCKER_IMAGE_STAGE)
+                  extendedStage('Build Docker Image')
                     .hooks(buildSummaryReportHooks.call())
                     .obeysAllowStages(false)
                     .timeout(20)
@@ -436,11 +453,8 @@ pipeline {
                         docker exec -dt general-build-container bin/rails graphql:schema
                       '''
 
-                      @SuppressWarnings('GStringExpressionWithinString')
                       def crystalballStep = '''
                         diffFrom=$(git --git-dir $LOCAL_WORKDIR/.git rev-parse $GERRIT_PATCHSET_REVISION^1)
-                        # crystalball will fail without adding $DOCKER_WORKDIR to safe.directory
-                        docker exec -t general-build-container bash -c "git config --global --add safe.directory ${DOCKER_WORKDIR%/}"
                         docker exec -dt \
                                         -e CRYSTALBALL_DIFF_FROM=$diffFrom \
                                         -e CRYSTALBALL_DIFF_TO=$GERRIT_PATCHSET_REVISION \
@@ -489,7 +503,6 @@ pipeline {
                             sleep 0.1
                           done
 
-                          docker exec -t general-build-container bash -c 'cat log/crystalball.log'
                           docker cp \$(docker ps -qa -f name=general-build-container):/usr/src/app/crystalball_spec_list.txt ./tmp/crystalball_spec_list.txt
                         '''
                         archiveArtifacts allowEmptyArchive: true, artifacts: 'tmp/crystalball_spec_list.txt'
@@ -517,7 +530,7 @@ pipeline {
                     .obeysAllowStages(false)
                     .required(!configuration.isChangeMerged() && env.GERRIT_PROJECT == 'canvas-lms' && sh(script: "${WORKSPACE}/build/new-jenkins/locales-changes.sh", returnStatus: true) == 0)
                     .execute {
-                        submitGerritReview('--label Lint-Review=-2', 'This commit contains only changes to config/locales/, this could be a bad sign!')
+                        gerrit.submitLintReview('-2', 'This commit contains only changes to config/locales/, this could be a bad sign!')
                       }
 
                   extendedStage('Webpack Bundle Size Check')
@@ -534,7 +547,7 @@ pipeline {
                       sh 'build/new-jenkins/consumer-smoke-test.sh'
                     }
 
-                    def shouldRunJS = configuration.isChangeMerged() || commitMessageFlag('force-failure-js') as Boolean ||
+                    def shouldRunJS = configuration.isChangeMerged() ||
                       (!configuration.isChangeMerged() && (filesChangedStage.hasGraphqlFiles(buildConfig) || filesChangedStage.hasJsFiles(buildConfig)))
 
                     extendedStage(JS_BUILD_IMAGE_STAGE)
@@ -551,28 +564,17 @@ pipeline {
                       .required(configuration.isChangeMerged())
                       .queue(stages, buildDockerImageStage.&i18nExtract)
 
+                    def shouldRunGraphQL = (configuration.isChangeMerged() && filesChangedStage.hasGraphqlFiles(buildConfig)) || configuration.apolloForceGraphqlSchemaCheck()
+
+                    extendedStage('GraphQL Post-Merge Schema Check')
+                      .hooks(buildSummaryReportHooks.call())
+                      .required(shouldRunGraphQL)
+                      .timeout(2)
+                      .queue(stages, graphqlSchemaCheckStage.&call)
+
                     parallel(stages)
                   }
                 }
-
-                extendedStage('ARM64 Builder - Container')
-                  .hooks(buildSummaryReportHooks.call())
-                  .nodeRequirements(label: 'docker-arm64')
-                  .required(configuration.isChangeMerged())
-                  .queue(rootStages) {
-                    extendedStage('ARM64 Builder').execute {
-                      setupStage()
-                      // Rebase is fortunately not needed - since this only runs in post-merge
-                      buildDockerImageStage.patchsetImage('', '-arm64')
-                    }
-
-                    extendedStage('Augment Manifest').waitsFor(BUILD_DOCKER_IMAGE_STAGE, 'Builder').execute {
-                      sh """#!/bin/bash -ex
-                      docker manifest create --amend $PATCHSET_TAG $PATCHSET_TAG $PATCHSET_TAG-arm64
-                      docker manifest push $PATCHSET_TAG
-                      """
-                    }
-                  }
 
                 extendedStage("${filesChangedStage.STAGE_NAME} (Waiting for Dependencies)").obeysAllowStages(false).waitsFor(filesChangedStage.STAGE_NAME, 'Builder').queue(rootStages) { stageConfig, buildConfig ->
                   def nestedStages = [:]
@@ -599,18 +601,17 @@ pipeline {
 
                 extendedStage('Linters (Waiting for Dependencies)').obeysAllowStages(false).waitsFor(LINTERS_BUILD_IMAGE_STAGE, 'Builder').queue(rootStages) { stageConfig, buildConfig ->
                   extendedStage('Linters - Dependency Check')
-                    .nodeRequirements(label: nodeLabel(), podTemplate: dependencyCheckStage.nodeRequirementsTemplate(), container: 'dependency-check')
+                    .nodeRequirements(label: configuration.nodeLabel(), podTemplate: dependencyCheckStage.nodeRequirementsTemplate(), container: 'dependency-check')
                     .required(configuration.isChangeMerged())
                     .execute(dependencyCheckStage.queueTestStage())
 
                   extendedStage('Linters')
                     .hooks([onNodeReleasing: lintersStage.tearDownNode()])
-                    .nodeRequirements(label: nodeLabel(), podTemplate: lintersStage.nodeRequirementsTemplate())
+                    .nodeRequirements(label: configuration.nodeLabel(), podTemplate: lintersStage.nodeRequirementsTemplate())
                     .required(!configuration.isChangeMerged() && env.GERRIT_CHANGE_ID != '0')
                     .execute {
                       def nestedStages = [:]
 
-                      callableWithDelegate(lintersStage.bundleStage(nestedStages, buildConfig))()
                       callableWithDelegate(lintersStage.codeStage(nestedStages))()
                       callableWithDelegate(lintersStage.groovyStage(nestedStages, buildConfig))()
                       callableWithDelegate(lintersStage.masterBouncerStage(nestedStages))()
@@ -622,6 +623,13 @@ pipeline {
 
                 extendedStage("${RUN_MIGRATIONS_STAGE} (Waiting for Dependencies)").obeysAllowStages(false).waitsFor(RUN_MIGRATIONS_STAGE, 'Builder').queue(rootStages) { stageConfig, buildConfig ->
                   def nestedStages = [:]
+
+                  extendedStage('CDC Schema Check')
+                    .hooks(buildSummaryReportHooks.call())
+                    .required(filesChangedStage.hasMigrationFiles(buildConfig))
+                    .queue(nestedStages, jobName: '/Canvas/cdc-event-transformer-master', buildParameters: buildParameters + [
+                      string(name: 'CANVAS_LMS_IMAGE_PATH', value: "${env.PATCHSET_TAG}"),
+                    ])
 
                   extendedStage('Contract Tests')
                     .hooks(buildSummaryReportHooks.call())
@@ -638,7 +646,7 @@ pipeline {
 
                   extendedStage('Flakey Spec Catcher')
                     .hooks(buildSummaryReportHooks.call())
-                    .required(!configuration.isChangeMerged() && filesChangedStage.hasSpecFiles(buildConfig) || commitMessageFlag('force-failure-fsc') as Boolean)
+                    .required(!configuration.isChangeMerged() && filesChangedStage.hasSpecFiles(buildConfig) || configuration.forceFailureFSC() == '1')
                     .queue(nestedStages, jobName: '/Canvas/test-suites/flakey-spec-catcher', buildParameters: buildParameters + [
                       string(name: 'CASSANDRA_IMAGE_TAG', value: "${env.CASSANDRA_IMAGE_TAG}"),
                       string(name: 'DYNAMODB_IMAGE_TAG', value: "${env.DYNAMODB_IMAGE_TAG}"),

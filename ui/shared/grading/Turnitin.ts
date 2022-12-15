@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2020 - present Instructure, Inc.
  *
@@ -20,10 +19,7 @@
 import {useScope as useI18nScope} from '@canvas/i18n'
 import {max, invert} from 'underscore'
 import {originalityReportSubmissionKey} from './originalityReportHelper'
-import type {
-  SubmissionOriginalityData,
-  SubmissionWithOriginalityReport,
-} from '@canvas/grading/grading.d'
+import type {PlagiarismData, SubmissionWithOriginalityReport} from '@canvas/grading/grading.d'
 
 const I18n = useI18nScope('turnitin')
 
@@ -37,7 +33,7 @@ export const extractDataTurnitin = function (submission: SubmissionWithOriginali
     return
   }
   const data: {
-    items: Array<{id: string; data: SubmissionOriginalityData}>
+    items: Array<{id: string; data: PlagiarismData}>
     state: string
   } = {
     items: [],

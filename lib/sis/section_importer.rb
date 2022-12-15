@@ -122,7 +122,7 @@ module SIS
           deleted_section_ids << section.id
         end
 
-        unless section.stuck_sis_fields.intersect?([:start_at, :end_at])
+        if (section.stuck_sis_fields & [:start_at, :end_at]).empty?
           section.start_at = start_date
           section.end_at = end_date
         end

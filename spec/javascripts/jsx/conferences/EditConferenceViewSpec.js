@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import EditConferenceView from 'ui/features/conferences/backbone/views/EditConferenceView'
+import EditConferenceView from 'ui/features/conferences/backbone/views/EditConferenceView.coffee'
 import Conference from 'ui/features/conferences/backbone/models/Conference'
 import timezone from 'timezone'
 import tzInTest from '@canvas/timezone/specHelpers'

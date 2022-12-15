@@ -23,7 +23,7 @@ import tz from '@canvas/timezone'
 import _ from 'underscore'
 import Backbone from '@canvas/backbone'
 import template from '../../jst/WikiPage.handlebars'
-import StickyHeaderMixin from '@canvas/wiki/backbone/views/StickyHeaderMixin'
+import StickyHeaderMixin from '@canvas/wiki/backbone/views/StickyHeaderMixin.coffee'
 import WikiPageDeleteDialog from '@canvas/wiki/backbone/views/WikiPageDeleteDialog'
 import WikiPageReloadView from '@canvas/wiki/backbone/views/WikiPageReloadView'
 import PublishButtonView from '@canvas/publish-button-view'
@@ -34,7 +34,6 @@ import '@canvas/modules/jquery/prerequisites_lookup'
 import '../../jquery/content_locks'
 import DirectShareUserModal from '@canvas/direct-sharing/react/components/DirectShareUserModal'
 import DirectShareCourseTray from '@canvas/direct-sharing/react/components/DirectShareCourseTray'
-import {renderFrontPagePill} from '@canvas/wiki/react/renderFrontPagePill'
 
 const I18n = useI18nScope('pages')
 
@@ -204,11 +203,6 @@ export default class WikiPageView extends Backbone.View {
     this.reloadView.on('reload', () => this.render())
     this.reloadView.pollForChanges()
 
-    renderFrontPagePill(this.$el[0], {
-      margin: 'small',
-      children: this.toJSON().frontPageText,
-    })
-
     return publish('userContent/change')
   }
 
@@ -323,7 +317,7 @@ export default class WikiPageView extends Backbone.View {
     _.each(json.wiki_page_menu_tools, tool => {
       tool.url = `${tool.base_url}&pages[]=${this.model.get('page_id')}`
     })
-    json.frontPageText = ENV.K5_SUBJECT_COURSE ? I18n.t('Subject Home') : I18n.t('Front Page')
+    json.frontPageText = ENV.K5_SUBJECT_COURSE ? 'Subject Home' : 'Front Page'
     return json
   }
 }

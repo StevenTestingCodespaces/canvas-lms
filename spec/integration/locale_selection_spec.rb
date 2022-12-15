@@ -36,7 +36,7 @@ describe "locale_selection" do
 
     get dashboard_url
     expect(response).to be_successful
-    expect(I18n.locale).to be(:es)
+    expect(I18n.locale).to eql(:es)
   end
 
   it "sets the locale when not authenticated" do
@@ -44,6 +44,6 @@ describe "locale_selection" do
     account.update_attribute :default_locale, "fr"
     get canvas_login_url
     expect(response).to be_successful
-    expect(I18n.locale).to be(:fr)
+    expect(I18n.locale).to eql(:fr)
   end
 end

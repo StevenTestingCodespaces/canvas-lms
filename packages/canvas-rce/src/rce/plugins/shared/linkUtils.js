@@ -27,7 +27,6 @@ import {
   IconAnnouncementLine,
   IconDocumentLine,
 } from '@instructure/ui-icons'
-import formatMessage from 'format-message'
 
 export const IconBlank = props => {
   return (
@@ -57,28 +56,5 @@ export const getIcon = type => {
       return IconBlank
     default:
       return IconDocumentLine
-  }
-}
-
-export const getFriendlyLinkType = type => {
-  switch (type) {
-    case 'assignments':
-      return formatMessage('Assignment')
-    case 'discussions':
-      return formatMessage('Discussion')
-    case 'modules':
-      return formatMessage('Module')
-    case 'quizzes':
-      return formatMessage('Quiz')
-    case 'quizzes.next':
-      return formatMessage('New Quiz')
-    case 'announcements':
-      return formatMessage('Announcement')
-    case 'wikiPages':
-      return formatMessage('Page')
-    case 'navigation':
-      return formatMessage('Navigation')
-    default:
-      return ''
   }
 }

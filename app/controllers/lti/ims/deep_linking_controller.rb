@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require "json/jwt"
+
 module Lti
   module IMS
     class DeepLinkingController < ApplicationController
@@ -59,10 +61,21 @@ module Lti
         end
 
         # deep linking on the new/edit assignment page should:
-        # * not create a resource link
-        # * not reload the page
+        # * only use the first content item to create an assignment
+        # * not create a new module
+        # * reload the page
         if for_placement?(:assignment_selection)
-          render_content_items(reload_page: false)
+          unless @context.root_account.feature_enabled? :lti_assignment_page_line_items
+            render_content_items(reload_page: false)
+            return
+          end
+
+          item_for_assignment = lti_resource_links.first
+          if allow_line_items? && item_for_assignment.key?(:lineItem) && validate_line_item!(item_for_assignment)
+            create_update_assignment!(item_for_assignment, return_url_parameters[:assignment_id])
+          end
+
+          render_content_items(items: [item_for_assignment])
           return
         end
 
@@ -119,7 +132,7 @@ module Lti
         render_content_items(module_created: create_new_module?)
       rescue => e
         code ||= response_code_for_rescue(e) if e
-        InstStatsd::Statsd.increment("canvas.deep_linking_controller.request_error", tags: { code: })
+        InstStatsd::Statsd.increment("canvas.deep_linking_controller.request_error", tags: { code: code })
         raise e
       end
 
@@ -130,12 +143,15 @@ module Lti
 
       private
 
+      def for_placement?(placement)
+        return_url_parameters[:placement]&.to_sym == placement
+      end
+
       def render_content_items(items: content_items, reload_page: true, module_created: false)
         js_env({
                  deep_link_response: {
                    placement: return_url_parameters[:placement],
                    content_items: items,
-                   service_id: return_url_parameters[:content_item_id],
                    msg: messaging_value("msg"),
                    log: messaging_value("log"),
                    errormsg: messaging_value("errormsg"),

@@ -17,7 +17,7 @@
 
 import $ from 'jquery'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import preventDefault from '../preventDefault'
+import preventDefault from 'prevent-default'
 import '@canvas/jquery/jquery.ajaxJSON'
 import '@canvas/rails-flash-notifications'
 

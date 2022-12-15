@@ -27,13 +27,13 @@ import {Flex} from '@instructure/ui-flex'
 import PreviewIcon from '../../../../shared/PreviewIcon'
 import {TruncateText} from '@instructure/ui-truncate-text'
 import {Text} from '@instructure/ui-text'
-import {ImageCropperModal} from '../../../../shared/ImageCropper'
+import {ImageCropperModal} from '../ImageCropper'
 import ModeSelect from './ModeSelect'
 import PropTypes from 'prop-types'
-import {ImageCropperSettingsPropTypes} from '../../../../shared/ImageCropper/propTypes'
-import {MAX_IMAGE_SIZE_BYTES} from '../../../../shared/compressionUtils'
-import {createCroppedImageSvg} from '../../../../shared/ImageCropper/imageCropUtils'
-import {convertFileToBase64} from '../../../../shared/fileUtils'
+import {ImageCropperSettingsPropTypes} from '../ImageCropper/propTypes'
+import {MAX_IMAGE_SIZE_BYTES} from './compressionUtils'
+import {createCroppedImageSvg} from '../ImageCropper/imageCropUtils'
+import {convertFileToBase64} from '../../../svg/utils'
 import {ImageSettingsPropTypes} from './propTypes'
 import _ from 'lodash'
 
@@ -101,7 +101,7 @@ function renderImageActionButtons({mode, collectionOpen}, dispatch, trayDispatch
   )
 }
 
-export const ImageOptions = ({state, settings, dispatch, mountNode, trayDispatch}) => {
+export const ImageOptions = ({state, settings, dispatch, mountNode, rcsConfig, trayDispatch}) => {
   const [isImageActionFocused, setIsImageActionFocused] = useState(false)
   const imageActionRef = useCallback(
     el => {
@@ -158,6 +158,7 @@ export const ImageOptions = ({state, settings, dispatch, mountNode, trayDispatch
             ref={imageActionRef}
             onFocus={() => setIsImageActionFocused(true)}
             onBlur={() => setIsImageActionFocused(false)}
+            rcsConfig={rcsConfig}
           />
         )}
         {state.cropperOpen && (
@@ -198,6 +199,7 @@ ImageOptions.propTypes = {
     imageSettings: ImageSettingsPropTypes,
   }).isRequired,
   dispatch: PropTypes.func.isRequired,
+  rcsConfig: PropTypes.object.isRequired,
   trayDispatch: PropTypes.func.isRequired,
   mountNode: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
 }

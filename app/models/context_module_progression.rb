@@ -18,6 +18,12 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 #
+class Float
+  def near_enough?(other, epsilon = 1e-6)
+    (self - other.to_f).abs < epsilon.to_f
+  end
+end
+
 class ContextModuleProgression < ActiveRecord::Base
   include Workflow
 
@@ -57,11 +63,11 @@ class ContextModuleProgression < ActiveRecord::Base
   end
 
   def collapse!(skip_save: false)
-    update_collapse_state(true, skip_save:)
+    update_collapse_state(true, skip_save: skip_save)
   end
 
   def uncollapse!(skip_save: false)
-    update_collapse_state(false, skip_save:)
+    update_collapse_state(false, skip_save: skip_save)
   end
 
   def update_collapse_state(collapsed_target_state, skip_save: false)
@@ -279,7 +285,7 @@ class ContextModuleProgression < ActiveRecord::Base
     subs.any? do |sub|
       score = get_submission_score(sub)
 
-      new_score = near_enough?(score, score.round) ? score.round : score if score.present?
+      new_score = score.near_enough?(score.round) ? score.round : score
       requirement_met = (score.present? && new_score.to_f >= requirement[:min_score].to_f)
       if requirement_met
         remove_incomplete_requirement(requirement[:id])
@@ -348,11 +354,6 @@ class ContextModuleProgression < ActiveRecord::Base
       touch_user
     end
   end
-
-  def near_enough?(test_number, other, epsilon = 1e-6)
-    (test_number.to_f - other.to_f).abs < epsilon.to_f
-  end
-  private :near_enough?
 
   def outdated?
     if current && evaluated_at.present?

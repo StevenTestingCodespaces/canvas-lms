@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "uri"
+
 module Api
   module Html
     class Link
@@ -38,8 +40,8 @@ module Api
 
       APPLICABLE_CONTEXT_TYPES = %w[Course Group Account].freeze
       SKIP_CONTEXT_TYPES = ["User"].freeze
-      FILE_LINK_REGEX = %r{/files/(\d+)/(?:download|preview)}
-      VERIFIER_REGEX = /(\?)verifier=[^&]*&?|&verifier=[^&]*/
+      FILE_LINK_REGEX = %r{/files/(\d+)/(?:download|preview)}.freeze
+      VERIFIER_REGEX = /(\?)verifier=[^&]*&?|&verifier=[^&]*/.freeze
 
       def strip_host(link)
         return link if @host.nil?

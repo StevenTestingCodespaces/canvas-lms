@@ -81,26 +81,22 @@ export default function CanvasMediaPlayer(props) {
   const containerRef = useRef(null)
   const mediaPlayerRef = useRef(null)
 
-  const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement
-  const isEmbedded =
-    window.frameElement?.tagName === 'IFRAME' ||
-    window.location !== window.top.location ||
-    !containerRef.current
-
-  const boundingBox = useCallback(() => {
-    if (isFullscreen || isEmbedded) {
+  function boundingBox() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
       return {
         width: window.innerWidth,
         height: window.innerHeight,
       }
+    } else if (window.frameElement?.tagName === 'IFRAME' || !containerRef.current) {
+      return {width: window.innerWidth, height: window.innerHeight}
+    } else {
+      // media_player_iframe_content.js includes a 16px top/bottom margin
+      return {
+        width: containerRef.current.clientWidth,
+        height: Math.min(containerRef.current.clientHeight, window.innerHeight - 32),
+      }
     }
-
-    // media_player_iframe_content.js includes a 16px top/bottom margin
-    return {
-      width: containerRef.current.clientWidth,
-      height: Math.min(containerRef.current.clientHeight, window.innerHeight - 32),
-    }
-  }, [isFullscreen, isEmbedded, containerRef])
+  }
 
   const handleLoadedMetadata = useCallback(
     event => {
@@ -116,7 +112,7 @@ export default function CanvasMediaPlayer(props) {
         props.resizeContainer
       )
     },
-    [boundingBox, props.resizeContainer, props.type]
+    [props.resizeContainer, props.type]
   )
 
   const handlePlayerSize = useCallback(
@@ -130,9 +126,32 @@ export default function CanvasMediaPlayer(props) {
         window.frameElement || playerParent,
         props.resizeContainer
       )
+      if (shouldPostReloadMessage()) {
+        window.postMessage(
+          {subject: 'reload_media', media_object_id: props.media_id},
+          window.location.origin
+        )
+      }
     },
-    [props.type, props.resizeContainer, boundingBox]
+    [props.type, props.resizeContainer, props.media_id]
   )
+
+  // should be false when in canvas proper, but true when in an LTI like New Quizzes
+  const shouldPostReloadMessage = () => {
+    const player = window.document.body.querySelector('video')
+    let playerWidth = parseInt(player?.style?.width, 10)
+    let playerHeight = parseInt(player?.style?.height, 10)
+    if (Number.isNaN(playerWidth)) playerWidth = 0
+    if (Number.isNaN(playerHeight)) playerHeight = 0
+
+    const playerParent = containerRef.current
+    const playerIframe = playerParent?.parentElement?.parentElement
+    const hasSizeDifference =
+      playerIframe?.clientWidth !== playerWidth || playerIframe?.clientHeight !== playerHeight
+    if (hasSizeDifference) return true
+
+    return false
+  }
 
   const fetchSources = useCallback(
     async function () {

@@ -26,7 +26,7 @@ module Canvas::Builders
       @enrollment = enrollment
       @course = @enrollment.course
       @section = @enrollment.course_section
-      @term = @course&.enrollment_term
+      @term = @course ? @course.enrollment_term : nil
       @enrollment_dates = []
     end
 

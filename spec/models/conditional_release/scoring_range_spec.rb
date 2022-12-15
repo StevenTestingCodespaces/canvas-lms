@@ -19,9 +19,10 @@
 #
 
 require_relative "../../conditional_release_spec_helper"
+require_dependency "conditional_release/scoring_range"
 
 module ConditionalRelease
-  describe ScoringRange do
+  describe ScoringRange, type: :model do
     it_behaves_like "a soft-deletable model"
 
     describe "scoring range definition" do

@@ -17,10 +17,10 @@
 
 import Backbone from '@canvas/backbone'
 import $ from 'jquery'
-import PaginatedCollectionView from '@canvas/pagination/backbone/views/PaginatedCollectionView'
+import PaginatedCollectionView from '@canvas/pagination/backbone/views/PaginatedCollectionView.coffee'
 import DateRangeSearchView from './DateRangeSearchView'
 import AutocompleteView from './AutocompleteView'
-import ValidatedMixin from '@canvas/forms/backbone/views/ValidatedMixin'
+import ValidatedMixin from '@canvas/forms/backbone/views/ValidatedMixin.coffee'
 import CourseLoggingItemView from './CourseLoggingItemView'
 import CourseLoggingCollection from '../collections/CourseLoggingCollection'
 import template from '../../jst/courseLoggingContent.handlebars'

@@ -46,9 +46,7 @@ export const SubmissionInterface = {
         ...MediaObject
       }
       originalityData
-      proxySubmitter
       resourceLinkLookupUuid
-      score
       state
       submissionDraft {
         ...SubmissionDraft

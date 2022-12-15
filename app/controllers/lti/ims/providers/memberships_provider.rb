@@ -43,16 +43,16 @@ module Lti::IMS::Providers
       # in case response serialization should ever need it. E.g. in NRPS v1, pagination
       # links went in the response body.
       {
-        memberships:,
-        context:,
-        assignment:,
-        api_metadata:,
-        controller:,
-        tool:,
+        memberships: memberships,
+        context: context,
+        assignment: assignment,
+        api_metadata: api_metadata,
+        controller: controller,
+        tool: tool,
         opts: {
-          rlid:,
-          role:,
-          limit:
+          rlid: rlid,
+          role: role,
+          limit: limit
         }.compact
       }
     end

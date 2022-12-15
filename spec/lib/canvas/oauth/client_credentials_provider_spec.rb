@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "canvas/oauth/client_credentials_provider"
+
 module Canvas::OAuth
   describe ClientCredentialsProvider do
     let(:dev_key) { DeveloperKey.create! }
@@ -76,9 +78,9 @@ module Canvas::OAuth
       {
         iss: "someiss",
         sub: dev_key.id,
-        aud:,
-        iat:,
-        exp:,
+        aud: aud,
+        iat: iat,
+        exp: exp,
         jti: SecureRandom.uuid
       }
     end
@@ -109,7 +111,7 @@ module Canvas::OAuth
 
         it do
           expected_url_called(url, :get, stubbed_response)
-          expect(subject).to be true
+          expect(subject).to eq true
         end
       end
 
@@ -120,7 +122,7 @@ module Canvas::OAuth
 
         it do
           expected_url_called(url, :get, stubbed_response)
-          expect(subject).to be true
+          expect(subject).to eq true
         end
       end
 
@@ -133,7 +135,7 @@ module Canvas::OAuth
 
         it do
           expected_url_called(url, :get, stubbed_response)
-          expect(subject).to be false
+          expect(subject).to eq false
         end
       end
 
@@ -152,7 +154,7 @@ module Canvas::OAuth
 
         it do
           expected_url_called(url, :get, stubbed_response)
-          expect(subject).to be false
+          expect(subject).to eq false
         end
       end
 
@@ -275,7 +277,7 @@ module Canvas::OAuth
         it "is true when when validated twice" do
           enable_cache do
             subject
-            expect(subject).to be true
+            expect(subject).to eq true
           end
         end
       end

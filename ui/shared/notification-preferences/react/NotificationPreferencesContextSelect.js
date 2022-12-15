@@ -57,7 +57,7 @@ export default function NotificationPreferencesContextSelect(props) {
         ]}
         value={props.currentContext.value || 'account'}
         onChange={handleChange}
-        data-testid="settings-for-label"
+        data-testId="settings-for-label"
       >
         <SimpleSelect.Option id="account" value="account" key="account">
           {I18n.t('Account')}

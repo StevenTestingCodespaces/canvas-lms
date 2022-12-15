@@ -111,7 +111,7 @@ export default {
     }
   },
 
-  UNSAFE_componentWillReceiveProps(newProps) {
+  componentWillReceiveProps(newProps) {
     return this.updateResults(newProps)
   },
 

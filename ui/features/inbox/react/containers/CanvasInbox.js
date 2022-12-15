@@ -32,7 +32,7 @@ import {
   UPDATE_SUBMISSIONS_READ_STATE,
 } from '../../graphql/Mutations'
 import {CONVERSATIONS_QUERY, VIEWABLE_SUBMISSIONS_QUERY} from '../../graphql/Queries'
-import {decodeQueryString} from '@canvas/query-string-encoding'
+import {decodeQueryString} from 'query-string-encoding'
 import {responsiveQuerySizes} from '../../util/utils'
 
 import {Link} from '@instructure/ui-link'
@@ -64,7 +64,6 @@ const CanvasInbox = () => {
   const userID = ENV.current_user_id?.toString()
   const [urlUserRecipient, setUrlUserRecepient] = useState()
   const [selectedIds, setSelectedIds] = useState([])
-  const [maxGroupRecipientsMet, setMaxGroupRecipientsMet] = useState(false)
 
   const setFilterStateToCurrentWindowHash = () => {
     const validFilters = ['inbox', 'unread', 'starred', 'sent', 'archived', 'submission_comments']
@@ -160,16 +159,9 @@ const CanvasInbox = () => {
     setSelectedConversationMessage(null)
   }
 
-  // when selected Ids change, determine is maxGroupRecipients have been met,
-  // so that we can programatically check and disable the
-  // individual message checkbox
-  useEffect(() => {
-    let totalRecipients = 0
-    selectedIds?.forEach(recipient => {
-      totalRecipients += recipient.totalRecipients
-    })
-    setMaxGroupRecipientsMet(totalRecipients > ENV.CONVERSATIONS.MAX_GROUP_CONVERSATION_SIZE)
-  }, [selectedIds])
+  const onSelectedIdsChange = ids => {
+    setSelectedIds(ids)
+  }
 
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
 
@@ -417,18 +409,15 @@ const CanvasInbox = () => {
   const firstConversationIsStarred = myConversationParticipant?.label === 'starred'
 
   const [starConversationParticipants] = useMutation(UPDATE_CONVERSATION_PARTICIPANTS, {
-    onCompleted: data => {
-      const isStarred =
-        data.updateConversationParticipants.conversationParticipants[0].label === 'starred'
-      const count = data.updateConversationParticipants.conversationParticipants.length
-      if (!isStarred) {
+    onCompleted: () => {
+      if (firstConversationIsStarred) {
         setOnSuccess(
           I18n.t(
             {
               one: 'The conversation has been successfully unstarred.',
               other: 'The conversations has been successfully unstarred.',
             },
-            {count}
+            {count: selectedConversations.length}
           )
         )
       } else {
@@ -438,7 +427,7 @@ const CanvasInbox = () => {
               one: 'The conversation has been successfully starred.',
               other: 'The conversations has been successfully starred.',
             },
-            {count}
+            {count: selectedConversations.length}
           )
         )
       }
@@ -448,26 +437,11 @@ const CanvasInbox = () => {
     },
   })
 
-  const handleStar = (starred, conversations = null) => {
-    const conversationIds =
-      conversations?.map(convo => convo._id) || selectedConversations.map(convo => convo._id)
-    const globalConversationIds =
-      conversations?.map(convo => convo.id) || selectedConversations.map(convo => convo.id)
+  const handleStar = starred => {
     starConversationParticipants({
       variables: {
-        conversationIds,
+        conversationIds: selectedConversations.map(convo => convo._id),
         starred,
-      },
-      optimisticResponse: {
-        updateConversationParticipants: {
-          conversationParticipants: globalConversationIds.map(id => ({
-            id,
-            label: starred ? 'starred' : null,
-            __typename: 'ConversationParticipant',
-          })),
-          errors: null,
-          __typename: 'UpdateConversationParticipantsPayload',
-        },
       },
     })
   }
@@ -514,11 +488,8 @@ const CanvasInbox = () => {
     },
   })
 
-  const handleReadState = (markAsRead, conversations = null) => {
-    const conversationIds =
-      conversations?.map(convo => convo._id) || selectedConversations.map(convo => convo._id)
-    const globalConversationIds =
-      conversations?.map(convo => convo.id) || selectedConversations.map(convo => convo.id)
+  const handleReadState = (markAsRead, conversationIds = null) => {
+    const conversationIdsToChange = conversationIds || selectedConversations.map(convo => convo._id)
     if (scope === 'submission_comments') {
       readStateChangeSubmission({
         variables: {
@@ -529,26 +500,18 @@ const CanvasInbox = () => {
     } else {
       readStateChangeConversationParticipants({
         variables: {
-          conversationIds,
+          conversationIds: conversationIdsToChange,
           workflowState: markAsRead,
-        },
-        optimisticResponse: {
-          updateConversationParticipants: {
-            conversationParticipants: globalConversationIds.map(id => ({
-              id,
-              workflowState: markAsRead,
-              __typename: 'ConversationParticipant',
-            })),
-            errors: null,
-            __typename: 'UpdateConversationParticipantsPayload',
-          },
         },
       })
     }
 
     // always change this to whatever was just changed
     if (markAsRead === 'unread') {
-      sessionStorage.setItem('conversationsManuallyMarkedUnread', JSON.stringify(conversationIds))
+      sessionStorage.setItem(
+        'conversationsManuallyMarkedUnread',
+        JSON.stringify(conversationIdsToChange)
+      )
     }
   }
 
@@ -661,7 +624,6 @@ const CanvasInbox = () => {
                       userFilter={userFilter}
                       scope={scope}
                       onSelectConversation={updateSelectedConversations}
-                      onStarStateChange={handleStar}
                       onReadStateChange={handleReadState}
                       commonQueryVariables={commonQueryVariables}
                       conversationsQuery={conversationsQuery}
@@ -680,9 +642,7 @@ const CanvasInbox = () => {
                     overflowY="auto"
                     margin={responsiveProps.messageDetailMargin}
                   >
-                    {!conversationsQuery.loading &&
-                    !submissionCommentsQuery.loading &&
-                    selectedConversations.length > 0 ? (
+                    {selectedConversations.length > 0 ? (
                       <>
                         {matches.includes('mobile') && (
                           <View
@@ -766,10 +726,8 @@ const CanvasInbox = () => {
             }}
             open={composeModal}
             conversationsQueryOption={conversationsQueryOption}
-            onSelectedIdsChange={setSelectedIds}
+            onSelectedIdsChange={onSelectedIdsChange}
             selectedIds={selectedIds}
-            maxGroupRecipientsMet={maxGroupRecipientsMet}
-            currentCourseFilter={courseFilter}
           />
         </ConversationContext.Provider>
       )}

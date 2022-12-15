@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 /*
  * Copyright (C) 2021 - present Instructure, Inc.
  *
@@ -66,10 +65,8 @@ const expectedPackageSpecifier = error => {
   const {target} = error
 
   if (target.startsWith('ui/shared')) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useOrAddCanvasPackage(error)
   } else if (target.startsWith('packages/')) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useOrAddGenericPackage(error)
   }
 }
@@ -81,7 +78,6 @@ const useOrAddGenericPackage = error => {
     t.findPackageJSON(target, [packageName, `@instructure/${packageName}`]) || []
 
   if (pjsonFile) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useExistingPackage(error, {pjsonFile, pjson})
   } else {
     return addGenericPackage(error, {packageName})
@@ -118,7 +114,6 @@ const useOrAddCanvasPackage = error => {
   const [pjsonFile, pjson] = t.findPackageJSON(target, [`@canvas/${packageName}`]) || []
 
   if (pjsonFile) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useExistingPackage(error, {pjsonFile, pjson})
   } else {
     return addCanvasPackage(error, {packageName})

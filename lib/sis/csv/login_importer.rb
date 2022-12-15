@@ -23,7 +23,7 @@ module SIS
     # NOTE: these are account-level groups, not course groups
     class LoginImporter < CSVBaseImporter
       def self.login_csv?(row)
-        row.intersect?(%w[existing_user_id existing_integration_id existing_canvas_user_id])
+        (row & %w[existing_user_id existing_integration_id existing_canvas_user_id]).any?
       end
 
       def self.identifying_fields
@@ -62,8 +62,8 @@ module SIS
           ssha_password: row["ssha_password"],
           integration_id: row["integration_id"],
           lineno: row["lineno"],
-          csv:,
-          row:,
+          csv: csv,
+          row: row,
           authentication_provider_id: row["authentication_provider_id"]
         )
       end

@@ -68,15 +68,15 @@ class Mutations::CreateDiscussionEntryDraft < Mutations::BaseMutation
                                                   port: context[:request].port)
 
     id = DiscussionEntryDraft.upsert_draft(user: current_user,
-                                           message:,
-                                           topic:,
-                                           entry:,
+                                           message: message,
+                                           topic: topic,
+                                           entry: entry,
                                            parent: parent_entry,
-                                           attachment:,
+                                           attachment: attachment,
                                            reply_preview: include_reply_preview).first
     draft = DiscussionEntryDraft.new(
-      id:,
-      message:,
+      id: id,
+      message: message,
       discussion_topic_id: topic.id,
       discussion_entry_id: entry&.id,
       parent_id: parent_entry&.id,

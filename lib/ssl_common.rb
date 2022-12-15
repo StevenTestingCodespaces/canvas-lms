@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "net/https"
+
 class SSLCommon
   SSL_CA_PATH = "/etc/ssl/certs/"
 

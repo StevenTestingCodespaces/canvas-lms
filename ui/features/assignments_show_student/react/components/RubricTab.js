@@ -27,7 +27,6 @@ import {RubricAssociation} from '@canvas/assignments/graphql/student/RubricAssoc
 import RubricComponent from '@canvas/rubrics/react/Rubric'
 import {Text} from '@instructure/ui-text'
 import {ToggleDetails} from '@instructure/ui-toggle-details'
-import {Alert} from '@instructure/ui-alerts'
 import {View} from '@instructure/ui-view'
 import useStore from './stores/index'
 
@@ -72,17 +71,9 @@ export default function RubricTab(props) {
   return (
     <div data-testid="rubric-tab">
       <View as="div" margin="none none medium">
-        {props.peerReviewModeEnabled && !hasSubmittedAssessment && (
-          <Alert variant="info" hasShadow={false}>
-            {I18n.t(
-              'Fill out the rubric below after reviewing the student submission to complete this review.'
-            )}
-          </Alert>
-        )}
         <ToggleDetails
           defaultExpanded={true}
           fluidWidth={true}
-          data-testid="fill-out-rubric-toggle"
           summary={
             <Text weight="bold">
               {props.peerReviewModeEnabled ? I18n.t('Fill Out Rubric') : I18n.t('View Rubric')}
@@ -94,7 +85,6 @@ export default function RubricTab(props) {
               <CanvasSelect
                 label={I18n.t('Select Grader')}
                 value={displayedAssessment?._id}
-                data-testid="select-grader-dropdown"
                 onChange={(e, optionValue) => assessmentSelectorChanged(optionValue)}
               >
                 {props.assessments.map(assessment => (
@@ -110,7 +100,7 @@ export default function RubricTab(props) {
             </div>
           )}
 
-          {props.rubric && (
+          {displayedAssessment !== null && (
             <RubricComponent
               customRatings={props.proficiencyRatings}
               rubric={props.rubric}

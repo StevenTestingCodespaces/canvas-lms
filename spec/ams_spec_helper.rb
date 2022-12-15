@@ -20,7 +20,11 @@
 
 require "active_model_serializers"
 require "action_controller"
+require "active_support"
 require "active_record"
+require_dependency "canvas/lock_explanation"
+require_dependency "api"
+require_dependency "text_helper"
 
 # You can include just this file if your serializer doesn't need too much
 # from the whole stack to run your tests faster!
@@ -55,6 +59,6 @@ require_relative "../app/serializers/canvas/api_serialization"
 require_relative "../app/serializers/canvas/api_serializer"
 require_relative "../app/serializers/canvas/api_array_serializer"
 
-Dir[File.expand_path(File.dirname(__FILE__) + "/../app/serializers/*.rb")].each do |file|
+Dir[File.expand_path(File.dirname(__FILE__) + "/../app/serializers/*.rb")].sort.each do |file|
   require file
 end

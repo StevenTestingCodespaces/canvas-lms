@@ -24,6 +24,6 @@ module Factories
     comment = opts.delete(:comment) || "my assignment comment"
     user = opts.delete(:user) || @user || user_model
 
-    CommentBankItem.create!(course:, user:, comment:)
+    CommentBankItem.create!(course: course, user: user, comment: comment)
   end
 end

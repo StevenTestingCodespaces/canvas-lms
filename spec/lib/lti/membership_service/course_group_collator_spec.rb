@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require_dependency "lti/membership_service/course_group_collator"
+
 module Lti::MembershipService
   describe CourseGroupCollator do
     context "course with lots of groups" do
@@ -25,7 +27,7 @@ module Lti::MembershipService
         course_with_teacher
         @group_category = @course.group_categories.create!(name: "Membership")
 
-        101.times do |n|
+        (0..100).each do |n|
           @course.groups.create!(name: "Group #{n}", group_category: @group_category)
         end
       end
@@ -104,13 +106,13 @@ module Lti::MembershipService
         describe "#next_page?" do
           it "returns true when there is an additional page of results" do
             collator = CourseGroupCollator.new(@course, page: 1)
-            expect(collator.next_page?).to be(true)
+            expect(collator.next_page?).to eq(true)
           end
 
           it "returns false when there are no more pages" do
             collator = CourseGroupCollator.new(@course, page: 11)
             collator.memberships
-            expect(collator.next_page?).to be(false)
+            expect(collator.next_page?).to eq(false)
           end
         end
       end

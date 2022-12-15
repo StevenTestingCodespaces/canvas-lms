@@ -19,7 +19,7 @@
 import $ from 'jquery'
 import TimeBlockList from 'ui/features/calendar/jquery/TimeBlockList'
 import moment from 'moment'
-import fcUtil from '@canvas/calendar/jquery/fcUtil'
+import fcUtil from '@canvas/calendar/jquery/fcUtil.coffee'
 
 QUnit.module('TimeBlockList', {
   setup() {

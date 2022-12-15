@@ -18,6 +18,9 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# @API Immersive Reader
+# @beta
+#
 # This API requires Immersive Reader to be configured
 
 class ImmersiveReaderController < ApplicationController
@@ -33,7 +36,7 @@ class ImmersiveReaderController < ApplicationController
       parsed = JSON.parse(response.body)
       render json: {
         token: parsed["access_token"],
-        subdomain: ir_config[:subdomain]
+        subdomain: ir_config[:ir_subdomain]
       }
     else
       body = begin
@@ -61,7 +64,7 @@ class ImmersiveReaderController < ApplicationController
   end
 
   def ir_config
-    @ir_config ||= Rails.application.credentials.immersive_reader || {}
+    @ir_config ||= YAML.safe_load(DynamicSettings.find(tree: :private)["immersive_reader.yml"] || "{}").with_indifferent_access
   end
 
   def require_config
@@ -69,7 +72,7 @@ class ImmersiveReaderController < ApplicationController
   end
 
   def service_url
-    "https://login.windows.net/#{ir_config[:tenant_id]}/oauth2/token"
+    "https://login.windows.net/#{ir_config[:ir_tenant_id]}/oauth2/token"
   end
 
   def headers
@@ -79,8 +82,8 @@ class ImmersiveReaderController < ApplicationController
   def form
     {
       grant_type: "client_credentials",
-      client_id: ir_config[:client_id],
-      client_secret: ir_config[:client_secret],
+      client_id: ir_config[:ir_client_id],
+      client_secret: ir_config[:ir_client_secret],
       resource: "https://cognitiveservices.azure.com/"
     }
   end

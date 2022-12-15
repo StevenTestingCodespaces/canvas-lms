@@ -30,10 +30,9 @@ const I18n = useI18nScope('UploadMediaTrackForm')
 
 export default class UploadMediaTrackForm {
   // video url needs to be the url to mp4 version of the video.
-  constructor(mediaCommentId, video_url, attachmentId = null) {
+  constructor(mediaCommentId, video_url) {
     this.mediaCommentId = mediaCommentId
     this.video_url = video_url
-    this.attachmentId = attachmentId
     const templateVars = {
       languages: _.map(mejs.language.codes, (name, code) => ({name, code})),
       video_url: this.video_url,
@@ -81,12 +80,8 @@ export default class UploadMediaTrackForm {
 
         if (!params.content || !params.locale) return submitDfd.reject()
 
-        const url =
-          ENV.FEATURES.media_links_use_attachment_id && this.attachmentId
-            ? `/media_attachments/${this.attachmentId}/media_tracks`
-            : `/media_objects/${this.mediaCommentId}/media_tracks`
         return $.ajaxJSON(
-          url,
+          `/media_objects/${this.mediaCommentId}/media_tracks`,
           'POST',
           params,
           () => {

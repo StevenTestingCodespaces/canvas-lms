@@ -17,17 +17,8 @@
  */
 
 import React, {Suspense, useCallback, useEffect, useRef, useState} from 'react'
-import {
-  arrayOf,
-  bool,
-  func,
-  instanceOf,
-  number,
-  oneOfType,
-  shape,
-  string,
-  element,
-} from 'prop-types'
+import {arrayOf, bool, func, instanceOf, number, oneOfType, shape, string} from 'prop-types'
+import formatMessage from 'format-message'
 
 import {Billboard} from '@instructure/ui-billboard'
 import {Button} from '@instructure/ui-buttons'
@@ -41,7 +32,6 @@ import {Text} from '@instructure/ui-text'
 import {px} from '@instructure/ui-utils'
 import {MediaPlayer} from '@instructure/ui-media-player'
 import {TextInput} from '@instructure/ui-text-input'
-import formatMessage from './format-message'
 
 import LoadingIndicator from './shared/LoadingIndicator'
 import RocketSVG from './RocketSVG'
@@ -63,7 +53,6 @@ export default function ComputerPanel({
   updateSubtitles,
   userLocale,
   bounds,
-  mountNode,
 }) {
   const {ADD_CLOSED_CAPTIONS_OR_SUBTITLES, LOADING_MEDIA} =
     uploadMediaTranslations.UploadMediaStrings
@@ -192,7 +181,6 @@ export default function ComputerPanel({
                   liveRegion={liveRegion}
                   uploadMediaTranslations={uploadMediaTranslations}
                   updateSubtitles={updateSubtitles}
-                  mountNode={mountNode}
                 />
               </Suspense>
             )}
@@ -251,5 +239,4 @@ ComputerPanel.propTypes = {
     height: number.isRequired,
   }),
   userLocale: string.isRequired,
-  mountNode: oneOfType([element, func]),
 }

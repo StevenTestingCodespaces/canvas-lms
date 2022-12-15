@@ -22,6 +22,7 @@ import {HTMLElement, KeyboardEventHandler, MouseEventHandler} from 'react'
 // by default. Declaring them as wildcard modules allows TS to recognize them as
 // bare-bones interfaces with the `any` type.
 // See https://www.typescriptlang.org/docs/handbook/modules.html#wildcard-module-declarations
+declare module '*.coffee'
 declare module '*.graphql'
 declare module '*.handlebars'
 declare module '*.svg'
@@ -41,7 +42,7 @@ interface MissingElementProps {
 }
 
 interface MissingThemeableProps {
-  theme?: Record<string, unknown>
+  theme?: object
 }
 
 declare module '@instructure/ui-buttons' {
@@ -51,18 +52,6 @@ declare module '@instructure/ui-buttons' {
   export interface CondensedButtonProps extends MissingInputProps, MissingThemeableProps {}
   export interface IconButtonProps extends MissingInputProps, MissingThemeableProps {}
   export interface ToggleButtonProps extends MissingInputProps, MissingThemeableProps {}
-  namespace IconButton {
-    export const theme: symbol
-  }
-  namespace Button {
-    export const theme: symbol
-  }
-  namespace CloseButton {
-    export const theme: symbol
-  }
-  namespace BaseButton {
-    export const theme: symbol
-  }
 }
 
 declare module '@instructure/ui-motion' {
@@ -71,24 +60,15 @@ declare module '@instructure/ui-motion' {
 
 declare module '@instructure/ui-text-input' {
   export interface TextInputProps extends MissingInputProps {}
-  export namespace TextInput {
-    export const theme: symbol
-  }
 }
 
 declare module '@instructure/ui-toggle-details' {
   export interface ToggleDetailsProps extends MissingThemeableProps {}
-  export namespace ToggleDetails {
-    export const theme: symbol
-  }
 }
 
 declare module '@instructure/ui-view' {
   export interface ViewProps extends MissingElementProps, MissingThemeableProps {
     className?: string
-  }
-  export namespace View {
-    export const theme: symbol
   }
 }
 
@@ -102,9 +82,6 @@ declare module '@instructure/ui-menu' {
   export interface Menu {
     contentRef?: any
   }
-  export namespace Menu {
-    export const theme: symbol
-  }
 }
 
 declare module '@instructure/ui-link' {
@@ -114,18 +91,11 @@ declare module '@instructure/ui-link' {
     isWithinText?: boolean
     as?: string
   }
-  export namespace Link {
-    export const theme: symbol
-  }
 }
 
 declare module '@instructure/ui-text' {
   export interface Text {
     tag?: string
-  }
-
-  export interface TextProps {
-    dangerouslySetInnerHTML?: {__html: string} | undefined
   }
 }
 
@@ -133,89 +103,4 @@ declare module '@instructure/ui-select' {
   export interface SelectProps {
     renderLabel?: string
   }
-}
-
-declare module '@instructure/ui-overlays' {
-  export namespace Mask {
-    export const theme: symbol
-  }
-}
-
-declare module '@instructure/ui-heading' {
-  export namespace Heading {
-    export const theme: symbol
-  }
-}
-
-declare module '@instructure/ui-checkbox' {
-  export namespace ToggleFacade {
-    export const theme: symbol
-  }
-  export namespace CheckboxFacade {
-    export const theme: symbol
-  }
-}
-
-declare module '@instructure/ui-table' {
-  export namespace Table {
-    export const theme: symbol
-    export namespace Cell {
-      export const theme: symbol
-    }
-    export namespace Row {
-      export const theme: symbol
-    }
-    export namespace ColHeader {
-      export const theme: symbol
-    }
-  }
-}
-
-declare module '@instructure/ui-tag' {
-  export namespace Tag {
-    export const theme: symbol
-  }
-}
-
-declare module '@instructure/ui-alerts' {
-  export namespace Alert {
-    export const theme: symbol
-  }
-}
-
-declare module '@instructure/ui-tree-browser' {
-  export namespace TreeBrowser {
-    export const theme: symbol
-    export namespace Node {
-      export const theme: symbol
-    }
-    export namespace Button {
-      export const theme: symbol
-    }
-  }
-}
-
-declare module '@instructure/ui-tabs' {
-  export namespace Tabs {
-    export const theme: symbol
-    export namespace Tab {
-      export const theme: symbol
-    }
-  }
-}
-
-declare module '@instructure/ui-badge' {
-  export namespace Tabs {
-    export const theme: symbol
-    export namespace Tab {
-      export const theme: symbol
-    }
-  }
-}
-
-declare module 'html-escape' {
-  type Escapeable = string | number | {[key: string]: Escapeable}
-  export function escape<T>(strOrObject: Escapeable): T
-  export function htmlEscape(str: string): string
-  export function unescape(str: string): string
 }

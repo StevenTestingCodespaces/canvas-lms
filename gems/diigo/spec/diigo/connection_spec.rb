@@ -30,7 +30,7 @@ describe Diigo::Connection do
         config
       end
       response = Diigo::Connection.config_check(config)
-      expect(response).to be_nil
+      expect(response).to eq nil
     end
 
     it "returns error if there are config issues" do

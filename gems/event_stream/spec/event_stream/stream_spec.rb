@@ -56,7 +56,6 @@ describe EventStream::Stream do
       record_type = double("record_type")
 
       stream = EventStream::Stream.new do
-        backend_strategy :cassandra
         self.database database
         self.table table
         self.id_column id_column
@@ -90,7 +89,6 @@ describe EventStream::Stream do
         # can't access spec ivars inside instance_exec
         database, table = self.database, @table
         @stream = EventStream::Stream.new do
-          backend_strategy :cassandra
           self.database database
           self.table table
         end
@@ -118,7 +116,6 @@ describe EventStream::Stream do
       record_type = double("record_type")
 
       stream = EventStream::Stream.new do
-        backend_strategy :cassandra
         self.database -> { database }
         self.table table
         self.id_column id_column
@@ -138,7 +135,6 @@ describe EventStream::Stream do
       record_type = double("record_type")
 
       stream = EventStream::Stream.new do
-        backend_strategy :cassandra
         self.database database
         self.table table
         self.id_column id_column
@@ -157,7 +153,6 @@ describe EventStream::Stream do
       record_type = double("record_type")
 
       stream = EventStream::Stream.new do
-        backend_strategy :cassandra
         self.database -> {}
         self.table table
         self.id_column id_column
@@ -165,7 +160,7 @@ describe EventStream::Stream do
         read_consistency_level "ALL"
       end
 
-      expect(stream.database).to be_nil
+      expect(stream.database).to be nil
       expect(stream.available?).to be false
     end
   end
@@ -180,7 +175,7 @@ describe EventStream::Stream do
       ar_type = Class.new do
         def self.connection
           self
-        end
+        end\
 
         def self.shard
           self
@@ -210,7 +205,6 @@ describe EventStream::Stream do
       @table = double(to_s: "expected_table")
       database, table = self.database, @table
       @stream = EventStream::Stream.new do
-        backend_strategy :cassandra
         self.database database
         self.table table
       end

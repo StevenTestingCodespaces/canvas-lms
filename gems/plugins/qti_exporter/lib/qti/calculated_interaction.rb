@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require "cgi"
 module Qti
   class CalculatedInteraction < AssessmentItemConverter
     def initialize(opts)
@@ -134,11 +135,8 @@ module Qti
           %i[variables formulas imported_formula formula_decimal_places answer_tolerance].each { |k| @question.delete(k) }
           @question[:question_type] = "numerical_question"
           @question[:answers] = [
-            { weight: 100,
-              id: unique_local_id,
-              text: "answer_text",
-              numerical_answer_type: "exact_answer",
-              exact: var[:min] }
+            { weight: 100, id: unique_local_id, text: "answer_text",
+              numerical_answer_type: "exact_answer", exact: var[:min] }
           ]
         end
       end

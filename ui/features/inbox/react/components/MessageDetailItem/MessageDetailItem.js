@@ -31,7 +31,6 @@ import {List} from '@instructure/ui-list'
 import {Text} from '@instructure/ui-text'
 import {ConversationContext} from '../../../util/constants'
 import {MediaAttachment} from '@canvas/message-attachments'
-import {formatMessage} from '@canvas/util/TextHelper'
 
 export const MessageDetailItem = ({...props}) => {
   const createdAt = DateHelper.formatDatetimeForDisplay(props.conversationMessage.createdAt)
@@ -72,8 +71,8 @@ export const MessageDetailItem = ({...props}) => {
               <Avatar
                 size={responsiveProps.avatar}
                 margin="small small small none"
-                name={props.conversationMessage?.author?.name}
-                src={props.conversationMessage?.author?.avatarUrl}
+                name={props.conversationMessage.author.name}
+                src={props.conversationMessage.author.avatarUrl}
               />
             </Flex.Item>
             <Flex.Item shouldShrink={true} shouldGrow={true}>
@@ -85,12 +84,12 @@ export const MessageDetailItem = ({...props}) => {
                   />
                 </Flex.Item>
                 <Flex.Item>
-                  <Text weight="normal" size={responsiveProps.courseNameDate} wrap="break-word">
+                  <Text weight="normal" size={responsiveProps.courseNameDate}>
                     {props.contextName}
                   </Text>
                 </Flex.Item>
                 <Flex.Item>
-                  <Text weight="normal" size={responsiveProps.courseNameDate} wrap="break-word">
+                  <Text weight="normal" size={responsiveProps.courseNameDate}>
                     {createdAt}
                   </Text>
                 </Flex.Item>
@@ -107,11 +106,7 @@ export const MessageDetailItem = ({...props}) => {
               </Flex.Item>
             )}
           </Flex>
-          <Text
-            wrap="break-word"
-            size={responsiveProps.messageBody}
-            dangerouslySetInnerHTML={{__html: formatMessage(props.conversationMessage?.body)}}
-          />
+          <Text size={responsiveProps.messageBody}>{props.conversationMessage.body}</Text>
           {props.conversationMessage.attachmentsConnection?.nodes?.length > 0 && (
             <List isUnstyled={true} margin="medium auto small">
               {props.conversationMessage.attachmentsConnection.nodes.map(attachment => {

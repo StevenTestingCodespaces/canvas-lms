@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import _ from 'lodash'
+import _ from 'underscore'
 
 import tz from '@canvas/timezone'
 import AssignmentOverrideHelper from '@canvas/due-dates/AssignmentOverrideHelper'
@@ -104,7 +104,7 @@ QUnit.module(
 
 test('returns dates for assigned students', function () {
   const studentIDs = _.keys(this.dueDates)
-  propEqual(studentIDs, _.map(defaultStudents, 'id'))
+  propEqual(studentIDs, _.pluck(defaultStudents, 'id'))
 })
 
 test('returns the assignment due date for students without overrides', function () {

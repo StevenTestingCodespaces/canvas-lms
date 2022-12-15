@@ -17,7 +17,7 @@
  */
 
 import $ from 'jquery'
-import File from '@canvas/files/backbone/models/File'
+import File from '@canvas/files/backbone/models/File.coffee'
 import {Model} from '@canvas/backbone'
 import * as uploader from '@canvas/upload-file'
 

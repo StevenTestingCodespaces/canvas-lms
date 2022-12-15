@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2019 - present Instructure, Inc.
  *
@@ -19,17 +18,15 @@
 
 import React from 'react'
 import {bool, func} from 'prop-types'
+
 import {Button} from '@instructure/ui-buttons'
 import {View} from '@instructure/ui-view'
 import {Flex} from '@instructure/ui-flex'
 import {Text} from '@instructure/ui-text'
 import {List} from '@instructure/ui-list'
 import {RadioInput, RadioInputGroup} from '@instructure/ui-radio-input'
-import {useScope as useI18nScope} from '@canvas/i18n'
 
-// Remove once we're on InstUI 8
-const {Item: FlexItem} = Flex as any
-const {Item: ListItem} = List as any
+import {useScope as useI18nScope} from '@canvas/i18n'
 
 const I18n = useI18nScope('assignment_posting_policy_tray')
 
@@ -70,11 +67,11 @@ export default function Layout(props) {
           </Text>
 
           <List margin="0 0 0 small" size="small" itemSpacing="small">
-            <ListItem>{I18n.t('Their grade for the assignment')}</ListItem>
-            <ListItem>{I18n.t('Grade change notifications')}</ListItem>
-            <ListItem>{I18n.t('Submission comments')}</ListItem>
-            <ListItem>{I18n.t('Curving assignments')}</ListItem>
-            <ListItem>{I18n.t('Score change notifications')}</ListItem>
+            <List.Item>{I18n.t('Their grade for the assignment')}</List.Item>
+            <List.Item>{I18n.t('Grade change notifications')}</List.Item>
+            <List.Item>{I18n.t('Submission comments')}</List.Item>
+            <List.Item>{I18n.t('Curving assignments')}</List.Item>
+            <List.Item>{I18n.t('Score change notifications')}</List.Item>
           </List>
 
           <Text size="small" as="p">
@@ -98,7 +95,6 @@ export default function Layout(props) {
         as="div"
         margin="small 0"
         padding="0 medium"
-        // @ts-expect-error
         id="AssignmentPostingPolicyTray__RadioInputGroup"
       >
         <RadioInputGroup
@@ -130,21 +126,20 @@ export default function Layout(props) {
         as="div"
         margin="medium 0 0"
         padding="0 medium"
-        // @ts-expect-error
         id="AssignmentPostingPolicyTray__Buttons"
       >
         <Flex justifyItems="end">
-          <FlexItem margin="0 small 0 0">
+          <Flex.Item margin="0 small 0 0">
             <Button onClick={props.onDismiss} disabled={!props.allowCanceling}>
               {I18n.t('Cancel')}
             </Button>
-          </FlexItem>
+          </Flex.Item>
 
-          <FlexItem>
+          <Flex.Item>
             <Button onClick={props.onSave} disabled={!props.allowSaving} color="primary">
               {I18n.t('Save')}
             </Button>
-          </FlexItem>
+          </Flex.Item>
         </Flex>
       </View>
     </>

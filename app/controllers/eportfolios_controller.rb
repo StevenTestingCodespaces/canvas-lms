@@ -19,6 +19,7 @@
 #
 
 require "atom"
+require "securerandom"
 
 class EportfoliosController < ApplicationController
   include EportfolioPage
@@ -51,7 +52,7 @@ class EportfoliosController < ApplicationController
           @portfolio.ensure_defaults
           flash[:notice] = t("notices.created", "ePortfolio successfully created")
           format.html { redirect_to eportfolio_url(@portfolio) }
-          format.json { render json: @portfolio.as_json(permissions: { user: @current_user, session: }) }
+          format.json { render json: @portfolio.as_json(permissions: { user: @current_user, session: session }) }
         else
           format.html do
             rce_js_env
@@ -122,7 +123,7 @@ class EportfoliosController < ApplicationController
           @portfolio.ensure_defaults
           flash[:notice] = t("notices.updated", "ePortfolio successfully updated")
           format.html { redirect_to eportfolio_url(@portfolio) }
-          format.json { render json: @portfolio.as_json(permissions: { user: @current_user, session: }) }
+          format.json { render json: @portfolio.as_json(permissions: { user: @current_user, session: session }) }
         else
           format.html do
             rce_js_env

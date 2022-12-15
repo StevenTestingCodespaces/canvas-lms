@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require "json/jwt"
+
 module Lti
   module OAuth2
     class AuthorizationValidator
@@ -60,7 +62,7 @@ module Lti
             raise InvalidAuthJwt, "the Developer Key is not active or available in this environment" if developer_key.present? && !developer_key.usable?
 
             ims_tool_proxy = ::IMS::LTI::Models::ToolProxy.from_json(tp.raw_data)
-            unless ims_tool_proxy.enabled_capabilities.intersect?(["Security.splitSecret", "OAuth.splitSecret"])
+            if (ims_tool_proxy.enabled_capabilities & ["Security.splitSecret", "OAuth.splitSecret"]).blank?
               raise InvalidAuthJwt, "the Tool Proxy must be using a split secret"
             end
 

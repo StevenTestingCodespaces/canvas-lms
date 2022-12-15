@@ -8,9 +8,10 @@ Gem::Specification.new do |spec|
   spec.summary       = "Commit level linting."
 
   spec.files         = Dir.glob("{lib,spec,bin}/**/*")
+  spec.test_files    = spec.files.grep(%r{^spec/})
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "fakefs", "~> 1.2"
-  spec.add_development_dependency "rspec", "~> 3.12"
-  spec.add_development_dependency "timecop", "~> 0.9"
+  spec.add_development_dependency "rspec", "~> 3.5.0"
+  spec.add_development_dependency "timecop", "0.8.1"
 end

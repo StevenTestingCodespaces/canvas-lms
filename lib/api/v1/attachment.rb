@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "uri"
+
 module Api::V1::Attachment
   include Api::V1::Json
   include Api::V1::Locked
@@ -229,7 +231,7 @@ module Api::V1::Attachment
     if !context.respond_to?(:folders)
       nil
     elsif params[:parent_folder_id]
-      context.folders.active.find_by(id: params[:parent_folder_id])
+      context.folders.active.where(id: params[:parent_folder_id]).first
     elsif params[:parent_folder_path].is_a?(String)
       Folder.assert_path(params[:parent_folder_path], context)
     end
@@ -307,17 +309,10 @@ module Api::V1::Attachment
     # an LTI request
     actual_user = opts[:override_logged_in_user] ? current_user : logged_in_user
 
-    # user must have permission on folder to use a custom folder other
+    # user must have permission on folder to user a custom folder other
     # than the "preferred" folder (that specified by the caller).
     folder = infer_upload_folder(context, params)
     return if folder && !authorized_action(folder, current_user, :manage_contents)
-
-    # given parent folder id doesn't exist or has been deleted
-    if folder.nil? && params[:parent_folder_id]
-      return render status: :not_found, json: {
-        message: I18n.t("The specified resource does not exist.")
-      }
-    end
 
     # no permission check required to use the preferred folder
 
@@ -358,12 +353,12 @@ module Api::V1::Attachment
       end
 
       json = InstFS.upload_preflight_json(
-        context:,
+        context: context,
         root_account: context.try(:root_account) || @domain_root_account,
         user: actual_user,
         acting_as: current_user,
         access_token: @access_token,
-        folder:,
+        folder: folder,
         filename: infer_upload_filename(params),
         content_type: infer_upload_content_type(params, "unknown/unknown"),
         on_duplicate: infer_on_duplicate(params),
@@ -372,7 +367,7 @@ module Api::V1::Attachment
         target_url: params[:url],
         progress_json: progress_json_result,
         include_param: params[:success_include],
-        additional_capture_params:
+        additional_capture_params: additional_capture_params
       )
     else
       @attachment = create_new_attachment(context, params, current_user, opts, folder)
@@ -382,7 +377,7 @@ module Api::V1::Attachment
         progress.reset!
 
         executor = Services::SubmitHomeworkService.create_clone_url_executor(
-          params[:url], on_duplicate, opts[:check_quota], progress:
+          params[:url], on_duplicate, opts[:check_quota], progress: progress
         )
 
         Services::SubmitHomeworkService.submit_job(
@@ -395,15 +390,15 @@ module Api::V1::Attachment
         quota_exemption = @attachment.quota_exemption_key unless opts[:check_quota]
         json = @attachment.ajax_upload_params(
           api_v1_files_create_url(
-            on_duplicate:,
-            quota_exemption:,
+            on_duplicate: on_duplicate,
+            quota_exemption: quota_exemption,
             success_include: params[:success_include]
           ),
           api_v1_files_create_success_url(
             @attachment,
             uuid: @attachment.uuid,
-            on_duplicate:,
-            quota_exemption:,
+            on_duplicate: on_duplicate,
+            quota_exemption: quota_exemption,
             include: params[:success_include]
           ),
           ssl: request.ssl?,
@@ -417,13 +412,13 @@ module Api::V1::Attachment
     # return json and the attachment if the attachment is to be precreated
     if opts[:precreate_attachment] && opts[:return_json]
       {
-        json:,
+        json: json,
         attachment: @attachment
       }
     elsif opts[:return_json]
       json
     else
-      render json:
+      render json: json
     end
   end
 

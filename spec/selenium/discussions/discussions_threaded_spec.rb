@@ -111,7 +111,7 @@ describe "threaded discussions" do
       )
       user_session(@student)
       Discussion.visit(@course, @topic)
-      student_enrollment.send(:conclude)
+      student_enrollment.send("conclude")
       Discussion.visit(@course, @topic)
       wait_for_ajaximations
 
@@ -131,7 +131,7 @@ describe "threaded discussions" do
       )
       user_session(@student)
       Discussion.visit(@course, @topic)
-      student_enrollment.send(:conclude)
+      student_enrollment.send("conclude")
       Discussion.visit(@course, @topic)
       wait_for_ajaximations
 
@@ -172,12 +172,12 @@ describe "threaded discussions" do
       @enrollment.save!
 
       # Reset discussion created_at time to two minutes ago
-      @topic.update_attribute(:posted_at, 2.minutes.ago)
+      @topic.update_attribute(:posted_at, Time.zone.now - 2.minutes)
 
       # Create reply message and reset created_at to one minute ago
       @topic.reply_from(user: @student, html: "New test reply")
       reply = DiscussionEntry.last
-      reply.update_attribute(:created_at, 1.minute.ago)
+      reply.update_attribute(:created_at, Time.zone.now - 1.minute)
 
       # Navigate to discussion URL
       Discussion.visit(@course, @topic)
@@ -285,7 +285,7 @@ describe "threaded discussions" do
     end
   end
 
-  context "when discussions redesign feature flag is ON", ignore_js_errors: true do
+  context "when discussions redesign feature flag is ON" do
     before :once do
       Account.site_admin.enable_feature! :react_discussions_post
     end
@@ -343,8 +343,7 @@ describe "threaded discussions" do
           new_reply = DiscussionEntry.last
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 1
-          expect(new_reply.parent_id).to be_nil
-          expect(new_reply.quoted_entry_id).to be_nil
+          expect(new_reply.parent_id).to eq nil
           expect(new_reply.discussion_topic_id).to eq @threaded_topic.id
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
@@ -362,34 +361,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 2
           expect(new_reply.parent_id).to eq @first_reply.id
-          # on isolated view, the first reply to a root entry can not be quoted
-          expect(new_reply.quoted_entry_id).to be_nil
-
-          # Verify that reply was posted
-          expect(fj("div:contains(#{new_reply.summary})")).to be_present
-          # Verify that the correct level is opened
-          expect(fj("div:contains(#{new_reply.summary})")).to be_present
-        end
-
-        it "replies correctly to first_reply from within the thread" do
-          # Open Thread
-          f("button[data-testid='expand-button']").click
-          wait_for_ajaximations
-          # Click the reply from inside the thread
-          ff("button[data-testid='threading-toolbar-reply']")[1].click
-
-          # Reply to the 1st reply from inside of the thread
-          type_in_tiny("textarea", "replying to 1st level reply from discussion")
-          f("button[data-testid='DiscussionEdit-submit'").click
-          wait_for_ajaximations
-          new_reply = DiscussionEntry.last
-
-          # Verify new entry data is correct
-          expect(new_reply.depth).to eq 2
-          expect(new_reply.parent_id).to eq @first_reply.id
-          # on isolated view, the first reply to a root entry can not be quoted
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that reply was posted
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           # Verify that the correct level is opened
@@ -410,7 +381,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 3
           expect(new_reply.parent_id).to eq @second_reply.id
-          expect(new_reply.quoted_entry_id).to eq @second_reply.id
           # Verify that reply was posted
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           # Verify that the correct reply is quoted
@@ -431,8 +401,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 4
           expect(new_reply.parent_id).to eq @third_reply.id
-          expect(new_reply.quoted_entry_id).to eq @third_reply.id
-
           # Verify that reply was posted
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           # Verify that the correct reply is quoted
@@ -453,8 +421,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 5
           expect(new_reply.parent_id).to eq @fourth_reply.id
-          expect(new_reply.quoted_entry_id).to eq @fourth_reply.id
-
           # Verify that reply was posted
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           # Verify that the correct reply is quoted
@@ -471,23 +437,6 @@ describe "threaded discussions" do
           get "/courses/#{@course.id}/discussion_topics/#{@threaded_topic.id}"
         end
 
-        it "expands and collapses all correctly" do
-          f("button[data-testid='ExpandCollapseThreads-button']").click
-          wait_for_ajaximations
-
-          expect(fj("div:contains('1st level reply')")).to be_present
-          expect(fj("div:contains('2nd level reply')")).to be_present
-          expect(fj("div:contains('3rd level reply')")).to be_present
-          expect(fj("div:contains('4th level reply')")).to be_present
-
-          f("button[data-testid='ExpandCollapseThreads-button']").click
-          wait_for_ajaximations
-
-          expect(f("body")).not_to contain_jqcss("div:contains('2nd level reply')")
-          expect(f("body")).not_to contain_jqcss("div:contains('3rd level reply')")
-          expect(f("body")).not_to contain_jqcss("div:contains('4th level reply')")
-        end
-
         it "replies correctly to discussion topic" do
           f("button[data-testid='discussion-topic-reply']").click
           wait_for_ajaximations
@@ -498,9 +447,8 @@ describe "threaded discussions" do
           new_reply = DiscussionEntry.last
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 1
-          expect(new_reply.parent_id).to be_nil
+          expect(new_reply.parent_id).to eq nil
           expect(new_reply.discussion_topic_id).to eq @threaded_topic.id
-          expect(new_reply.quoted_entry_id).to be_nil
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@first_reply.summary})")).to be_present
@@ -517,8 +465,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 2
           expect(new_reply.parent_id).to eq @first_reply.id
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@second_reply.summary})")).to be_present
@@ -538,8 +484,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 3
           expect(new_reply.parent_id).to eq @second_reply.id
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@third_reply.summary})")).to be_present
@@ -560,8 +504,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 3
           expect(new_reply.parent_id).to eq @second_reply.id
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@third_reply.summary})")).to be_present
@@ -584,8 +526,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 2
           expect(new_reply.parent_id).to eq @first_reply.id
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@second_reply.summary})")).to be_present
@@ -609,8 +549,6 @@ describe "threaded discussions" do
             # Verify new entry data is correct
             expect(new_reply.depth).to eq 2
             expect(new_reply.parent_id).to eq @first_reply.id
-            expect(new_reply.quoted_entry_id).to eq @first_reply.id
-
             # Verify that the correct quote is created after submission
             expect(fj("div[data-testid='reply-preview']:contains('#{@first_reply.summary}')")).to be_present
           end
@@ -634,7 +572,6 @@ describe "threaded discussions" do
             # Verify new entry data is correct
             expect(new_reply.depth).to eq 3
             expect(new_reply.parent_id).to eq @second_reply.id
-            expect(new_reply.quoted_entry_id).to eq @second_reply.id
 
             # Verify that the correct quote is created after submission
             expect(fj("div[data-testid='reply-preview']:contains('#{@second_reply.summary}')")).to be_present
@@ -660,7 +597,6 @@ describe "threaded discussions" do
             # Verify new entry data is correct
             expect(new_reply.depth).to eq 3
             expect(new_reply.parent_id).to eq @second_reply.id
-            expect(new_reply.quoted_entry_id).to eq @third_reply.id
 
             # Verify that the correct quote is created after submission
             expect(fj("div[data-testid='reply-preview']:contains('#{@third_reply.summary}')")).to be_present
@@ -689,7 +625,6 @@ describe "threaded discussions" do
             # Verify new entry data is correct
             expect(new_reply.depth).to eq 2
             expect(new_reply.parent_id).to eq @first_reply.id
-            expect(new_reply.quoted_entry_id).to eq @fourth_reply.id
 
             # Verify that the correct quote is created after submission
             expect(fj("div[data-testid='reply-preview']:contains('#{@fourth_reply.summary}')")).to be_present
@@ -720,10 +655,8 @@ describe "threaded discussions" do
           new_reply = DiscussionEntry.last
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 1
-          expect(new_reply.parent_id).to be_nil
+          expect(new_reply.parent_id).to eq nil
           expect(new_reply.discussion_topic_id).to eq @threaded_topic.id
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@first_reply.summary})")).to be_present
@@ -740,8 +673,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 2
           expect(new_reply.parent_id).to eq @first_reply.id
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@second_reply.summary})")).to be_present
@@ -761,8 +692,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 3
           expect(new_reply.parent_id).to eq @second_reply.id
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@third_reply.summary})")).to be_present
@@ -785,8 +714,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 3
           expect(new_reply.parent_id).to eq @second_reply.id
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@third_reply.summary})")).to be_present
@@ -813,8 +740,6 @@ describe "threaded discussions" do
           # Verify new entry data is correct
           expect(new_reply.depth).to eq 2
           expect(new_reply.parent_id).to eq @first_reply.id
-          expect(new_reply.quoted_entry_id).to be_nil
-
           # Verify that the correct level is opened
           expect(fj("div:contains(#{new_reply.summary})")).to be_present
           expect(fj("div:contains(#{@second_reply.summary})")).to be_present
@@ -839,8 +764,6 @@ describe "threaded discussions" do
             # Verify new entry data is correct
             expect(new_reply.depth).to eq 2
             expect(new_reply.parent_id).to eq @first_reply.id
-            expect(new_reply.quoted_entry_id).to eq @first_reply.id
-
             # Verify that the correct quote is created after submission
             expect(fj("div[data-testid='reply-preview']:contains('#{@first_reply.summary}')")).to be_present
           end
@@ -862,7 +785,6 @@ describe "threaded discussions" do
             # Verify new entry data is correct
             expect(new_reply.depth).to eq 3
             expect(new_reply.parent_id).to eq @second_reply.id
-            expect(new_reply.quoted_entry_id).to eq @second_reply.id
 
             # Verify that the correct quote is created after submission
             expect(fj("div[data-testid='reply-preview']:contains('#{@second_reply.summary}')")).to be_present
@@ -888,7 +810,6 @@ describe "threaded discussions" do
             # Verify new entry data is correct
             expect(new_reply.depth).to eq 3
             expect(new_reply.parent_id).to eq @second_reply.id
-            expect(new_reply.quoted_entry_id).to eq @third_reply.id
 
             # Verify that the correct quote is created after submission
             expect(fj("div[data-testid='reply-preview']:contains('#{@third_reply.summary}')")).to be_present
@@ -917,7 +838,6 @@ describe "threaded discussions" do
             # Verify new entry data is correct
             expect(new_reply.depth).to eq 2
             expect(new_reply.parent_id).to eq @first_reply.id
-            expect(new_reply.quoted_entry_id).to eq @fourth_reply.id
 
             # Verify that the correct quote is created after submission
             expect(fj("div[data-testid='reply-preview']:contains('#{@fourth_reply.summary}')")).to be_present
@@ -981,7 +901,7 @@ describe "threaded discussions" do
           user: @student,
           message: "new threaded reply from student"
         )
-        student_enrollment.send(:conclude)
+        student_enrollment.send("conclude")
         user_session(@student)
         get "/courses/#{@course.id}/discussion_topics/#{@topic.id}"
       end

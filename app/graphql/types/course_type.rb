@@ -74,21 +74,18 @@ module Types
     class CourseUsersFilterInputType < Types::BaseInputObject
       graphql_name "CourseUsersFilter"
 
-      argument :user_ids,
-               [ID],
+      argument :user_ids, [ID],
                "only include users with the given ids",
                prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("User"),
                required: false
 
-      argument :enrollment_states,
-               [CourseFilterableEnrollmentWorkflowState],
+      argument :enrollment_states, [CourseFilterableEnrollmentWorkflowState],
                <<~MD,
                  only return users with the given enrollment state. defaults
                  to `invited`, `creation_pending`, `active`
                MD
                required: false
-      argument :enrollment_types,
-               [CourseFilterableEnrollmentType],
+      argument :enrollment_types, [CourseFilterableEnrollmentType],
                "Only return users with the specified enrollment types",
                required: false
     end
@@ -105,19 +102,13 @@ module Types
     field :syllabus_body, String, null: true
     field :state, CourseWorkflowState, method: :workflow_state, null: false
 
-    field :assignment_groups_connection,
-          AssignmentGroupType.connection_type,
+    field :assignment_groups_connection, AssignmentGroupType.connection_type,
           method: :assignment_groups,
           null: true
 
-    field :apply_group_weights, Boolean, null: true
-    def apply_group_weights
-      object.apply_group_weights?
-    end
-
     implements Interfaces::AssignmentsConnectionInterface
     def assignments_connection(filter: {})
-      super(filter:, course:)
+      super(filter: filter, course: course)
     end
 
     field :account, AccountType, null: true
@@ -164,13 +155,11 @@ module Types
     end
 
     field :users_connection, UserType.connection_type, null: true do
-      argument :user_ids,
-               [ID],
-               <<~MD,
-                 Only include users with the given ids.
+      argument :user_ids, [ID], <<~MD,
+        Only include users with the given ids.
 
-                 **This field is deprecated, use `filter: {userIds}` instead.**
-               MD
+        **This field is deprecated, use `filter: {userIds}` instead.**
+      MD
                prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("User"),
                required: false
 
@@ -178,16 +167,12 @@ module Types
     end
     def users_connection(user_ids: nil, filter: {})
       return nil unless course.grants_any_right?(
-        current_user,
-        session,
-        :read_roster,
-        :view_all_grades,
-        :manage_grades
+        current_user, session,
+        :read_roster, :view_all_grades, :manage_grades
       )
 
-      context.scoped_merge!(course:)
-      scope = UserSearch.scope_for(course,
-                                   current_user,
+      context.scoped_merge!(course: course)
+      scope = UserSearch.scope_for(course, current_user,
                                    include_inactive_enrollments: true,
                                    enrollment_state: filter[:enrollment_states],
                                    enrollment_type: filter[:enrollment_types])
@@ -200,24 +185,16 @@ module Types
       scope
     end
 
-    field :course_nickname, String, null: true
-    def course_nickname
-      current_user.course_nickname(course)
-    end
-
     field :enrollments_connection, EnrollmentType.connection_type, null: true do
       argument :filter, EnrollmentFilterInputType, required: false
     end
     def enrollments_connection(filter: {})
       return nil unless course.grants_any_right?(
-        current_user,
-        session,
-        :read_roster,
-        :view_all_grades,
-        :manage_grades
+        current_user, session,
+        :read_roster, :view_all_grades, :manage_grades
       )
 
-      context.scoped_merge!(course:)
+      context.scoped_merge!(course: course)
       scope = course.apply_enrollment_visibility(course.all_enrollments, current_user).active
       scope = scope.where(associated_user_id: filter[:associated_user_ids]) if filter[:associated_user_ids].present?
       scope = scope.where(type: filter[:types]) if filter[:types].present?
@@ -229,17 +206,10 @@ module Types
       GradingPeriod.for(course).order(:start_date)
     end
 
-    field :grading_standard, GradingStandardType, null: true
-    def grading_standard
-      object.grading_standard_or_default
-    end
-
     field :submissions_connection, SubmissionType.connection_type, null: true do
       description "all the submissions for assignments in this course"
 
-      argument :student_ids,
-               [ID],
-               "Only return submissions for the given students.",
+      argument :student_ids, [ID], "Only return submissions for the given students.",
                prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("User"),
                required: false
       argument :order_by, [SubmissionOrderInputType], required: false
@@ -278,7 +248,7 @@ module Types
       end
 
       (order_by || []).each do |order|
-        direction = (order[:direction] == "descending") ? "DESC NULLS LAST" : "ASC"
+        direction = order[:direction] == "descending" ? "DESC NULLS LAST" : "ASC"
         submissions = submissions.order("#{order[:field]} #{direction}")
       end
 
@@ -319,15 +289,13 @@ module Types
       load_association(:enrollment_term)
     end
 
-    field :permissions,
-          CoursePermissionsType,
+    field :permissions, CoursePermissionsType,
           "returns permission information for the current user in this course",
           null: true
     def permissions
       Loaders::PermissionsLoader.for(
         course,
-        current_user:,
-        session:
+        current_user: current_user, session: session
       )
     end
 
@@ -338,8 +306,7 @@ module Types
       load_association(:default_post_policy)
     end
 
-    field :assignment_post_policies,
-          PostPolicyType.connection_type,
+    field :assignment_post_policies, PostPolicyType.connection_type,
           <<~MD,
             PostPolicies for assignments within a course
           MD

@@ -34,6 +34,7 @@ const I18n = useI18nScope('discussion_posts')
 
 export function PostMessage({...props}) {
   const {searchTerm} = useContext(SearchContext)
+  const threadMode = props.threadMode
 
   return (
     <Responsive
@@ -42,25 +43,21 @@ export function PostMessage({...props}) {
       props={{
         mobile: {
           titleMargin: '0',
-          titleTextSize: 'small',
+          titleTextSize: 'medium',
           titleTextWeight: 'bold',
           messageTextSize: 'fontSizeSmall',
         },
         desktop: {
-          titleMargin: props.threadMode ? '0' : '0 0 small 0',
-          titleTextSize: props.threadMode ? 'medium' : 'x-large',
-          titleTextWeight: props.threadMode ? 'bold' : 'normal',
-          messageTextSize: props.threadMode ? 'fontSizeSmall' : 'fontSizeMedium',
+          titleMargin: threadMode ? '0' : '0 0 small 0',
+          titleTextSize: threadMode ? 'medium' : 'x-large',
+          titleTextWeight: threadMode ? 'bold' : 'normal',
+          messageTextSize: threadMode ? 'fontSizeSmall' : 'fontSizeMedium',
         },
       }}
       render={responsiveProps => (
         <View>
           {props.title ? (
-            <View
-              as="h2"
-              margin={responsiveProps.titleMargin}
-              padding={props.isTopic ? 'small 0 0 0' : '0'}
-            >
+            <View as="h2" margin={responsiveProps.titleMargin}>
               <Text size={responsiveProps.titleTextSize} weight={responsiveProps.titleTextWeight}>
                 <AccessibleContent alt={I18n.t('Discussion Topic: %{title}', {title: props.title})}>
                   {props.title}
@@ -159,7 +156,6 @@ PostMessage.propTypes = {
   canReplyAnonymously: PropTypes.bool,
   draftSaved: PropTypes.bool,
   threadMode: PropTypes.bool,
-  isTopic: PropTypes.bool,
 }
 
 PostMessage.defaultProps = {

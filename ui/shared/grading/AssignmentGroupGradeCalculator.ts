@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Copyright (C) 2016 - present Instructure, Inc.
  *
@@ -19,47 +18,32 @@
 
 import _ from 'underscore'
 import {divide, sum, sumBy} from './GradeCalculationHelper'
-import type {Assignment, AssignmentGroup} from '../../api.d'
-import type {AggregateGrade, AssignmentGroupGrade, SubmissionGradeCriteria} from './grading.d'
-
-type DroppableSubmission = {
-  total: number
-  drop?: boolean
-}
 
 function partition(collection, partitionFn) {
   const grouped = _.groupBy(collection, partitionFn)
   return [grouped.true || [], grouped.false || []]
 }
 
-function parseScore(score: string | number | null) {
-  const result = parseFloat(String(score))
+function parseScore(score: string) {
+  const result = parseFloat(score)
   return result && Number.isFinite(result) ? result : 0
 }
 
-function sortPairsDescending(
-  [scoreA, submissionA]: [number, {submission: SubmissionGradeCriteria}],
-  [scoreB, submissionB]: [number, {submission: SubmissionGradeCriteria}]
-) {
+function sortPairsDescending([scoreA, submissionA], [scoreB, submissionB]) {
   const scoreDiff = scoreB - scoreA
   if (scoreDiff !== 0) {
     return scoreDiff
   }
   // To ensure stable sorting, use the assignment id as a secondary sort.
-  // @ts-expect-error
   return submissionA.submission.assignment_id - submissionB.submission.assignment_id
 }
 
-function sortPairsAscending(
-  [scoreA, submissionA]: [number, {submission: SubmissionGradeCriteria}],
-  [scoreB, submissionB]: [number, {submission: SubmissionGradeCriteria}]
-) {
+function sortPairsAscending([scoreA, submissionA], [scoreB, submissionB]) {
   const scoreDiff = scoreA - scoreB
   if (scoreDiff !== 0) {
     return scoreDiff
   }
   // To ensure stable sorting, use the assignment id as a secondary sort.
-  // @ts-expect-error
   return submissionA.submission.assignment_id - submissionB.submission.assignment_id
 }
 
@@ -79,7 +63,7 @@ function getSubmissionGrade({score, total}: {score: number; total: number}) {
 function estimateQHigh(
   pointed: {total: number; score: number}[],
   unpointed: {score: number}[],
-  grades: number[]
+  grades
 ) {
   if (unpointed.length > 0) {
     const pointsPossible = sumBy(pointed, 'total')
@@ -91,8 +75,8 @@ function estimateQHigh(
   return grades[grades.length - 1]
 }
 
-function buildBigF(keepCount: number, cannotDrop: DroppableSubmission[], sortFn) {
-  return function bigF(q: number, submissions: SubmissionGradeCriteria[]) {
+function buildBigF(keepCount: number, cannotDrop, sortFn) {
+  return function bigF(q, submissions) {
     const ratedScores = _.map(submissions, submission => [
       submission.score - q * submission.total,
       submission,
@@ -101,21 +85,12 @@ function buildBigF(keepCount: number, cannotDrop: DroppableSubmission[], sortFn)
     const keptScores = rankedScores.slice(0, keepCount)
     const qKept = sumBy(keptScores, ([score]) => score)
     const keptSubmissions = _.map(keptScores, ([_score, submission]) => submission)
-    const qCannotDrop = sumBy(
-      cannotDrop,
-      // @ts-expect-error
-      (submission: SubmissionGradeCriteria) => submission.score - q * submission.total
-    )
+    const qCannotDrop = sumBy(cannotDrop, submission => submission.score - q * submission.total)
     return [qKept + qCannotDrop, keptSubmissions]
   }
 }
 
-function dropPointed(
-  droppableSubmissionData: DroppableSubmission[],
-  cannotDrop: DroppableSubmission[],
-  keepHighest: number,
-  keepLowest: number
-) {
+function dropPointed(droppableSubmissionData, cannotDrop, keepHighest, keepLowest) {
   const totals = _.map(droppableSubmissionData, 'total')
   const maxTotal = Math.max(...totals)
 
@@ -182,9 +157,13 @@ function dropUnpointed(submissions, keepHighest, keepLowest) {
 // a full explanation of the math.
 // (http://cseweb.ucsd.edu/~dakane/droplowest.pdf)
 function dropAssignments(
-  allSubmissionData: DroppableSubmission[],
-  rules: AssignmentGroup['rules'] = {}
-): DroppableSubmission[] {
+  allSubmissionData,
+  rules: {
+    drop_lowest?: number
+    drop_highest?: number
+    never_drop?: string[]
+  } = {}
+) {
   let dropLowest = rules.drop_lowest || 0
   let dropHighest = rules.drop_highest || 0
   const neverDropIds = rules.never_drop || []
@@ -193,8 +172,8 @@ function dropAssignments(
     return allSubmissionData
   }
 
-  let cannotDrop: DroppableSubmission[] = []
-  let droppableSubmissionData: DroppableSubmission[] = allSubmissionData
+  let cannotDrop = []
+  let droppableSubmissionData = allSubmissionData
   if (neverDropIds.length > 0) {
     ;[cannotDrop, droppableSubmissionData] = partition(allSubmissionData, submission =>
       _.includes(neverDropIds, submission.submission.assignment_id)
@@ -210,9 +189,9 @@ function dropAssignments(
 
   const keepHighest = droppableSubmissionData.length - dropLowest
   const keepLowest = keepHighest - dropHighest
-  const hasPointed: boolean = _.some(droppableSubmissionData, submission => submission.total > 0)
+  const hasPointed = _.some(droppableSubmissionData, submission => submission.total > 0)
 
-  let submissionsToKeep: DroppableSubmission[]
+  let submissionsToKeep
   if (hasPointed) {
     submissionsToKeep = dropPointed(droppableSubmissionData, cannotDrop, keepHighest, keepLowest)
   } else {
@@ -221,29 +200,20 @@ function dropAssignments(
 
   submissionsToKeep = [...submissionsToKeep, ...cannotDrop]
 
-  _.difference(droppableSubmissionData, submissionsToKeep).forEach(
-    (submission: DroppableSubmission) => {
-      submission.drop = true
-    }
-  )
+  _.difference(droppableSubmissionData, submissionsToKeep).forEach(submission => {
+    submission.drop = true
+  })
 
   return submissionsToKeep
 }
 
-function calculateGroupGrade(
-  group: AssignmentGroup,
-  allSubmissions: SubmissionGradeCriteria[],
-  opts: {
-    ignoreUnpostedAnonymous: boolean
-    includeUngraded: boolean
-  }
-): AggregateGrade {
+function calculateGroupGrade(group, allSubmissions, opts) {
   // Remove assignments without visibility from gradeableAssignments.
   const hiddenAssignmentsById = _.chain(allSubmissions)
     .filter('hidden')
     .keyBy('assignment_id')
     .value()
-  const ungradeableCriteria = (assignment: Assignment) =>
+  const ungradeableCriteria = assignment =>
     assignment.omit_from_final_grade ||
     hiddenAssignmentsById[assignment.id] ||
     _.isEqual(assignment.submission_types, ['not_graded']) ||
@@ -253,18 +223,14 @@ function calculateGroupGrade(
   const assignments = _.keyBy(gradeableAssignments, 'id')
 
   // Remove submissions from other assignment groups.
-  let submissions: SubmissionGradeCriteria = _.filter(
-    allSubmissions,
-    (submission: SubmissionGradeCriteria) => assignments[submission.assignment_id]
-  )
+  let submissions = _.filter(allSubmissions, submission => assignments[submission.assignment_id])
 
   // Remove excused submissions.
   submissions = _.reject(submissions, 'excused')
 
-  const submissionData = _.map(submissions, (submission: SubmissionGradeCriteria) => ({
+  const submissionData = _.map(submissions, submission => ({
     total: parseScore(assignments[submission.assignment_id].points_possible),
     score: parseScore(submission.score),
-    // @ts-expect-error
     submitted: submission.score != null && submission.score !== '',
     pending_review: submission.workflow_state === 'pending_review',
     submission,
@@ -345,11 +311,7 @@ function calculateGroupGrade(
 //   final: <AssignmentGroup Grade *see above>
 //   scoreUnit: 'points'
 // }
-function calculate(
-  allSubmissions: SubmissionGradeCriteria[],
-  assignmentGroup: AssignmentGroup,
-  ignoreUnpostedAnonymous: boolean
-): AssignmentGroupGrade {
+function calculate(allSubmissions, assignmentGroup, ignoreUnpostedAnonymous) {
   const submissions = _.uniq(allSubmissions, 'assignment_id')
   return {
     assignmentGroupId: assignmentGroup.id,

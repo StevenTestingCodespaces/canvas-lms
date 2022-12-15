@@ -17,8 +17,8 @@
  */
 
 import Backbone from '@canvas/backbone'
-import Module from '@canvas/modules/backbone/models/Module'
-import ModuleItemCollection from '@canvas/modules/backbone/collections/ModuleItemCollection'
+import Module from '@canvas/modules/backbone/models/Module.coffee'
+import ModuleItemCollection from '@canvas/modules/backbone/collections/ModuleItemCollection.coffee'
 
 QUnit.module('Module', {
   setup() {

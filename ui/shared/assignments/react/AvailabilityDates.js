@@ -20,7 +20,6 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 import FriendlyDatetime from '@canvas/datetime/react/components/FriendlyDatetime'
-import ConnectedFriendlyDatetimes from '@canvas/datetime/react/components/ConnectedFriendlyDatetimes'
 
 const I18n = useI18nScope('assignments_2')
 
@@ -29,16 +28,19 @@ export default function AvailabilityDates({assignment, formatStyle}) {
 
   if (assignment.lockAt && assignment.unlockAt) {
     return (
-      // ConnectedFriendlyDatetimes was needed to work around voiceover either smashing the two times together or
-      // treating the times as two different elements. This new element works around this.
-      <ConnectedFriendlyDatetimes
-        prefix={longFmt ? I18n.t('Available:') : ''}
-        firstDateTime={assignment.unlockAt}
-        secondDateTime={assignment.lockAt}
-        format={longFmt ? I18n.t('#date.formats.full') : I18n.t('#date.formats.short')}
-        connector={longFmt ? I18n.t('until') : I18n.t('to')}
-        connectorMobile={I18n.t('to')}
-      />
+      <>
+        <FriendlyDatetime
+          prefix={longFmt ? I18n.t('Available:') : ''}
+          dateTime={assignment.unlockAt}
+          format={longFmt ? I18n.t('#date.formats.full') : I18n.t('#date.formats.short')}
+        />
+        <FriendlyDatetime
+          prefix={longFmt ? I18n.t(' until') : I18n.t(' to')}
+          prefixMobile={I18n.t(' to')}
+          dateTime={assignment.lockAt}
+          format={longFmt ? I18n.t('#date.formats.full') : I18n.t('#date.formats.short')}
+        />
+      </>
     )
   } else if (assignment.lockAt) {
     return (

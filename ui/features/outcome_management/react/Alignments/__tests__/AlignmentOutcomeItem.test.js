@@ -34,22 +34,6 @@ describe('AlignmentOutcomeItem', () => {
         moduleUrl: '/courses/1/modules/1',
         moduleWorkflowState: 'active',
         assignmentContentType: 'assignment',
-        assignmentWorkflowState: 'published',
-        quizItems: [],
-        alignmentsCount: 1,
-      },
-      {
-        _id: '2',
-        contentType: 'Assignment',
-        title: 'New Quiz',
-        url: '/courses/1/assignments/2',
-        moduleTitle: 'Module 1',
-        moduleUrl: '/courses/1/modules/1',
-        moduleWorkflowState: 'active',
-        assignmentContentType: 'new_quiz',
-        assignmentWorkflowState: 'published',
-        quizItems: [],
-        alignmentsCount: 2,
       },
     ],
     ...props,
@@ -68,7 +52,7 @@ describe('AlignmentOutcomeItem', () => {
   it('displays number of alignments', () => {
     const {getByText} = render(<AlignmentOutcomeItem {...defaultProps()} />)
     expect(getByText('Alignments:')).toBeInTheDocument()
-    expect(getByText('3')).toBeInTheDocument()
+    expect(getByText('1')).toBeInTheDocument()
   })
 
   it('does not show truncated description if no description', () => {
@@ -98,9 +82,9 @@ describe('AlignmentOutcomeItem', () => {
     })
 
     it('displays list of alignments if outcomes has alignments', () => {
-      const {getAllByTestId, getByText} = render(<AlignmentOutcomeItem {...defaultProps()} />)
+      const {queryByTestId, getByText} = render(<AlignmentOutcomeItem {...defaultProps()} />)
       fireEvent.click(getByText('Expand description for outcome Outcome Title'))
-      expect(getAllByTestId('alignment-item').length).toBe(2)
+      expect(queryByTestId('alignment-item')).toBeInTheDocument()
     })
 
     it('displays no alignments message if outcome has no alignments', () => {

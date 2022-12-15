@@ -18,7 +18,7 @@
 
 import $ from 'jquery'
 import registrationErrors from '@canvas/normalize-registration-errors'
-import preventDefault from '@canvas/util/preventDefault'
+import preventDefault from 'prevent-default'
 import '@canvas/forms/jquery/jquery.instructure_forms' /* getFormData, formErrors */
 import '@canvas/jquery/jquery.instructure_misc_plugins' /* showIf */
 import '@canvas/user-sortable-name'

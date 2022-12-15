@@ -18,6 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 require_relative "../../../spec_helper"
+require_dependency "api/html/link"
 
 module Api
   module Html
@@ -56,7 +57,7 @@ module Api
           host = "account.instructure.com"
           port = 443
           raw_link = "https://#{host}/files/1/download?verifier=123"
-          expect(Link.new(raw_link, host:, port:).to_corrected_s).to eq "/courses/1/files/1/download?"
+          expect(Link.new(raw_link, host: host, port: port).to_corrected_s).to eq "/courses/1/files/1/download?"
         end
 
         it "strips the current host from absolute urls" do
@@ -65,7 +66,7 @@ module Api
           host = "account.instructure.com"
           port = 443
           raw_link = "https://#{host}/courses/1/files/1/download?"
-          expect(Link.new(raw_link, host:, port:).to_corrected_s).to eq "/courses/1/files/1/download?"
+          expect(Link.new(raw_link, host: host, port: port).to_corrected_s).to eq "/courses/1/files/1/download?"
         end
 
         it "does not scope to the context if url includes a differnt host" do
@@ -74,7 +75,7 @@ module Api
           host = "account.instructure.com"
           port = 443
           raw_link = "https://#{host}/files/1/download"
-          expect(Link.new(raw_link, host: "other-host", port:).to_corrected_s).to eq raw_link
+          expect(Link.new(raw_link, host: "other-host", port: port).to_corrected_s).to eq raw_link
         end
 
         it "does not strip the current host if the ports do not match" do
@@ -83,7 +84,7 @@ module Api
           host = "localhost"
           port = 3000
           raw_link = "https://#{host}:8080/some/other/file"
-          expect(Link.new(raw_link, host:, port:).to_corrected_s).to eq raw_link
+          expect(Link.new(raw_link, host: host, port: port).to_corrected_s).to eq raw_link
         end
       end
     end

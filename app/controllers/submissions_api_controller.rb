@@ -261,8 +261,7 @@ class SubmissionsApiController < ApplicationController
                       @assignment.representatives(user: @current_user).map(&:id)
                     else
                       @context.apply_enrollment_visibility(@context.student_enrollments,
-                                                           @current_user,
-                                                           section_ids)
+                                                           @current_user, section_ids)
                               .pluck(:user_id)
                     end
       submissions = @assignment.submissions.where(user_id: student_ids).preload(:originality_reports)
@@ -277,8 +276,7 @@ class SubmissionsApiController < ApplicationController
                submissions = submissions.preload(:quiz_submission) unless params[:exclude_response_fields]&.include?("preview_url")
                submissions = submissions.preload(:attachment) unless params[:exclude_response_fields]&.include?("attachments")
 
-               submissions = Api.paginate(submissions,
-                                          self,
+               submissions = Api.paginate(submissions, self,
                                           polymorphic_url([:api_v1, @section || @context, @assignment, :submissions]))
                bulk_load_attachments_and_previews(submissions)
 
@@ -288,7 +286,7 @@ class SubmissionsApiController < ApplicationController
                end
              end
 
-      render json:
+      render json: json
     end
   end
 
@@ -473,7 +471,7 @@ class SubmissionsApiController < ApplicationController
 
     # unless teacher, filter assignments down to only assignments current user can see
     unless @context.grants_any_right?(@current_user, :read_as_admin, :manage_grades)
-      assignments = assignments.select { |a| assignment_visibilities.fetch(a.id, []).intersect?(student_ids) }
+      assignments = assignments.select { |a| (assignment_visibilities.fetch(a.id, []) & student_ids).any? }
     end
 
     # preload with stuff already in memory
@@ -679,12 +677,11 @@ class SubmissionsApiController < ApplicationController
     permission = :grade if @user != @current_user
     if authorized_action(@assignment, @current_user, permission)
       api_attachment_preflight(
-        @user,
-        request,
+        @user, request,
         check_quota: false, # we don't check quota when uploading a file for assignment submission
         folder: @user.submissions_folder(@context), # organize attachment into the course submissions folder
         assignment: @assignment,
-        submit_assignment:
+        submit_assignment: submit_assignment
       )
     end
   end
@@ -833,10 +830,6 @@ class SubmissionsApiController < ApplicationController
     end
 
     @user ||= get_user_considering_section(params[:user_id])
-    unless @assignment.assigned?(@user)
-      render_unauthorized_action
-      return
-    end
     @submission ||= @assignment.all_submissions.find_or_create_by!(user: @user)
 
     authorized = if params[:submission] || params[:rubric_assessment]
@@ -902,7 +895,7 @@ class SubmissionsApiController < ApplicationController
 
       assessment = params[:rubric_assessment]
       if assessment.is_a?(ActionController::Parameters) && @assignment.active_rubric_association?
-        unless assessment.keys.intersect?(@assignment.rubric_association.rubric.criteria_object.map { |c| c.id.to_s })
+        if (assessment.keys & @assignment.rubric_association.rubric.criteria_object.map { |c| c.id.to_s }).empty?
           return render json: { message: "invalid rubric_assessment" }, status: :bad_request
         end
 
@@ -988,7 +981,7 @@ class SubmissionsApiController < ApplicationController
           params.merge(anonymize_user_id: !!@anonymize_user_id)
         )
       end
-      render json:
+      render json: json
     end
   end
 
@@ -1156,10 +1149,10 @@ class SubmissionsApiController < ApplicationController
           pg_list = submission_provisional_grades_json(
             course: @context,
             assignment: @assignment,
-            submission:,
+            submission: submission,
             current_user: @current_user,
             avatars: service_enabled?(:avatars) && !@assignment.grade_as_group?,
-            includes:
+            includes: includes
           )
           json[:provisional_grades] = pg_list
         end
@@ -1324,33 +1317,6 @@ class SubmissionsApiController < ApplicationController
     change_topic_read_state("unread")
   end
 
-  # @API Mark bulk submissions as read
-  #
-  # @argument submissionIds[] [String]
-  #
-  # Accepts a string array of submission ids. Loops through and marks each submission as read
-  #
-  # On success, the response will be 204 No Content with an empty body.
-  #
-  # @example_request
-  #
-  #   curl 'https://<canvas>/api/v1/courses/<course_id>/submissions/bulk_mark_read.json' \
-  #        -X PUT \
-  #        -H "Authorization: Bearer <token>" \
-  #        -H "Content-Length: 0" \
-  #        -F 'submissionIds=['88']'
-  #
-  def mark_bulk_submissions_as_read
-    submissions = @context.submissions.where(id: params[:submissionIds])
-
-    submissions.each do |submission|
-      if submission&.user_id == @current_user.id
-        submission.change_read_state("read", @current_user)
-      end
-    end
-    head :no_content
-  end
-
   # @API Mark submission item as read
   #
   # No request fields are necessary.
@@ -1376,37 +1342,6 @@ class SubmissionsApiController < ApplicationController
 
       render_state_change_result @submission.mark_item_read(item)
     end
-  end
-
-  # @API Clear unread status for all submissions.
-  #
-  # Site-admin-only endpoint.
-  #
-  # No request fields are necessary.
-  #
-  # On success, the response will be 204 No Content with an empty body.
-  #
-  # @example_request
-  #
-  #   curl 'https://<canvas>/api/v1/courses/<course_id>/submissions/<user_id>/clear_unread.json' \
-  #        -X PUT \
-  #        -H "Authorization: Bearer <token>" \
-  #        -H "Content-Length: 0"
-  #
-  def submissions_clear_unread
-    return render_unauthorized_action unless Account.site_admin.grants_right?(@current_user, :manage_students)
-
-    user_id = params[:user_id]
-    course_id = params[:course_id]
-    user = User.find(user_id)
-    course = Course.find(course_id)
-    submissions = course.submissions.where(user:)
-    ids = ContentParticipation.mark_all_as_read_for_user(user, submissions, course)
-
-    opts = { type: :submissions_clear_unread }
-    error_info = Canvas::Errors::Info.new(request, @domain_root_account, @current_user, opts).to_h
-    error_info[:extra][:ids] = ids
-    Canvas::Errors.capture("Notification Badge Count mismatch, Site Admin is clearing Notification Badge Count for User ID - #{user_id} for Course ID - #{course_id}", error_info, :warn)
   end
 
   # @API Get rubric assessments read state
@@ -1556,7 +1491,7 @@ class SubmissionsApiController < ApplicationController
               end
       not_submitted = total - graded - ungraded
 
-      render json: { graded:, ungraded:, not_submitted: }
+      render json: { graded: graded, ungraded: ungraded, not_submitted: not_submitted }
     end
   end
 

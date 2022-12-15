@@ -234,7 +234,7 @@ module GradebookCommon
     end
 
     # third assignment data
-    due_date = 1.day.from_now
+    due_date = Time.zone.now + 1.day
     @third_assignment = assignment_model({
                                            course: @course,
                                            name: "assignment three",

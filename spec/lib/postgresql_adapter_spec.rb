@@ -18,6 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+require "irb"
+
 require_relative "../spec_helper"
 
 describe ActiveRecord::ConnectionAdapters::PostgreSQLAdapter do
@@ -41,7 +43,7 @@ describe ActiveRecord::ConnectionAdapters::PostgreSQLAdapter do
     thread.join
 
     expect(Time.now.utc - start).to be < 1.0
-    expect(aborted).to be true
+    expect(aborted).to eq true
   end
 
   it "differentiates between unique and non-unique indexes" do

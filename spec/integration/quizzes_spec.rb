@@ -63,7 +63,7 @@ describe Quizzes::QuizzesController do
         end
 
         it "shows an overridden due date for student" do
-          @course.enroll_user(user_factory, "StudentEnrollment", enrollment_state: "active")
+          @course.enroll_user(user_factory, "StudentEnrollment")
           user_session(@user)
 
           get "/courses/#{@course.id}/quizzes/#{@quiz.id}"
@@ -178,7 +178,7 @@ describe Quizzes::QuizzesController do
         doc = Nokogiri::HTML5(response.body)
         needing_review = doc.at_css("#questions_needing_review")
         expect(needing_review).to be_present
-        expect(needing_review.children.css("li a").map(&:text)).to eq(@quiz.quiz_data.pluck("name"))
+        expect(needing_review.children.css("li a").map(&:text)).to eq(@quiz.quiz_data.map { |qq| qq["name"] })
       end
 
       it "displays message about the quiz changing significantly" do
@@ -201,7 +201,7 @@ describe Quizzes::QuizzesController do
         doc = Nokogiri::HTML5(response.body)
         needing_review = doc.at_css("#questions_needing_review")
         expect(needing_review).to be_present
-        expect(needing_review.children.css("li a").map(&:text)).to eq(@quiz.quiz_data.pluck("name"))
+        expect(needing_review.children.css("li a").map(&:text)).to eq(@quiz.quiz_data.map { |qq| qq["name"] })
       end
 
       it "shoudn't show the user's name/email when it's an anonymous submission" do

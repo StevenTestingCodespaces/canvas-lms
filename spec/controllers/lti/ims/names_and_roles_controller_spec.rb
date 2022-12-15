@@ -20,6 +20,9 @@
 require_relative "concerns/advantage_services_shared_context"
 require_relative "concerns/advantage_services_shared_examples"
 require_relative "concerns/lti_services_shared_examples"
+require_dependency "lti/ims/names_and_roles_controller.rb"
+require_dependency "lti/ims/providers/course_memberships_provider.rb"
+require_dependency "lti/ims/providers/group_memberships_provider.rb"
 
 describe Lti::IMS::NamesAndRolesController do
   include Lti::IMS::NamesAndRolesMatchers
@@ -32,11 +35,11 @@ describe Lti::IMS::NamesAndRolesController do
 
   # rubocop:disable RSpec/LetSetup
   shared_context "assignment context" do
-    let!(:student_enrollment_1) { student_in_course(course:, active_all: true) }
-    let!(:student_enrollment_2) { student_in_course(course:, active_all: true) }
-    let!(:student_enrollment_3) { student_in_course(course:, active_all: true) }
-    let!(:student_enrollment_4) { student_in_course(course:, active_all: true) }
-    let!(:student_enrollment_5) { student_in_course(course:, active_all: true) }
+    let!(:student_enrollment_1) { student_in_course(course: course, active_all: true) }
+    let!(:student_enrollment_2) { student_in_course(course: course, active_all: true) }
+    let!(:student_enrollment_3) { student_in_course(course: course, active_all: true) }
+    let!(:student_enrollment_4) { student_in_course(course: course, active_all: true) }
+    let!(:student_enrollment_5) { student_in_course(course: course, active_all: true) }
     let!(:student_enrollments) do
       [student_enrollment_1, student_enrollment_2, student_enrollment_3, student_enrollment_4, student_enrollment_5]
     end
@@ -350,87 +353,63 @@ describe Lti::IMS::NamesAndRolesController do
     # Bunch of single-enrollment tests b/c they're just so much easier to
     # debug as compared to multi-enrollment tests
 
-    describe "id field" do
-      context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is on" do
-        it "uses the Account#domain in the line item id" do
-          course.root_account.enable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-          allow_any_instance_of(Account).to receive(:domain).and_return("canonical.host")
-          send_request
-          expect(json[:id]).to eq(
-            "http://canonical.host/api/lti/courses/#{course.id}/names_and_roles"
-          )
-        end
-      end
-
-      context "when the consistent_ags_ids_based_on_account_principal_domain feature flag is off" do
-        it "uses the host domain in the line item id" do
-          course.root_account.disable_feature!(:consistent_ags_ids_based_on_account_principal_domain)
-          allow_any_instance_of(Account).to receive(:domain).and_return("canonical.host")
-          send_request
-          expect(json[:id]).to eq(
-            "http://test.host/api/lti/courses/#{course.id}/names_and_roles"
-          )
-        end
-      end
-    end
-
     context "when a course has a single enrollment" do
       it "returns teacher in members array" do
-        enrollment = teacher_in_course(course:, active_all: true)
+        enrollment = teacher_in_course(course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
 
       it "returns student in members array" do
-        enrollment = student_in_course(course:, active_all: true)
+        enrollment = student_in_course(course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
 
       it "returns ta in members array" do
-        enrollment = ta_in_course(course:, active_all: true)
+        enrollment = ta_in_course(course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
 
       it "returns observer in members array" do
-        enrollment = observer_in_course(course:, active_all: true)
+        enrollment = observer_in_course(course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
 
       it "returns designer in members array" do
-        enrollment = designer_in_course(course:, active_all: true)
+        enrollment = designer_in_course(course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
 
       it "returns custom teacher in members array" do
-        enrollment = custom_enrollment_in_course("TeacherEnrollment", course:, active_all: true)
+        enrollment = custom_enrollment_in_course("TeacherEnrollment", course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
 
       it "returns custom student in members array" do
-        enrollment = custom_enrollment_in_course("StudentEnrollment", course:, active_all: true)
+        enrollment = custom_enrollment_in_course("StudentEnrollment", course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
 
       it "returns custom ta in members array" do
-        enrollment = custom_enrollment_in_course("TaEnrollment", course:, active_all: true)
+        enrollment = custom_enrollment_in_course("TaEnrollment", course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
 
       it "returns custom observer in members array" do
-        enrollment = custom_enrollment_in_course("ObserverEnrollment", course:, active_all: true)
+        enrollment = custom_enrollment_in_course("ObserverEnrollment", course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
 
       it "returns custom designer in members array" do
-        enrollment = custom_enrollment_in_course("DesignerEnrollment", course:, active_all: true)
+        enrollment = custom_enrollment_in_course("DesignerEnrollment", course: course, active_all: true)
         send_request
         expect_single_member(enrollment)
       end
@@ -438,8 +417,8 @@ describe Lti::IMS::NamesAndRolesController do
 
     context "when a course has a user with multiple active enrollments" do
       it "returns both enrollments in the same NRPS membership" do
-        teacher_enrollment = teacher_in_course(course:, active_all: true)
-        student_enrollment = student_in_course(course:, user: teacher_enrollment.user, active_all: true)
+        teacher_enrollment = teacher_in_course(course: course, active_all: true)
+        student_enrollment = student_in_course(course: course, user: teacher_enrollment.user, active_all: true)
         send_request
         expect_single_member(teacher_enrollment, student_enrollment)
       end
@@ -447,7 +426,7 @@ describe Lti::IMS::NamesAndRolesController do
 
     context "when a course has a concluded enrollment" do
       it "does not return the concluded enrollment" do
-        enrollment = teacher_in_course(course:, active_all: true)
+        enrollment = teacher_in_course(course: course, active_all: true)
         enrollment.conclude
         send_request
         expect_empty_members_array
@@ -456,7 +435,7 @@ describe Lti::IMS::NamesAndRolesController do
 
     context "when a course has a deactivated enrollment" do
       it "does not return the deactivated enrollment" do
-        enrollment = teacher_in_course(course:, active_all: true)
+        enrollment = teacher_in_course(course: course, active_all: true)
         enrollment.deactivate
         send_request
         expect_empty_members_array
@@ -465,7 +444,7 @@ describe Lti::IMS::NamesAndRolesController do
 
     context "when a course has a deleted enrollment" do
       it "does not return the deleted enrollment" do
-        enrollment = teacher_in_course(course:, active_all: true)
+        enrollment = teacher_in_course(course: course, active_all: true)
         enrollment.destroy # logical delete (physical wont work and will just raise a FK violation)
         send_request
         expect_empty_members_array
@@ -474,7 +453,7 @@ describe Lti::IMS::NamesAndRolesController do
 
     context "when a course has a rejected enrollment" do
       it "does not return the rejected enrollment" do
-        enrollment = teacher_in_course(course:, active_all: true)
+        enrollment = teacher_in_course(course: course, active_all: true)
         enrollment.reject!
         send_request
         expect_empty_members_array
@@ -483,7 +462,7 @@ describe Lti::IMS::NamesAndRolesController do
 
     context "when a course has a invited instructor enrollment" do
       it "does not return the invited instructor enrollment" do
-        teacher_in_course(course:)
+        teacher_in_course(course: course)
         send_request
         expect_empty_members_array
       end
@@ -491,7 +470,7 @@ describe Lti::IMS::NamesAndRolesController do
 
     context "when a course has a creation_pending student enrollment" do
       it "does not return the creation_pending student enrollment" do
-        student_in_course(course:)
+        student_in_course(course: course)
         send_request
         expect_empty_members_array
       end
@@ -499,18 +478,18 @@ describe Lti::IMS::NamesAndRolesController do
 
     # rubocop:disable RSpec/LetSetup
     context "when the rlid param is specified" do
-      let!(:enrollment) { teacher_in_course(course:, active_all: true, name: user_full_name) }
+      let!(:enrollment) { teacher_in_course(course: course, active_all: true, name: user_full_name) }
 
       it_behaves_like "rlid check"
     end
     # rubocop:enable RSpec/LetSetup
 
     context "when a course has multiple enrollments" do
-      let!(:teacher_enrollment) { teacher_in_course(course:, active_all: true) }
-      let!(:student_enrollment) { student_in_course(course:, active_all: true) }
-      let!(:ta_enrollment) { ta_in_course(course:, active_all: true) }
-      let!(:observer_enrollment) { observer_in_course(course:, active_all: true) }
-      let!(:designer_enrollment) { designer_in_course(course:, active_all: true) }
+      let!(:teacher_enrollment) { teacher_in_course(course: course, active_all: true) }
+      let!(:student_enrollment) { student_in_course(course: course, active_all: true) }
+      let!(:ta_enrollment) { ta_in_course(course: course, active_all: true) }
+      let!(:observer_enrollment) { observer_in_course(course: course, active_all: true) }
+      let!(:designer_enrollment) { designer_in_course(course: course, active_all: true) }
 
       let!(:enrollments) do
         [
@@ -586,7 +565,7 @@ describe Lti::IMS::NamesAndRolesController do
 
         it "limits results to test students" do
           student_view_enrollment =
-            course_with_user("StudentViewEnrollment", course:, active_all: true)
+            course_with_user("StudentViewEnrollment", course: course, active_all: true)
           send_request
           expect_enrollment_response_page_of([student_view_enrollment])
         end
@@ -602,7 +581,7 @@ describe Lti::IMS::NamesAndRolesController do
       end
 
       context "and a course has a user with multiple active enrollments" do
-        let(:student_enrollment_2) { student_in_course(course:, user: teacher_enrollment.user, active_all: true) }
+        let(:student_enrollment_2) { student_in_course(course: course, user: teacher_enrollment.user, active_all: true) }
         let(:enrollments) { super().push(student_enrollment_2) }
 
         context "and the role param specifies the first enrollment role" do
@@ -934,7 +913,7 @@ describe Lti::IMS::NamesAndRolesController do
 
           context "for an assignment assigned to an inactive enrollment" do
             # student 5 is assigned, but lets deactivate his enrollment
-            let!(:student_enrollment_5) { student_in_course(course:, active_all: false) }
+            let!(:student_enrollment_5) { student_in_course(course: course, active_all: false) }
 
             # Really just specifying the role so we can focus on verifying the enrollments we care about
             context "and a student role param is specified" do
@@ -1134,12 +1113,12 @@ describe Lti::IMS::NamesAndRolesController do
         end
         # student 1 is our leader, add another rando student as group member 1
         let!(:group_membership_1) do
-          group_membership_model(group: group_record, user: student_in_course(course:, active_all: true).user)
+          group_membership_model(group: group_record, user: student_in_course(course: course, active_all: true).user)
         end
         let!(:group_membership_2) { group_membership_model(group: group_record, user: student_enrollment_2.user) }
         # to test 'narrowing', leave student 3 out, add another rando student as group member 3
         let!(:group_membership_3) do
-          group_membership_model(group: group_record, user: student_in_course(course:, active_all: true).user)
+          group_membership_model(group: group_record, user: student_in_course(course: course, active_all: true).user)
         end
         let!(:group_membership_4) { group_membership_model(group: group_record, user: student_enrollment_4.user) }
         let!(:group_membership_5) { group_membership_model(group: group_record, user: student_enrollment_5.user) }
@@ -1374,7 +1353,7 @@ describe Lti::IMS::NamesAndRolesController do
 
   def expect_empty_members_array
     expect(json[:members]).to be_empty
-    expect(json[:members]).to be_a(Array)
+    expect(json[:members]).to be_a_kind_of(Array)
   end
 
   def expect_member_count(count)
@@ -1398,7 +1377,7 @@ describe Lti::IMS::NamesAndRolesController do
   end
 
   def match_enrollment_for_rlid(message_matcher, *enrollment)
-    opts = { message_matcher: }
+    opts = { message_matcher: message_matcher }
     return be_lti_course_membership(opts.merge!(expected: enrollment)) if enrollment.first.is_a?(Enrollment)
 
     be_lti_group_membership(opts.merge!(expected: enrollment.first))
@@ -1438,7 +1417,7 @@ describe Lti::IMS::NamesAndRolesController do
   end
 
   def page_count(total_items, page_size)
-    (total_items / page_size) + ((total_items % page_size > 0) ? 1 : 0)
+    (total_items / page_size) + (total_items % page_size > 0 ? 1 : 0)
   end
 
   def response_links
@@ -1447,7 +1426,7 @@ describe Lti::IMS::NamesAndRolesController do
 
   def assignment_with_rlid(rlid)
     assignment_model({
-                       course:,
+                       course: course,
                        lti_context_id: rlid,
                        submission_types: "external_tool",
                        external_tool_tag_attributes: {

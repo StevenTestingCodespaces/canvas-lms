@@ -41,7 +41,6 @@ export const MOCK_OBSERVED_USERS_LIST = [
 ]
 
 export const SHOW_K5_DASHBOARD_ROUTE = /\/api\/v1\/show_k5_dashboard/
-export const showK5DashboardResponse = (k5User = true, useClassicFont = false) => ({
+export const showK5DashboardResponse = (k5User = true) => ({
   show_k5_dashboard: k5User,
-  use_classic_font: useClassicFont,
 })

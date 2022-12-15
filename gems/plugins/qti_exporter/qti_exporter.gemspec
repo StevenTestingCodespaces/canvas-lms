@@ -11,6 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary       = "QTI Exporter"
 
   spec.files = Dir["{app,lib}/**/*"]
+  spec.test_files = Dir["spec_canvas/**/*"]
 
   spec.add_dependency "rails", ">= 3.2"
 end

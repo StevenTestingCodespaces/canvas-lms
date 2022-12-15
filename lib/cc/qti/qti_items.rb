@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+require "bigdecimal"
 
 # rubocop:disable comments of Style/SymbolProc in this file are because the
 # builder DSL uses method_missing and blocks to define nested XML elements, and
@@ -117,7 +118,7 @@ module CC
               else
                 meta_field(qm_node, "question_type", question["question_type"])
                 meta_field(qm_node, "points_possible", question["points_possible"])
-                meta_field(qm_node, "original_answer_ids", question["answers"].pluck("id").join(","))
+                meta_field(qm_node, "original_answer_ids", question["answers"].map { |a| a["id"] }.join(","))
                 if question[:is_quiz_question]
                   meta_field(qm_node, "assessment_question_identifierref", aq_mig_id(question))
                 end
@@ -174,7 +175,7 @@ module CC
       end
 
       def multiple_choice_response_str(node, question)
-        card = (question["question_type"] == "multiple_answers_question") ? "Multiple" : "Single"
+        card = question["question_type"] == "multiple_answers_question" ? "Multiple" : "Single"
         node.response_lid(
           ident: "response1",
           rcardinality: card
@@ -475,9 +476,9 @@ module CC
           node.respcondition(continue: "Yes") do |res_node|
             res_node.conditionvar do |c_node|
               if question[:question_type] == "short_answer_question"
-                c_node.varequal(answer["text"], respident:)
+                c_node.varequal answer["text"], respident: respident
               else
-                c_node.varequal answer["id"], respident:
+                c_node.varequal answer["id"], respident: respident
               end
             end # c_node
             node.displayfeedback(feedbacktype: "Response", linkrefid: "#{answer["id"]}_fb")
@@ -486,7 +487,7 @@ module CC
       end
 
       def other_respcondition(node, continue = "No", feedback_ref = nil)
-        node.respcondition(continue:) do |res_node|
+        node.respcondition(continue: continue) do |res_node|
           res_node.conditionvar do |c_node| # rubocop:disable Style/SymbolProc
             c_node.other
           end # c_node

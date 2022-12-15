@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import _ from '@instructure/lodash-underscore'
+import _ from 'lodash-underscore'
 
 const extend = _.extend
 

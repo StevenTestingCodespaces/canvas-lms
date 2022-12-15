@@ -23,18 +23,11 @@ const I18n = useI18nScope('gradebook')
 export const statuses = ['late', 'missing', 'resubmitted', 'dropped', 'excused']
 if (ENV.FEATURES && ENV.FEATURES.extended_submission_state) statuses.push('extended')
 
-export const statusesTitleMap: {
-  late: string
-  missing: string
-  resubmitted: string
-  dropped: string
-  excused: string
-  extended: string
-} = {
+export const statusesTitleMap = {
   late: I18n.t('Late'),
   missing: I18n.t('Missing'),
   resubmitted: I18n.t('Resubmitted'),
   dropped: I18n.t('Dropped'),
   excused: I18n.t('Excused'),
   extended: I18n.t('Extended'),
-} as const
+}

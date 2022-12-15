@@ -19,6 +19,8 @@
 #
 
 require "vericite_client"
+require "digest/sha1"
+require "date"
 
 module VeriCite
   def self.state_from_similarity_score(similarity_score)
@@ -96,8 +98,8 @@ module VeriCite
 
       response = sendRequest(:create_assignment, settings.merge!({
                                                                    user: course,
-                                                                   course:,
-                                                                   assignment:,
+                                                                   course: course,
+                                                                   assignment: assignment,
                                                                    utp: "2",
                                                                    dtstart: "#{today.strftime} 00:00:00",
                                                                    dtdue: "#{today.strftime} 00:00:00",
@@ -118,8 +120,8 @@ module VeriCite
         post: true,
         utp: "1",
         user: student,
-        course:,
-        assignment:,
+        course: course,
+        assignment: assignment,
         tem: email(course),
         role: submission.grants_right?(student, :grade) ? "Instructor" : "Learner"
       }
@@ -166,7 +168,7 @@ module VeriCite
       course = assignment.context
       object_id = submission.vericite_data_hash[asset_string][:object_id] rescue nil
       res = nil
-      res = sendRequest(:get_scores, oid: object_id, utp: "2", user:, course:, assignment:) if object_id
+      res = sendRequest(:get_scores, oid: object_id, utp: "2", user: user, course: course, assignment: assignment) if object_id
       data = {}
       if res
         data[:similarity_score] = res[:similarity_score]
@@ -179,7 +181,7 @@ module VeriCite
       assignment = submission.assignment
       course = assignment.context
       object_id = submission.vericite_data_hash[asset_string][:object_id] rescue nil
-      response = sendRequest(:generate_report, oid: object_id, utp: "2", current_user:, user:, course:, assignment:)
+      response = sendRequest(:generate_report, oid: object_id, utp: "2", current_user: current_user, user: user, course: course, assignment: assignment)
       if response.nil?
         nil
       else
@@ -192,7 +194,7 @@ module VeriCite
       assignment = submission.assignment
       course = assignment.context
       object_id = submission.vericite_data_hash[asset_string][:object_id] rescue nil
-      response = sendRequest(:generate_report, oid: object_id, utp: "1", current_user:, user:, course:, assignment:, tem: email(course))
+      response = sendRequest(:generate_report, oid: object_id, utp: "1", current_user: current_user, user: user, course: course, assignment: assignment, tem: email(course))
       if response.nil?
         nil
       else
@@ -291,7 +293,7 @@ module VeriCite
             users_score_map[user_id.to_s] ||= {}
             # we need to look up the user scores in VeriCite for this course
             # @return [Array<ReportScoreReponse>]
-            data, status_code, _headers = vericite_client.reports_scores_context_id_get(context_id, consumer, consumer_secret, { assignment_id: })
+            data, status_code, _headers = vericite_client.reports_scores_context_id_get(context_id, consumer, consumer_secret, { assignment_id: assignment_id })
             # keep track of the assignment lookup api call
             Rails.cache.write(user_score_cache_key_prefix, true, expires_in: 5.minutes)
             # check status code
@@ -373,7 +375,7 @@ module VeriCite
 
     private
 
-    SUCCESSFUL_RETURN_CODES = (200..299)
+    SUCCESSFUL_RETURN_CODES = (200..299).freeze
     def is_response_success?(response)
       response&.key?(:return_code) && SUCCESSFUL_RETURN_CODES.cover?(Integer(response[:return_code]))
     rescue

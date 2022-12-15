@@ -24,7 +24,6 @@ import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {UPDATE_USER_DISCUSSION_SPLITSCREEN_PREFERENCE} from '../../../graphql/Mutations'
 import {useMutation} from 'react-apollo'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import {AllThreadsState, SearchContext} from '../../utils/constants'
 
 const I18n = useI18nScope('discussions_posts')
 
@@ -34,7 +33,6 @@ export const SplitScreenButton = ({
   ...props
 }) => {
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
-  const {setAllThreadsStatus, setExpandedThreads} = useContext(SearchContext)
 
   const [updateUserDiscussionsSplitscreenView] = useMutation(
     UPDATE_USER_DISCUSSION_SPLITSCREEN_PREFERENCE,
@@ -59,13 +57,6 @@ export const SplitScreenButton = ({
     // Logic: if userSplitScreenPreference currently true, then it will be false, which means closeView.
     if (userSplitScreenPreference) {
       props.closeView()
-    } else {
-      setExpandedThreads([])
-      setAllThreadsStatus(AllThreadsState.Collapsed)
-
-      setTimeout(() => {
-        setAllThreadsStatus(AllThreadsState.None)
-      }, 0)
     }
     updateUserDiscussionsSplitscreenView({
       variables: {discussionsSplitscreenView: !userSplitScreenPreference},

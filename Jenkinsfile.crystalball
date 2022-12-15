@@ -21,8 +21,6 @@
 library 'canvas-builds-library'
 loadLocalLibrary('local-lib', 'build/new-jenkins/library')
 
-commitMessageFlag.setDefaultValues(commitMessageFlagDefaults() + commitMessageFlagPrivateDefaults())
-
 @groovy.transform.Field
 def rspecqNodeTotal = 50
 
@@ -108,9 +106,9 @@ pipeline {
     BUILD_REGISTRY_FQDN = configuration.buildRegistryFQDN()
     COMPOSE_FILE = 'docker-compose.new-jenkins.yml:docker-compose.new-jenkins-selenium.yml'
     COMPOSE_PROJECT_NAME = 'crystalball-map'
-    RERUNS_RETRY = commitMessageFlag('rspecq-max-requeues').asType(Integer)
+    RERUNS_RETRY = "${configuration.getInteger('rspecq-max-requeues')}"
     RSPECQ_FILE_SPLIT_THRESHOLD = '9999'
-    RSPECQ_MAX_REQUEUES = commitMessageFlag('rspecq-max-requeues').asType(Integer)
+    RSPECQ_MAX_REQUEUES = "${configuration.getInteger('rspecq-max-requeues')}"
     RSPEC_PROCESSES = 6
     TEST_PATTERN = '^./(spec|gems/plugins/.*/spec_canvas)/'
     EXCLUDE_TESTS = '.*/(selenium/performance|instfs/selenium|contracts)'
@@ -187,12 +185,6 @@ pipeline {
 
             extendedStage('Parallel Run Tests').obeysAllowStages(false).execute { stageConfig, buildConfig ->
               def rspecqStages = [:]
-
-              // Pull docker images before running Reporter
-              // sometimes it takes longer than usual to pull from starlord causing Reporter to timeout
-              credentials.withStarlordCredentials { ->
-                sh(script: 'build/new-jenkins/docker-compose-pull.sh', label: 'Pull Images')
-              }
 
               extendedStage('RSpecQ Reporter').timeout(30).queue(rspecqStages) {
                 try {

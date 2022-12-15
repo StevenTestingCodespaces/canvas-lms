@@ -17,10 +17,10 @@
 //
 
 import $ from 'jquery'
-import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection'
+import PaginatedCollection from '@canvas/pagination/backbone/collections/PaginatedCollection.coffee'
 import _ from 'underscore'
 import deparam from 'deparam'
-import File from '../models/File'
+import File from '../models/File.coffee'
 
 export default class FilesCollection extends PaginatedCollection {
   initialize() {
@@ -53,7 +53,7 @@ export default class FilesCollection extends PaginatedCollection {
     return super.parse(...arguments)
   }
 
-  // TODO: This is duplicate code from Folder.js, can we DRY?
+  // TODO: This is duplicate code from Folder.coffee, can we DRY?
   setQueryStringParams() {
     const newParams = {
       include: ['user'],

@@ -152,13 +152,3 @@ span.late-pill, span.missing-pill, span.extended-pill {
     flex: 1
   }
 }
-
-.row-fluid {
-  .ml-0 {
-    margin-#{direction(left)}: 0;
-  }
-}
-
-.mr-add {
-  margin-#{direction(right)}: $fluidGridGutterWidth;
-}

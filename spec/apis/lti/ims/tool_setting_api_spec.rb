@@ -19,6 +19,7 @@
 #
 
 require_relative "../../api_spec_helper"
+require_dependency "lti/ims/tool_setting_controller"
 
 module Lti
   module IMS
@@ -30,25 +31,25 @@ module Lti
           context: account,
           guid: SecureRandom.uuid,
           shared_secret: "abc",
-          product_family:,
+          product_family: product_family,
           product_version: "1",
           workflow_state: "disabled",
           raw_data: { "proxy" => "value" },
           lti_version: "1"
         )
       end
-      let(:resource_handler) { ResourceHandler.create!(resource_type_code: "code", name: "name", tool_proxy:) }
-      let(:message_handler) { MessageHandler.create(message_type: "basic-lti-launch-request", launch_path: "https://samplelaunch/blti", resource_handler:) }
+      let(:resource_handler) { ResourceHandler.create!(resource_type_code: "code", name: "name", tool_proxy: tool_proxy) }
+      let(:message_handler) { MessageHandler.create(message_type: "basic-lti-launch-request", launch_path: "https://samplelaunch/blti", resource_handler: resource_handler) }
       let(:access_token) { Lti::OAuth2::AccessToken.create_jwt(aud: nil, sub: tool_proxy.guid).to_s }
 
       before do
         allow_any_instance_of(ToolSettingController).to receive_messages(oauth_authenticated_request?: true)
         allow_any_instance_of(ToolSettingController).to receive_messages(authenticate_body_hash: true)
         allow_any_instance_of(ToolSettingController).to receive_messages(oauth_consumer_key: tool_proxy.guid)
-        allow(AuthenticationMethods).to receive_messages(access_token:)
-        @link_setting = ToolSetting.create(tool_proxy:, context: account, resource_link_id: "abc", custom: { link: :setting, a: 1, b: 2, c: 3 })
-        @binding_setting = ToolSetting.create(tool_proxy:, context: account, custom: { binding: :setting, a: 1, b: 2, d: 4 })
-        @proxy_setting = ToolSetting.create(tool_proxy:, custom: { proxy: :setting, a: 1, c: 3, d: 4 })
+        allow(AuthenticationMethods).to receive_messages(access_token: access_token)
+        @link_setting = ToolSetting.create(tool_proxy: tool_proxy, context: account, resource_link_id: "abc", custom: { link: :setting, a: 1, b: 2, c: 3 })
+        @binding_setting = ToolSetting.create(tool_proxy: tool_proxy, context: account, custom: { binding: :setting, a: 1, b: 2, d: 4 })
+        @proxy_setting = ToolSetting.create(tool_proxy: tool_proxy, custom: { proxy: :setting, a: 1, c: 3, d: 4 })
       end
 
       describe "#show" do
@@ -60,32 +61,28 @@ module Lti
         end
 
         it "returns toolsettings when requested" do
-          get "/api/lti/tool_settings/#{@link_setting.id}.json",
-              params: { tool_setting_id: @link_setting },
-              headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
+          get "/api/lti/tool_settings/#{@link_setting.id}.json", params: { tool_setting_id: @link_setting },
+                                                                 headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
           expect(response.media_type).to eq "application/vnd.ims.lti.v2.toolsettings+json"
         end
 
         it "returns not_found if there isn't a tool setting" do
-          get "/api/lti/tool_settings/3.json",
-              params: { tool_setting_id: "3" },
-              headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
-          expect(response).to have_http_status :not_found
+          get "/api/lti/tool_settings/3.json", params: { tool_setting_id: "3" },
+                                               headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
+          expect(response.code).to eq "404"
           expect(response.body).to eq '{"status":"not_found","errors":[{"message":"not_found"}]}'
         end
 
         it 'returns as a bad request when bubble is something besides "all" or "distinct"' do
-          get "/api/lti/tool_settings/#{@link_setting.id}.json",
-              params: { tool_setting_id: @link_setting, bubble: "pop" },
-              headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
-          expect(response).to have_http_status :bad_request
+          get "/api/lti/tool_settings/#{@link_setting.id}.json", params: { tool_setting_id: @link_setting, bubble: "pop" },
+                                                                 headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
+          expect(response.code).to eq "400"
         end
 
         it 'returns as a bad request when bubble is "all" and the accept type is "simple"' do
-          get "/api/lti/tool_settings/#{@link_setting.id}.json",
-              params: { tool_setting_id: @link_setting, bubble: "all" },
-              headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
-          expect(response).to have_http_status :bad_request
+          get "/api/lti/tool_settings/#{@link_setting.id}.json", params: { tool_setting_id: @link_setting, bubble: "all" },
+                                                                 headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
+          expect(response.code).to eq "400"
         end
 
         context "lti_link" do
@@ -101,16 +98,14 @@ module Lti
           end
 
           it "returns the lti link simple json" do
-            get "/api/lti/tool_settings/#{@link_setting.id}.json",
-                params: { tool_setting_id: @link_setting },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@link_setting.id}.json", params: { tool_setting_id: @link_setting },
+                                                                   headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
             expect(JSON.parse(body)).to eq({ "link" => "setting", "a" => 1, "b" => 2, "c" => 3 })
           end
 
           it "returns the lti link tool settings json with bubble distinct" do
-            get "/api/lti/tool_settings/#{@link_setting.id}.json",
-                params: { tool_setting_id: @link_setting, bubble: "distinct" },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@link_setting.id}.json", params: { tool_setting_id: @link_setting, bubble: "distinct" },
+                                                                   headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
             json = JSON.parse(body)
             link_setting = json["@graph"].find { |setting| setting["@type"] == "LtiLink" }
             expect(link_setting["custom"]).to eq({ "link" => "setting", "a" => 1, "b" => 2, "c" => 3 })
@@ -121,16 +116,14 @@ module Lti
           end
 
           it "returns the lti link tool settings simple json with bubble distinct" do
-            get "/api/lti/tool_settings/#{@link_setting.id}.json",
-                params: { tool_setting_id: @link_setting, bubble: "distinct" },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@link_setting.id}.json", params: { tool_setting_id: @link_setting, bubble: "distinct" },
+                                                                   headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
             expect(JSON.parse(body)).to eq({ "link" => "setting", "binding" => "setting", "proxy" => "setting", "a" => 1, "b" => 2, "c" => 3, "d" => 4 })
           end
 
           it "bubbles up all levels" do
-            get "/api/lti/tool_settings/#{@link_setting.id}.json",
-                params: { tool_setting_id: @link_setting.id, bubble: "all" },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@link_setting.id}.json", params: { tool_setting_id: @link_setting.id, bubble: "all" },
+                                                                   headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
             json = JSON.parse(body)
             link_setting = json["@graph"].find { |setting| setting["@type"] == "LtiLink" }
             expect(link_setting["custom"]).to eq({ "link" => "setting", "a" => 1, "b" => 2, "c" => 3 })
@@ -144,9 +137,9 @@ module Lti
             resource_link_id = SecureRandom.uuid
             custom = { test: "value" }.with_indifferent_access
             Lti::ToolSetting.create!(
-              tool_proxy:,
-              resource_link_id:,
-              custom:,
+              tool_proxy: tool_proxy,
+              resource_link_id: resource_link_id,
+              custom: custom,
               context: tool_proxy.context
             )
             get "/api/lti/tool_proxy/#{tool_proxy.guid}/accounts/#{tool_proxy.context.id}/resource_link_id/#{resource_link_id}/tool_setting",
@@ -158,9 +151,8 @@ module Lti
 
         context "binding" do
           it "returns the simple json" do
-            get "/api/lti/tool_settings/#{@binding_setting.id}.json",
-                params: { tool_setting_id: @binding_setting.id },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@binding_setting.id}.json", params: { tool_setting_id: @binding_setting.id },
+                                                                      headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
             expect(JSON.parse(body)).to eq({ "binding" => "setting", "a" => 1, "b" => 2, "d" => 4 })
           end
 
@@ -175,9 +167,8 @@ module Lti
           end
 
           it "returns the tool settings json with bubble distinct" do
-            get "/api/lti/tool_settings/#{@binding_setting.id}.json",
-                params: { tool_setting_id: @link_setting, bubble: "distinct" },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@binding_setting.id}.json", params: { tool_setting_id: @link_setting, bubble: "distinct" },
+                                                                      headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
             json = JSON.parse(body)
             link_setting = json["@graph"].find { |setting| setting["@type"] == "LtiLink" }
             expect(link_setting).to be_nil
@@ -188,16 +179,14 @@ module Lti
           end
 
           it "returns the tool settings simple json with bubble distinct" do
-            get "/api/lti/tool_settings/#{@binding_setting.id}.json",
-                params: { tool_setting_id: @link_setting, bubble: "distinct" },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@binding_setting.id}.json", params: { tool_setting_id: @link_setting, bubble: "distinct" },
+                                                                      headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
             expect(JSON.parse(body)).to eq({ "binding" => "setting", "proxy" => "setting", "a" => 1, "b" => 2, "c" => 3, "d" => 4 })
           end
 
           it "bubbles up from binding" do
-            get "/api/lti/tool_settings/#{@binding_setting.id}.json",
-                params: { tool_setting_id: @binding_setting.id, bubble: "all" },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@binding_setting.id}.json", params: { tool_setting_id: @binding_setting.id, bubble: "all" },
+                                                                      headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
             json = JSON.parse(body)
             link_setting = json["@graph"].find { |setting| setting["@type"] == "LtiLink" }
             expect(link_setting).to be_nil
@@ -210,9 +199,8 @@ module Lti
 
         context "tool proxy" do
           it "returns the lti link simple json" do
-            get "/api/lti/tool_settings/#{@proxy_setting.id}.json",
-                params: { link_id: @proxy_setting.id },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@proxy_setting.id}.json", params: { link_id: @proxy_setting.id },
+                                                                    headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
             expect(JSON.parse(body)).to eq({ "proxy" => "setting", "a" => 1, "c" => 3, "d" => 4 })
           end
 
@@ -226,9 +214,8 @@ module Lti
           end
 
           it "returns the tool settings json with bubble distinct" do
-            get "/api/lti/tool_settings/#{@proxy_setting.id}.json",
-                params: { tool_setting_id: @link_setting, bubble: "distinct" },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@proxy_setting.id}.json", params: { tool_setting_id: @link_setting, bubble: "distinct" },
+                                                                    headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
             json = JSON.parse(body)
             link_setting = json["@graph"].find { |setting| setting["@type"] == "LtiLink" }
             expect(link_setting).to be_nil
@@ -239,16 +226,14 @@ module Lti
           end
 
           it "returns the tool settings simple json with bubble distinct" do
-            get "/api/lti/tool_settings/#{@proxy_setting.id}.json",
-                params: { tool_setting_id: @link_setting, bubble: "distinct" },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@proxy_setting.id}.json", params: { tool_setting_id: @link_setting, bubble: "distinct" },
+                                                                    headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
             expect(JSON.parse(body)).to eq({ "proxy" => "setting", "a" => 1, "c" => 3, "d" => 4 })
           end
 
           it "bubbles up from tool proxy" do
-            get "/api/lti/tool_settings/#{@proxy_setting.id}.json",
-                params: { tool_setting_id: @proxy_setting.id, bubble: "all" },
-                headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
+            get "/api/lti/tool_settings/#{@proxy_setting.id}.json", params: { tool_setting_id: @proxy_setting.id, bubble: "all" },
+                                                                    headers: { "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings+json", "Authorization" => "oauth_token" }
             json = JSON.parse(body)
             link_setting = json["@graph"].find { |setting| setting["@type"] == "LtiLink" }
             expect(link_setting).to be_nil
@@ -262,96 +247,81 @@ module Lti
 
       describe "#update" do
         it "returns as a bad request when bubble is set" do
-          tool_setting = ToolSetting.create(tool_proxy:, context: account, resource_link_id: "resource_link")
+          tool_setting = ToolSetting.create(tool_proxy: tool_proxy, context: account, resource_link_id: "resource_link")
           params = { "link" => "settings" }
-          put "/api/lti/tool_settings/#{tool_setting.id}.json?bubble=all",
-              params: params.to_json,
-              headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                         "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                         "Authorization" => "oauth_token" }
-          expect(response).to have_http_status :bad_request
+          put "/api/lti/tool_settings/#{tool_setting.id}.json?bubble=all", params: params.to_json,
+                                                                           headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
+                                                                                      "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
+          expect(response.code).to eq "400"
         end
 
         it "returns as a bad request when there is more than one @graph item" do
-          tool_setting = ToolSetting.create(tool_proxy:, context: account, resource_link_id: "resource_link")
+          tool_setting = ToolSetting.create(tool_proxy: tool_proxy, context: account, resource_link_id: "resource_link")
           params = {
             "@context" => "http://purl.imsglobal.org/ctx/lti/v2/ToolSettings",
             "@graph" => [
               {
-                "@type" => "LtiLink",
-                "@id" => "http://sample.invalid/api/lti/tool_settings/#{tool_setting.id}",
+                "@type" => "LtiLink", "@id" => "http://sample.invalid/api/lti/tool_settings/#{tool_setting.id}",
                 "custom" => { "link" => "settings" }
               },
               {
-                "@type" => "ToolProxyBinding",
-                "@id" => "http://sample.invalid/api/lti/tool_settings/#{tool_setting.id + 1}",
+                "@type" => "ToolProxyBinding", "@id" => "http://sample.invalid/api/lti/tool_settings/#{tool_setting.id + 1}",
                 "custom" => { "binding" => "settings" }
               }
             ]
           }
-          put "/api/lti/tool_settings/#{tool_setting.id}.json",
-              params: params.to_json,
-              headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings+json",
-                         "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                         "Authorization" => "oauth_token" }
-          expect(response).to have_http_status :bad_request
+          put "/api/lti/tool_settings/#{tool_setting.id}.json", params: params.to_json,
+                                                                headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings+json",
+                                                                           "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
+          expect(response.code).to eq "400"
         end
 
         it "updates a tool_setting with a single graph element" do
-          tool_setting = ToolSetting.create(tool_proxy:, context: account, resource_link_id: "resource_link")
+          tool_setting = ToolSetting.create(tool_proxy: tool_proxy, context: account, resource_link_id: "resource_link")
           params = {
             "@context" => "http://purl.imsglobal.org/ctx/lti/v2/ToolSettings",
             "@graph" => [
               {
-                "@type" => "LtiLink",
-                "@id" => "http://sample.invalid/api/lti/tool_settings/#{tool_setting.id}",
+                "@type" => "LtiLink", "@id" => "http://sample.invalid/api/lti/tool_settings/#{tool_setting.id}",
                 "custom" => { "link" => "settings" }
               }
             ]
           }
-          put "/api/lti/tool_settings/#{tool_setting.id}.json",
-              params: params.to_json,
-              headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings+json",
-                         "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                         "Authorization" => "oauth_token" }
+          put "/api/lti/tool_settings/#{tool_setting.id}.json", params: params.to_json,
+                                                                headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings+json",
+                                                                           "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
           expect(tool_setting.reload.custom).to eq({ "link" => "settings" })
         end
 
         context "lti_link" do
           it "creates a new lti link tool setting" do
-            tool_setting = ToolSetting.create(tool_proxy:, context: account, resource_link_id: "resource_link")
+            tool_setting = ToolSetting.create(tool_proxy: tool_proxy, context: account, resource_link_id: "resource_link")
             params = { "link" => "settings" }
-            put "/api/lti/tool_settings/#{tool_setting.id}.json",
-                params: params.to_json,
-                headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                           "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                           "Authorization" => "oauth_token" }
+            put "/api/lti/tool_settings/#{tool_setting.id}.json", params: params.to_json,
+                                                                  headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
+                                                                             "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
             expect(tool_setting.reload.custom).to eq({ "link" => "settings" })
           end
         end
 
         context "binding" do
           it "creates a new binding tool setting" do
-            tool_setting = ToolSetting.create(tool_proxy:, context: account)
+            tool_setting = ToolSetting.create(tool_proxy: tool_proxy, context: account)
             params = { "binding" => "settings" }
-            put "/api/lti/tool_settings/#{tool_setting.id}.json",
-                params: params.to_json,
-                headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                           "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                           "Authorization" => "oauth_token" }
+            put "/api/lti/tool_settings/#{tool_setting.id}.json", params: params.to_json,
+                                                                  headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
+                                                                             "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
             expect(tool_setting.reload.custom).to eq({ "binding" => "settings" })
           end
         end
 
         context "proxy" do
           it "creates a new tool_proxy tool setting" do
-            tool_setting = ToolSetting.create(tool_proxy:)
+            tool_setting = ToolSetting.create(tool_proxy: tool_proxy)
             params = { "tool_proxy" => "settings" }
-            put "/api/lti/tool_settings/#{tool_setting.id}.json",
-                params: params.to_json,
-                headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                           "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
-                           "Authorization" => "oauth_token" }
+            put "/api/lti/tool_settings/#{tool_setting.id}.json", params: params.to_json,
+                                                                  headers: { "CONTENT_TYPE" => "application/vnd.ims.lti.v2.toolsettings.simple+json",
+                                                                             "HTTP_ACCEPT" => "application/vnd.ims.lti.v2.toolsettings.simple+json", "Authorization" => "oauth_token" }
             expect(tool_setting.reload.custom).to eq({ "tool_proxy" => "settings" })
           end
         end

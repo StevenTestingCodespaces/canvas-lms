@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
+require_dependency "canvas/oauth/provider"
+
 module Canvas::OAuth
   describe Provider do
     let(:provider) { Provider.new("123") }
@@ -111,18 +113,18 @@ module Canvas::OAuth
       let(:user) { User.create! }
 
       it "finds a pre existing token with the same scope" do
-        user.access_tokens.create!(developer_key:, scopes: ["#{TokenScopes::OAUTH2_SCOPE_NAMESPACE}userinfo"], remember_access: true)
-        expect(Provider.new(developer_key.id, "", ["userinfo"]).authorized_token?(user)).to be true
+        user.access_tokens.create!(developer_key: developer_key, scopes: ["#{TokenScopes::OAUTH2_SCOPE_NAMESPACE}userinfo"], remember_access: true)
+        expect(Provider.new(developer_key.id, "", ["userinfo"]).authorized_token?(user)).to eq true
       end
 
       it "ignores tokens unless access is remembered" do
-        user.access_tokens.create!(developer_key:, scopes: ["#{TokenScopes::OAUTH2_SCOPE_NAMESPACE}userinfo"])
-        expect(Provider.new(developer_key.id, "", ["userinfo"]).authorized_token?(user)).to be false
+        user.access_tokens.create!(developer_key: developer_key, scopes: ["#{TokenScopes::OAUTH2_SCOPE_NAMESPACE}userinfo"])
+        expect(Provider.new(developer_key.id, "", ["userinfo"]).authorized_token?(user)).to eq false
       end
 
       it "ignores tokens for out of band requests" do
-        user.access_tokens.create!(developer_key:, scopes: ["#{TokenScopes::OAUTH2_SCOPE_NAMESPACE}userinfo"], remember_access: true)
-        expect(Provider.new(developer_key.id, Canvas::OAuth::Provider::OAUTH2_OOB_URI, ["userinfo"]).authorized_token?(user)).to be false
+        user.access_tokens.create!(developer_key: developer_key, scopes: ["#{TokenScopes::OAUTH2_SCOPE_NAMESPACE}userinfo"], remember_access: true)
+        expect(Provider.new(developer_key.id, Canvas::OAuth::Provider::OAUTH2_OOB_URI, ["userinfo"]).authorized_token?(user)).to eq false
       end
     end
 
@@ -182,14 +184,14 @@ module Canvas::OAuth
 
       describe "#valid_scopes?" do
         it "returns true if scopes requested are included on key" do
-          expect(provider.valid_scopes?).to be(true)
+          expect(provider.valid_scopes?).to eq(true)
         end
 
         context "with invalid scopes" do
           let(:scopes) { [TokenScopes::USER_INFO_SCOPE[:scope], "otherscope"] }
 
           it "returns false" do
-            expect(provider.valid_scopes?).to be(false)
+            expect(provider.valid_scopes?).to eq(false)
           end
         end
       end

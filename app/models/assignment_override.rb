@@ -29,7 +29,6 @@ class AssignmentOverride < ActiveRecord::Base
   simply_versioned keep: 10
 
   attr_accessor :dont_touch_assignment, :preloaded_student_ids, :changed_student_ids
-  attr_writer :for_nonactive_enrollment
 
   belongs_to :root_account, class_name: "Account"
   belongs_to :assignment, inverse_of: :assignment_overrides
@@ -79,8 +78,7 @@ class AssignmentOverride < ActiveRecord::Base
       next if s.valid?
 
       s.errors.each do |_, error|
-        record.errors.add(:assignment_override_students,
-                          error.type,
+        record.errors.add(:assignment_override_students, error.type,
                           message: error.message)
       end
     end
@@ -103,8 +101,8 @@ class AssignmentOverride < ActiveRecord::Base
     course = assignment&.context || quiz&.context || quiz&.assignment&.context
     return true unless course&.grading_periods?
 
-    grading_period_was = GradingPeriod.for_date_in_course(date: due_at_before_last_save, course:)
-    grading_period = GradingPeriod.for_date_in_course(date: due_at, course:)
+    grading_period_was = GradingPeriod.for_date_in_course(date: due_at_before_last_save, course: course)
+    grading_period = GradingPeriod.for_date_in_course(date: due_at, course: course)
     return true if grading_period_was&.id == grading_period&.id
 
     students = applies_to_students.map(&:id)
@@ -161,8 +159,8 @@ class AssignmentOverride < ActiveRecord::Base
         context_type: self.class.name,
         context_id: id,
         alert_type: :due_date_reminder,
-        due_at:,
-        root_account_id:
+        due_at: due_at,
+        root_account_id: root_account_id
       )
     end
   end
@@ -207,7 +205,7 @@ class AssignmentOverride < ActiveRecord::Base
             .distinct
 
     if visible_ids.is_a?(ActiveRecord::Relation)
-      column = (visible_ids.klass == User) ? :id : visible_ids.select_values.first
+      column = visible_ids.klass == User ? :id : visible_ids.select_values.first
       scope = scope.primary_shard.activate do
         scope.joins("INNER JOIN #{visible_ids.klass.quoted_table_name} ON assignment_override_students.user_id=#{visible_ids.klass.table_name}.#{column}")
       end
@@ -268,24 +266,6 @@ class AssignmentOverride < ActiveRecord::Base
     else
       super
     end
-  end
-
-  def for_nonactive_enrollment?
-    !!@for_nonactive_enrollment
-  end
-
-  def self.preload_for_nonactive_enrollment(section_overrides, course, user)
-    return section_overrides if user.blank? || section_overrides.empty?
-
-    enrollment_state_by_section_id = course.enrollments.where(user:).pluck(:course_section_id, :workflow_state).to_h
-    section_overrides.each do |override|
-      next unless override.set_type == "CourseSection"
-
-      state = enrollment_state_by_section_id[override.set_id]
-      override.for_nonactive_enrollment = state.present? && state != "active"
-    end
-
-    section_overrides
   end
 
   def self.override(field)
@@ -359,15 +339,15 @@ class AssignmentOverride < ActiveRecord::Base
   end
 
   def as_hash
-    { title:,
-      due_at:,
-      id:,
-      all_day:,
-      set_type:,
-      set_id:,
-      all_day_date:,
-      lock_at:,
-      unlock_at:,
+    { title: title,
+      due_at: due_at,
+      id: id,
+      all_day: all_day,
+      set_type: set_type,
+      set_id: set_id,
+      all_day_date: all_day_date,
+      lock_at: lock_at,
+      unlock_at: unlock_at,
       override: self }
   end
 

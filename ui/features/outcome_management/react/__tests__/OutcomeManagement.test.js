@@ -287,6 +287,7 @@ describe('OutcomeManagement', () => {
   const courseOnlyTests = () => {
     beforeEach(() => {
       window.ENV.IMPROVED_OUTCOMES_MANAGEMENT = true
+      window.ENV.OUTCOME_ALIGNMENT_SUMMARY = true
       window.ENV.PERMISSIONS.manage_outcomes = true
     })
 
@@ -313,8 +314,8 @@ describe('OutcomeManagement', () => {
           expect(queryByText('Alignments')).not.toBeInTheDocument()
         })
 
-        it('does not render Alignments tab if Improved Outcomes Management FF is disabled even if user has permissions', async () => {
-          window.ENV.IMPROVED_OUTCOMES_MANAGEMENT = false
+        it('does not render Alignments tab if Alignment Summary FF is disabled even if user has permissions', async () => {
+          window.ENV.OUTCOME_ALIGNMENT_SUMMARY = false
           const {queryByText} = render(
             <MockedProvider cache={cache} mocks={[...outcomeGroupsMocks]}>
               <OutcomeManagement />
@@ -344,6 +345,7 @@ describe('OutcomeManagement', () => {
     describe('Outcome Alignment Summary', () => {
       it('does not render Aligments Summary tab in account context', async () => {
         window.ENV.IMPROVED_OUTCOMES_MANAGEMENT = true
+        window.ENV.OUTCOME_ALIGNMENT_SUMMARY = true
         window.ENV.PERMISSIONS.manage_outcomes = true
         const {queryByText} = render(
           <MockedProvider cache={cache} mocks={[...outcomeGroupsMocks]}>
