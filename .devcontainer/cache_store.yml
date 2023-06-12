@@ -10,7 +10,7 @@ development:
   # # separate redis instance for cache and for data.
   #
   url:
-    - localhost
+    - redis://localhost
   db: 0
   #
   #
