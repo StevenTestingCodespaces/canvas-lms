@@ -3,6 +3,8 @@
 set -e
 
 sudo update-rc.d redis-server enable
+sudo service redis-server start
+sudo service redis-server status
 
 ruby -rerb -e 'puts ERB.new(File.read(".devcontainer/domain.yml.erb")).result(binding)' > config/domain.yml
 cp config/database.yml.codespaces config/database.yml
