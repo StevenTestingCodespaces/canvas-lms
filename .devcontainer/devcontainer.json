@@ -19,6 +19,7 @@
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "./build/finalize-app-setup.sh",
+	"postStartCommand": "./.devcontainer/start-services.sh",
 
 	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode"
